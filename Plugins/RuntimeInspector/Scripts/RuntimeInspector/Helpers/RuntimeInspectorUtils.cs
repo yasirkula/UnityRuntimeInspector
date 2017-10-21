@@ -5,6 +5,7 @@ using System.Runtime.Serialization;
 using System.Text;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
 
@@ -33,6 +34,11 @@ namespace RuntimeInspectorNamespace
 					m_draggedReferenceItemsCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
                     m_draggedReferenceItemsCanvas.sortingOrder = 987654;
 					m_draggedReferenceItemsCanvas.gameObject.AddComponent<CanvasScaler>();
+
+					SceneManager.sceneLoaded -= OnSceneLoaded;
+					SceneManager.sceneLoaded += OnSceneLoaded;
+
+					Object.DontDestroyOnLoad( m_draggedReferenceItemsCanvas.gameObject );
                 }
 
 				return m_draggedReferenceItemsCanvas;
@@ -193,6 +199,16 @@ namespace RuntimeInspectorNamespace
 			}
 
 			return null;
+		}
+
+		private static void OnSceneLoaded( Scene arg0, LoadSceneMode arg1 )
+		{
+			if( !m_draggedReferenceItemsCanvas.IsNull() )
+			{
+				Transform canvasTR = m_draggedReferenceItemsCanvas.transform;
+				for( int i = canvasTR.childCount - 1; i >= 0; i-- )
+					Object.Destroy( canvasTR.GetChild( i ).gameObject );
+			}
 		}
 
 		public static MemberInfo[] GetAllVariables( this Type type )
@@ -414,7 +430,8 @@ namespace RuntimeInspectorNamespace
 		private static void GetExposedExtensionMethods( Type type )
 		{
 			exposedExtensionMethods.Clear();
-			
+			typeToExposedMethods.Clear();
+
 			MethodInfo[] methods = type.GetMethods( BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic );
 			for( int i = 0; i < methods.Length; i++ )
 			{

@@ -6,6 +6,7 @@ namespace RuntimeInspectorNamespace
 {
 	public class DraggedReferenceSourceUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 	{
+		[SerializeField]
 		private Object m_reference;
 		public Object Reference
 		{

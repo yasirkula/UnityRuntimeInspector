@@ -23,7 +23,7 @@ GameObject:
   - component: {fileID: 114144096220550954}
   - component: {fileID: 114163117979347852}
   m_Layer: 5
-  m_Name: HierarchyItemScene
+  m_Name: HierarchyItemRoot
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
