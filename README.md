@@ -53,9 +53,11 @@ RuntimeInspector works similar to the editor Inspector. It can expose commonly u
     - While searching for a suitable drawer for a variable, the corresponding drawers list is traversed from bottom to top until a drawer that supports that variable type is found. If such a drawer is not found, that variable is not exposed
   - **Hidden Variables**: allows you to hide some variables from the inspector for a given type and all the types that extend/implement it. You can enter asterisk character (\*) to hide all the variables for that type
   - **Exposed Variables**: allows you to expose (counter) some hidden variables. A variable goes through a number of filters before it is exposed:
-  1. It must pass the *Expose Private Fields*, *Expose Public Fields*, *Expose Private Properties* and *Expose Public Properties* filters
-  2. It must be serializable or *Debug Mode* must be enabled
-  3. It must not be hidden using the *Hidden Variables* or if it is hidden, it must be exposed using the *Exposed Variables*
+  1. If it is in *Exposed Variables*, it is exposed
+  2. Otherwise, it must pass the *Expose Private Fields*, *Expose Public Fields*, *Expose Private Properties* and *Expose Public Properties* filters
+  3. It must not be in *Hidden Variables*
+  4. It must not have a *System.Obsolete*, *System.NonSerialized* or *HideInInspector* attribute
+  5. It must be serializable or *Debug Mode* must be enabled
   - So, to expose only a specific set of variables for a given type, you can hide all of its variables by entering an asterisk to its *Hidden Variables* and then entering the set of exposed variables to its *Exposed Variables*
 
 You are advised not to change the **InternalSettings** but create a separate Settings asset and add it to the **Settings** array of the inspector if you want to tweak its settings. Otherwise, when *InternalSettings* is changed on an update, your settings might be overridden.

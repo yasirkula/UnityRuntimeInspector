@@ -59,6 +59,9 @@ namespace RuntimeInspectorNamespace
 				if( variables[index] is FieldInfo )
 				{
 					FieldInfo field = (FieldInfo) variables[index];
+					if( IsVariableInExposedVariablesList( field.Name ) )
+						return true;
+
 					bool isPublic = field.IsPublic;
 					if( ( ( isPublic && exposePublicFields ) || ( !isPublic && exposePrivateFields ) ) &&
 						ShouldExposeVariable( field ) )
@@ -67,6 +70,9 @@ namespace RuntimeInspectorNamespace
 				else
 				{
 					PropertyInfo property = (PropertyInfo) variables[index];
+					if( IsVariableInExposedVariablesList( property.Name ) )
+						return true;
+
 					bool isPublic = property.GetSetMethod( true ).IsPublic && property.GetGetMethod( true ).IsPublic;
 					if( ( ( isPublic && exposePublicProperties ) || ( !isPublic && exposePrivateProperties ) ) &&
 						ShouldExposeVariable( property ) )
@@ -82,9 +88,8 @@ namespace RuntimeInspectorNamespace
 			index = -1;
         }
 
-		private bool ShouldExposeVariable( MemberInfo variable )
+		private bool IsVariableInExposedVariablesList( string variableName )
 		{
-			string variableName = variable.Name;
 			if( exposedVariables != null )
 			{
 				for( int i = 0; i < exposedVariables.Count; i++ )
@@ -94,6 +99,12 @@ namespace RuntimeInspectorNamespace
 				}
 			}
 
+			return false;
+		}
+
+		private bool ShouldExposeVariable( MemberInfo variable )
+		{
+			string variableName = variable.Name;
 			if( hiddenVariables != null )
 			{
 				for( int i = 0; i < hiddenVariables.Count; i++ )
