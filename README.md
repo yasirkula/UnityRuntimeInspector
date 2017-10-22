@@ -173,7 +173,7 @@ Note that dragged reference items are created on a separate **Screen Space - Ove
 
 You can introduce your own property drawers to the inspector to extend its functionality using a **Settings** asset mentioned in section **C.1**. Each property drawer extends from **InspectorField** base class. There is also an **ExpandableInspectorField** abstract class that allows you to create an expandable/collapsable property drawer like arrays and **ObjectReferenceField** class that allows you to create drawers that can be assigned values via the reference picker or via drag&drop.
 
-#### D.3.1 InspectorField
+#### D.3.1. InspectorField
 
 To have a standardized visual appearance across all the property drawers, there are some common variables for each drawer:
 - **Layout Element**: is used to set the height of the property drawer. A standard height is set by the currently active Inspector skin's **Line Height** property. This value is multiplied by the virtual **HeightMultiplier** property of the drawer. For ExpandableInspectorField's of unknown height, this variable should be left unassigned
@@ -200,7 +200,7 @@ There are some special functions on drawers that are invoked on certain circumst
 - **void OnDepthChanged()**: called when the *Depth* property of the drawer is changed. Here, your custom drawers must add a padding to their content from left to comply with the nesting standard. This function is also called when the *Skin* changes
 - **void Refresh()**: called when the value of the bound object is refreshed. Drawers must refresh the values of their UI elements here
 
-#### D.3.2 ExpandableInspectorField
+#### D.3.2. ExpandableInspectorField
 
 Custom drawers that extend **ExpandableInspectorField** have access to the following properties:
 - **bool IsExpanded**: returns whether the drawer is expanded or collapsed. When set to *true*, the drawer is expanded and its content is drawn under it
@@ -225,11 +225,11 @@ There are actually some helper functions in ExpandableInspectorField to easily c
 
 If you don't want the name of the variable to be title case formatted, you can enter an empty string as the **variableName** parameter and then set the *NameRaw* property of the returned *InspectorField* object.
 
-### D.3.3 ObjectReferenceField
+#### D.3.3. ObjectReferenceField
 
 Property drawers that extend **ObjectReferenceField** class have access to the `void OnReferenceChanged( Object reference )` function that is called when the reference assigned to that drawer is changed.
 
-### D.3.4 Helper Classes
+#### D.3.4. Helper Classes
 
 **PointerEventListener**: this is a simple helper component that invokes **PointerDown** event pressed, **PointerUp** event when released and **PointerClick** event when clicked
 
