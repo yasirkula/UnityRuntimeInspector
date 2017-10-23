@@ -26,6 +26,11 @@ namespace RuntimeInspectorNamespace
 					parseFunction = ( string input, out object value ) => { double parsedVal; bool result = double.TryParse( input, out parsedVal ); value = parsedVal; return result; };
 					equalsFunction = ( object value1, object value2 ) => (double) value1 == (double) value2;
 				}
+				else if( fieldType == typeof( decimal ) )
+				{
+					parseFunction = ( string input, out object value ) => { decimal parsedVal; bool result = decimal.TryParse( input, out parsedVal ); value = parsedVal; return result; };
+					equalsFunction = ( object value1, object value2 ) => (decimal) value1 == (decimal) value2;
+				}
 				else
 				{
 					parseFunction = null;
@@ -59,7 +64,7 @@ namespace RuntimeInspectorNamespace
 
 		public override bool SupportsType( Type type )
 		{
-			return type.IsPrimitive && ( type == typeof( float ) || type == typeof( double ) );
+			return type == typeof( float ) || type == typeof( double ) || type == typeof( decimal );
 		}
 
 		protected override void OnBound()
