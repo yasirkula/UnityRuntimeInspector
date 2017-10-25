@@ -4,7 +4,7 @@ using UnityEngine.EventSystems;
 
 namespace RuntimeInspectorNamespace
 {
-	public class DraggedReferenceSourceUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
+	public class DraggedReferenceSourceUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IBeginDragHandler
 	{
 		[SerializeField]
 		private Object m_reference;
@@ -35,6 +35,15 @@ namespace RuntimeInspectorNamespace
 		}
 
 		public void OnPointerUp( PointerEventData eventData )
+		{
+			if( pointerHeldCoroutine != null )
+			{
+				StopCoroutine( pointerHeldCoroutine );
+				pointerHeldCoroutine = null;
+			}
+		}
+
+		public void OnBeginDrag( PointerEventData eventData )
 		{
 			if( pointerHeldCoroutine != null )
 			{
