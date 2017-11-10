@@ -75,6 +75,7 @@ RuntimeHierarchy simply exposes the objects in your scenes to the user interface
 - **Pseudo Scenes Order**: the order of the pseudo-scenes from top to bottom in the hierarchy. Note that entering a pseudo-scene here does not automatically create it when the application starts. Pseudo-scenes can be created via the scripting API only
 - **Create Dragged Reference On Hold**: when enabled, if you click and hold on an object in the hierarchy for a while, a **dragged reference item** will be created that can be dropped on a *reference drawer* in the inspector to assign that object to that variable (similar to Unity's drag&drop reference assignment)
 - **Dragged Reference Hold Time**: this value defines the hold time in seconds before a dragged reference item is created
+- **Double Click Threshold**: when an object in the hierarchy is double clicked, **OnItemDoubleClicked** event is raised (see *SCRIPTING API*). This value determines the maximum allowed delay between two clicks to register a double click
 - **Sync Selection With Editor Hierarchy**: simply synces the selected object between the Unity Hierarchy and this RuntimeHierarchy
 
 ## D. SCRIPTING API
@@ -112,6 +113,7 @@ private object OnlyInspectObjectsWithRenderer( object previousInspectedObject, o
 }
 ```
 
+- You can register to the `OnItemDoubleClicked` event of the hierarchy to get notified when an object in the hierarchy is double clicked
 - You can add **RuntimeInspectorButton** attribute to your functions to expose them as buttons in the inspector. These buttons appear when an object of that type is inspected. This attribute takes 3 parameters:
   - **string label**: the text that will appear on the button
   - **bool isInitializer**: if set to true, and if the function returns an object that is assignable to the type that the function was defined in, the resulting value of the function will be assigned back to the inspected object. In other words, this function can be used to initialize null objects or change the variables of alive objects
@@ -144,6 +146,9 @@ public void DeletePseudoScene( string scene );
 public void DeleteAllPseudoScenes();
 ```
 
+#### D.1.1. PseudoSceneSourceTransform
+This helper component allows you to add an object's children to a pseudo-scene in the hierarchy. When a child is added to or removed from the object, this component refreshes the pseudo-scene automatically. If **HideOnDisable** is enabled, the object's children are removed from the pseudo-scene when the object is disabled.
+
 ### D.2. DRAGGED REFERENCE ITEMS
 In section **C.2**, it is mentioned that you can drag&drop objects from the hierarchy to the variables in the inspector to assign these objects to those variables. However, you are not limited with just hierarchy. There are two helper components that you can use to create dragged reference items for other objects:
 
@@ -171,7 +176,7 @@ public static DraggedReferenceItem CreateDraggedReferenceItem( Object reference,
 Note that dragged reference items are created on a separate **Screen Space - Overlay** canvas so that they can be drawn on top of everything. You may want to change this canvas's properties for UI consistency (like its *CanvasScaler*'s properties). In that case, simply use the **RuntimeInspectorUtils.DraggedReferenceItemsCanvas** property to access this canvas.
 
 ### D.3. CUSTOM PROPERTY DRAWERS
-**NOTE**: this section is about giving you a brief idea on how to create your own drawers. As the amount of information presented here might be overwhelming or boring, you are recommended to actually examine some of the built-in drawers to have a better idea about the architecture. For starters, you can examine **BoolField** and continue with **BoundsField** and **GameObjectField**.
+**NOTE**: this section is about giving you a brief idea on how to create your own drawers. As the amount of information presented here might be overwhelming or boring, you are also recommended to examine some of the built-in drawers to have a better idea about the architecture. For starters, you can examine **BoolField** and continue with **BoundsField** and **GameObjectField**.
 
 You can introduce your own property drawers to the inspector to extend its functionality using a **Settings** asset mentioned in section **C.1**. Each property drawer extends from **InspectorField** base class. There is also an **ExpandableInspectorField** abstract class that allows you to create an expandable/collapsable property drawer like arrays and **ObjectReferenceField** class that allows you to create drawers that can be assigned values via the reference picker or via drag&drop.
 

@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -11,6 +10,7 @@ namespace RuntimeInspectorNamespace
 		private const string POOL_OBJECT_NAME = "RuntimeHierarchyPool";
 
 		public delegate void SelectionChangedDelegate( Transform selection );
+		public delegate void DoubleClickDelegate( Transform selection );
 
 		[SerializeField]
 		private float refreshInterval = 0f;
@@ -67,6 +67,10 @@ namespace RuntimeInspectorNamespace
 			set { m_draggedReferenceHoldTime = value; }
 		}
 
+		[SerializeField]
+		private float doubleClickThreshold = 0.5f;
+		private float lastClickTime;
+
 #if UNITY_EDITOR
 		[SerializeField]
 		private bool syncSelectionWithEditorHierarchy = false;
@@ -111,6 +115,7 @@ namespace RuntimeInspectorNamespace
 		private Dictionary<string, HierarchyItemRoot> pseudoSceneDrawers = new Dictionary<string, HierarchyItemRoot>();
 
 		public event SelectionChangedDelegate OnSelectionChanged;
+		public event DoubleClickDelegate OnItemDoubleClicked;
 
 		private Transform m_currentSelection = null;
 		public Transform CurrentSelection
@@ -227,7 +232,27 @@ namespace RuntimeInspectorNamespace
 		public void OnClicked( HierarchyItem drawer )
 		{
 			if( currentlySelectedDrawer == drawer )
+			{
+				if( OnItemDoubleClicked != null )
+				{
+					if( !drawer.IsNull() && Time.realtimeSinceStartup - lastClickTime <= doubleClickThreshold )
+					{
+						lastClickTime = 0f;
+						if( drawer is HierarchyItemTransform )
+						{
+							Transform target = ( (HierarchyItemTransform) drawer ).BoundTransform;
+							if( !target.IsNull() )
+								OnItemDoubleClicked( target );
+						}
+					}
+					else
+						lastClickTime = Time.realtimeSinceStartup;
+				}
+
 				return;
+			}
+
+			lastClickTime = Time.realtimeSinceStartup;
 
 			if( !currentlySelectedDrawer.IsNull() )
 				currentlySelectedDrawer.IsSelected = false;
@@ -238,10 +263,10 @@ namespace RuntimeInspectorNamespace
 			{
 				drawer.IsSelected = true;
 
-				if( drawer is HierarchyItemRoot )
-					CurrentSelection = null;
-				else
+				if( drawer is HierarchyItemTransform )
 					CurrentSelection = ( (HierarchyItemTransform) drawer ).BoundTransform;
+				else
+					CurrentSelection = null;
 			}
 			else
 				CurrentSelection = null;
