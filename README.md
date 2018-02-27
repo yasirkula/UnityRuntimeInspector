@@ -1,6 +1,6 @@
 # Runtime Inspector and Hierarchy for Unity 3D
 
-![screenshot](images/img1.png)
+![screenshot](images/img1.png) 
 
 **Available on Asset Store:** https://www.assetstore.unity3d.com/en/#!/content/111349
 
