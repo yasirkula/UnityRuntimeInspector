@@ -2,6 +2,10 @@
 
 ![screenshot](images/img1.png)
 
+**Available on Asset Store:** https://www.assetstore.unity3d.com/en/#!/content/111349
+
+**Forum Thread:** https://forum.unity.com/threads/runtime-inspector-and-hierarchy-open-source.501220/
+
 ## A. ABOUT
 
 This is a simple yet powerful runtime **Inspector** and **Hierarchy** solution for Unity 3D that should work on pretty much any platform that Unity supports, including mobile platforms. Simply import **RuntimeInspector.unitypackage** to your project to get started!
