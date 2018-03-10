@@ -258,8 +258,8 @@ namespace RuntimeInspectorNamespace
 		private void UpdateSelectors()
 		{
 			//Set the selectors positions
-			SelectorOut.localPosition = new Vector3( Mathf.Sin( outer ) * halfSize * 0.85f, Mathf.Cos( outer ) * halfSize * 0.85f, 1 );
-			SelectorIn.localPosition = new Vector3( innerSquareHalfSize - inner.x * halfSize, innerSquareHalfSize - inner.y * halfSize, 1 );
+			SelectorOut.anchoredPosition = new Vector2( Mathf.Sin( outer ) * halfSize * 0.85f, Mathf.Cos( outer ) * halfSize * 0.85f );
+			SelectorIn.anchoredPosition = new Vector2( innerSquareHalfSize - inner.x * halfSize, innerSquareHalfSize - inner.y * halfSize );
 		}
 	}
 }

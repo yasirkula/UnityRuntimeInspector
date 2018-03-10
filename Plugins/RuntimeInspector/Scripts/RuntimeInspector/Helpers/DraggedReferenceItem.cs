@@ -65,7 +65,7 @@ namespace RuntimeInspectorNamespace
 			Vector2 touchPos;
 			RectTransformUtility.ScreenPointToLocalPointInRectangle( canvasTransform, eventData.position, canvas.worldCamera, out touchPos );
 
-			rectTransform.localPosition = touchPos;
+			rectTransform.anchoredPosition = touchPos;
 		}
 
 		public void OnEndDrag( PointerEventData eventData )

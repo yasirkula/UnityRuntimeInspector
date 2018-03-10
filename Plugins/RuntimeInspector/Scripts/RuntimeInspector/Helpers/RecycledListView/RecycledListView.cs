@@ -53,7 +53,7 @@ namespace RuntimeInspectorNamespace
 		// Update the list
 		public void UpdateList()
 		{
-			contentTransform.localPosition = Vector3.zero;
+			contentTransform.anchoredPosition = Vector2.zero;
 
             float newHeight = Mathf.Max( 1f, adapter.Count * itemHeight );
 			contentTransform.sizeDelta = new Vector2( 0f, newHeight );
@@ -96,11 +96,10 @@ namespace RuntimeInspectorNamespace
 			// If there is at least one item to show
 			if( adapter.Count > 0 )
 			{
-				Vector3 localPos = contentTransform.localPosition;
-
-				// Use an extra item at each side, in case of scrolling
-				int newTopIndex = (int) ( localPos.y * _1OverItemHeight ) - 1;
-				int newBottomIndex = (int) ( ( localPos.y + viewportHeight ) * _1OverItemHeight ) + 1;
+				float contentPos = contentTransform.anchoredPosition.y - 1f;
+				
+				int newTopIndex = (int) ( contentPos * _1OverItemHeight );
+				int newBottomIndex = (int) ( ( contentPos + viewportHeight + 2f ) * _1OverItemHeight );
 
 				if( newTopIndex < 0 )
 					newTopIndex = 0;
@@ -218,7 +217,7 @@ namespace RuntimeInspectorNamespace
 			}
 
 			// Reposition the item
-			item.transform.localPosition = new Vector3( 0f, -index * itemHeight, 0f );
+			( (RectTransform) item.transform ).anchoredPosition = new Vector2( 0f, -index * itemHeight );
 
 			// To access this item easily in the future, add it to the dictionary
 			items[index] = item;
