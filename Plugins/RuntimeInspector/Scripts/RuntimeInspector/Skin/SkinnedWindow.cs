@@ -24,6 +24,10 @@ namespace RuntimeInspectorNamespace
 		{
 			// Refresh skin
 			m_skinVersion = Skin.Version - 1;
+
+			// Unity 2017.2 bugfix
+			gameObject.SetActive( false );
+			gameObject.SetActive( true );
 		}
 
 		protected virtual void Update()
