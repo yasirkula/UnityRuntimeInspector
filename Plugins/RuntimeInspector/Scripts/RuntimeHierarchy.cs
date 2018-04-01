@@ -490,7 +490,7 @@ namespace RuntimeInspectorNamespace
 				}
 			}
 
-			HierarchyItem result = Instantiate( drawerPrefab, drawerParent, false );
+			HierarchyItem result = (HierarchyItem) Instantiate( drawerPrefab, drawerParent, false );
 			result.Hierarchy = this;
 			result.Skin = Skin;
 

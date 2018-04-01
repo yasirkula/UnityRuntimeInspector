@@ -174,7 +174,7 @@ namespace RuntimeInspectorNamespace
 
 		public RecycledListItem CreateItem( Transform parent )
 		{
-			ObjectReferencePickerItem item = Instantiate( referenceItemPrefab, parent, false );
+			ObjectReferencePickerItem item = (ObjectReferencePickerItem) Instantiate( referenceItemPrefab, parent, false );
 			item.Skin = Skin;
 
 			return item;

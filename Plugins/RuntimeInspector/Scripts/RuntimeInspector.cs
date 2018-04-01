@@ -383,7 +383,7 @@ namespace RuntimeInspectorNamespace
 				}
 			}
 
-			InspectorField newDrawer = Instantiate( drawer, drawerParent, false );
+			InspectorField newDrawer = (InspectorField) Instantiate( drawer, drawerParent, false );
 			newDrawer.Initialize();
 			return newDrawer;
 		}

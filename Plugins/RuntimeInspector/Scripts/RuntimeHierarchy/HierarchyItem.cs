@@ -221,7 +221,7 @@ namespace RuntimeInspectorNamespace
 						}
 					}
 
-					children[index].IsActive = children[index].BoundTransform.gameObject.activeInHierarchy;
+					( (HierarchyItem) children[index] ).IsActive = children[index].BoundTransform.gameObject.activeInHierarchy;
 					children[index].Refresh();
 				}
 

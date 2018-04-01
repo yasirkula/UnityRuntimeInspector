@@ -164,7 +164,7 @@ namespace RuntimeInspectorNamespace
 
 		public static DraggedReferenceItem CreateDraggedReferenceItem( Object reference, PointerEventData draggingPointer, UISkin skin = null )
 		{
-			DraggedReferenceItem referenceItem = Object.Instantiate( Resources.Load<DraggedReferenceItem>( "RuntimeInspector/DraggedReferenceItem" ), DraggedReferenceItemsCanvas.transform, false );
+			DraggedReferenceItem referenceItem = (DraggedReferenceItem) Object.Instantiate( Resources.Load<DraggedReferenceItem>( "RuntimeInspector/DraggedReferenceItem" ), DraggedReferenceItemsCanvas.transform, false );
 			referenceItem.Initialize( DraggedReferenceItemsCanvas, reference, draggingPointer, skin );
 
 			return referenceItem;
