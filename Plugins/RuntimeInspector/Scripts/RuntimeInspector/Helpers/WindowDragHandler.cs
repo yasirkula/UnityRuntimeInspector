@@ -12,18 +12,6 @@ namespace RuntimeInspectorNamespace
 		private int pointerId = NON_EXISTING_TOUCH;
 		private Vector2 initialTouchPos;
 
-		private Canvas m_canvas = null;
-		private Canvas Canvas
-		{
-			get
-			{
-				if( m_canvas == null )
-					m_canvas = GetComponentInParent<Canvas>();
-
-				return m_canvas;
-			}
-		}
-
 		void Awake()
 		{
 			rectTransform = (RectTransform) transform;
@@ -38,7 +26,7 @@ namespace RuntimeInspectorNamespace
 			}
 
 			pointerId = eventData.pointerId;
-			RectTransformUtility.ScreenPointToLocalPointInRectangle( rectTransform, eventData.position, Canvas.worldCamera, out initialTouchPos );
+			RectTransformUtility.ScreenPointToLocalPointInRectangle( rectTransform, eventData.position, eventData.pressEventCamera, out initialTouchPos );
 		}
 
 		public void OnDrag( PointerEventData eventData )
@@ -47,7 +35,7 @@ namespace RuntimeInspectorNamespace
 				return;
 
 			Vector2 touchPos;
-			RectTransformUtility.ScreenPointToLocalPointInRectangle( rectTransform, eventData.position, Canvas.worldCamera, out touchPos );
+			RectTransformUtility.ScreenPointToLocalPointInRectangle( rectTransform, eventData.position, eventData.pressEventCamera, out touchPos );
 
 			rectTransform.anchoredPosition += touchPos - initialTouchPos;
 		}

@@ -50,7 +50,7 @@ namespace RuntimeInspectorNamespace
 		public void OnDrag( PointerEventData eventData )
 		{
 			Vector2 localPoint;
-			RectTransformUtility.ScreenPointToLocalPointInRectangle( rectTransform, eventData.position, alphaImage.canvas.worldCamera, out localPoint );
+			RectTransformUtility.ScreenPointToLocalPointInRectangle( rectTransform, eventData.position, eventData.pressEventCamera, out localPoint );
 
 			Value = Mathf.Clamp01( localPoint.x / rectTransform.sizeDelta.x );
 			if( OnValueChanged != null )

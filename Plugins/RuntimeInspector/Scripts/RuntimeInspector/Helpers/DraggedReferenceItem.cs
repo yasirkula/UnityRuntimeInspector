@@ -1,15 +1,14 @@
-﻿using RuntimeInspectorNamespace;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
-	public class DraggedReferenceItem : MonoBehaviour, IDragHandler, IEndDragHandler
+	public class DraggedReferenceItem : MonoBehaviour, IDragHandler, IEndDragHandler, IPointerClickHandler
 	{
 		private RectTransform rectTransform;
 
-		private Canvas canvas;
+		private Camera worldCamera;
 		private RectTransform canvasTransform;
 
 		[SerializeField]
@@ -29,14 +28,17 @@ namespace RuntimeInspectorNamespace
 		public void Initialize( Canvas canvas, Object reference, PointerEventData draggingPointer, UISkin skin )
 		{
 			rectTransform = (RectTransform) transform;
-
-			this.canvas = canvas;
 			canvasTransform = (RectTransform) canvas.transform;
 
 			m_reference = reference;
 			referenceName.text = reference.GetNameWithType();
 
 			pointerId = draggingPointer.pointerId;
+
+			if( canvas.renderMode == RenderMode.ScreenSpaceOverlay || ( canvas.renderMode == RenderMode.ScreenSpaceCamera && canvas.worldCamera == null ) )
+				worldCamera = null;
+			else
+				worldCamera = canvas.worldCamera ?? Camera.main;
 
 			if( skin != null )
 			{
@@ -63,12 +65,17 @@ namespace RuntimeInspectorNamespace
 				return;
 
 			Vector2 touchPos;
-			RectTransformUtility.ScreenPointToLocalPointInRectangle( canvasTransform, eventData.position, canvas.worldCamera, out touchPos );
+			RectTransformUtility.ScreenPointToLocalPointInRectangle( canvasTransform, eventData.position, worldCamera, out touchPos );
 
 			rectTransform.anchoredPosition = touchPos;
 		}
 
 		public void OnEndDrag( PointerEventData eventData )
+		{
+			Destroy( gameObject );
+		}
+
+		public void OnPointerClick( PointerEventData eventData )
 		{
 			Destroy( gameObject );
 		}

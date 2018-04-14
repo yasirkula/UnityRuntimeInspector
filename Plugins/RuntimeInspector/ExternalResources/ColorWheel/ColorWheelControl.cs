@@ -176,7 +176,7 @@ namespace RuntimeInspectorNamespace
 				return;
 
 			Vector2 position;
-			RectTransformUtility.ScreenPointToLocalPointInRectangle( rectTransform, eventData.position, img.canvas.worldCamera, out position );
+			RectTransformUtility.ScreenPointToLocalPointInRectangle( rectTransform, eventData.position, eventData.pressEventCamera, out position );
 
 			//Check if click was in outer circle, inner box or neither
 			float distanceSqr = position.sqrMagnitude;
@@ -202,7 +202,7 @@ namespace RuntimeInspectorNamespace
 			}
 
 			Vector2 position;
-			RectTransformUtility.ScreenPointToLocalPointInRectangle( rectTransform, eventData.position, img.canvas.worldCamera, out position );
+			RectTransformUtility.ScreenPointToLocalPointInRectangle( rectTransform, eventData.position, eventData.pressEventCamera, out position );
 
 			GetSelectedColor( position );
 		}
@@ -213,7 +213,7 @@ namespace RuntimeInspectorNamespace
 				return;
 
 			Vector2 position;
-			RectTransformUtility.ScreenPointToLocalPointInRectangle( rectTransform, eventData.position, img.canvas.worldCamera, out position );
+			RectTransformUtility.ScreenPointToLocalPointInRectangle( rectTransform, eventData.position, eventData.pressEventCamera, out position );
 
 			GetSelectedColor( position );
 
