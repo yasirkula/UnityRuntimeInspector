@@ -117,7 +117,11 @@ namespace RuntimeInspectorNamespace
 			initialValue = null;
 			currentlySelectedObject = null;
 			currentlySelectedItem = null;
-            gameObject.SetActive( false );
+
+			references.Clear();
+			filteredReferences.Clear();
+
+			gameObject.SetActive( false );
 		}
 
 		protected override void RefreshSkin()
