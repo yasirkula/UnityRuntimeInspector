@@ -109,7 +109,11 @@ namespace RuntimeInspectorNamespace
 				if( variableName == null )
 					variableName = field.Name;
 
+#if UNITY_EDITOR || !NETFX_CORE
 				if( !parent.BoundVariableType.IsValueType )
+#else
+				if( !parent.BoundVariableType.GetTypeInfo().IsValueType )
+#endif
 					BindTo( field.FieldType, variableName, () => field.GetValue( parent.Value ), ( value ) => field.SetValue( parent.Value, value ) );
 				else
 					BindTo( field.FieldType, variableName, () => field.GetValue( parent.Value ), ( value ) =>
@@ -124,7 +128,11 @@ namespace RuntimeInspectorNamespace
 				if( variableName == null )
 					variableName = property.Name;
 
+#if UNITY_EDITOR || !NETFX_CORE
 				if( !parent.BoundVariableType.IsValueType )
+#else
+				if( !parent.BoundVariableType.GetTypeInfo().IsValueType )
+#endif
 					BindTo( property.PropertyType, variableName, () => property.GetValue( parent.Value, null ), ( value ) => property.SetValue( parent.Value, value, null ) );
 				else
 					BindTo( property.PropertyType, variableName, () => property.GetValue( parent.Value, null ), ( value ) =>
@@ -202,7 +210,11 @@ namespace RuntimeInspectorNamespace
 			}
 			catch
 			{
+#if UNITY_EDITOR || !NETFX_CORE
 				if( BoundVariableType.IsValueType )
+#else
+				if( BoundVariableType.GetTypeInfo().IsValueType )
+#endif
 					m_value = Activator.CreateInstance( BoundVariableType );
 				else
 					m_value = null;

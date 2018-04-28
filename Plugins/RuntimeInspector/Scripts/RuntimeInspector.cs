@@ -287,7 +287,11 @@ namespace RuntimeInspectorNamespace
 				if( obj.IsNull() )
 					return;
 
+#if UNITY_EDITOR || !NETFX_CORE
 				if( obj.GetType().IsValueType )
+#else
+				if( obj.GetType().GetTypeInfo().IsValueType )
+#endif
 				{
 					m_inspectedObject = null;
 					Debug.LogError( "Can't inspect a value type!" );

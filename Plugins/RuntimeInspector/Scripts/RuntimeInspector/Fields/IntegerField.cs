@@ -1,6 +1,8 @@
-﻿using System;
+﻿#if !UNITY_EDITOR && NETFX_CORE
+using System.Reflection;
+#endif
+using System;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
@@ -94,7 +96,12 @@ namespace RuntimeInspectorNamespace
 
 		public override bool SupportsType( Type type )
 		{
-			return type.IsPrimitive && ( type == typeof( int ) || type == typeof( uint ) ||
+#if UNITY_EDITOR || !NETFX_CORE
+			return type.IsPrimitive &&
+#else
+			return type.GetTypeInfo().IsPrimitive &&
+#endif
+				( type == typeof( int ) || type == typeof( uint ) ||
 				type == typeof( long ) || type == typeof( ulong ) || type == typeof( byte ) || type == typeof( sbyte ) ||
 				type == typeof( short ) || type == typeof( ushort ) || type == typeof( char ) );
 		}

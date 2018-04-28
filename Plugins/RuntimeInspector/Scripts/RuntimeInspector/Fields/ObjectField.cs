@@ -46,7 +46,11 @@ namespace RuntimeInspectorNamespace
 
 		public override bool SupportsType( Type type )
 		{
+#if UNITY_EDITOR || !NETFX_CORE
 			return typeof( UnityEngine.Object ).IsAssignableFrom( type ) || Attribute.IsDefined( type, typeof( SerializableAttribute ), false );
+#else
+			return typeof( UnityEngine.Object ).IsAssignableFrom( type ) || type.GetTypeInfo().IsDefined( typeof( SerializableAttribute ), false );
+#endif
 		}
 
 		protected override void OnBound()
@@ -77,7 +81,11 @@ namespace RuntimeInspectorNamespace
 
 		private bool CanInitializeNewObject()
 		{
+#if UNITY_EDITOR || !NETFX_CORE
 			if( BoundVariableType.IsAbstract || BoundVariableType.IsInterface )
+#else
+			if( BoundVariableType.GetTypeInfo().IsAbstract || BoundVariableType.GetTypeInfo().IsInterface )
+#endif
 				return false;
 
 			if( typeof( ScriptableObject ).IsAssignableFrom( BoundVariableType ) )
@@ -89,7 +97,11 @@ namespace RuntimeInspectorNamespace
 			if( BoundVariableType.IsArray )
 				return false;
 
+#if UNITY_EDITOR || !NETFX_CORE
 			if( BoundVariableType.IsGenericType && BoundVariableType.GetGenericTypeDefinition() == typeof( List<> ) )
+#else
+			if( BoundVariableType.GetTypeInfo().IsGenericType && BoundVariableType.GetGenericTypeDefinition() == typeof( List<> ) )
+#endif
 				return false;
 
 			return true;

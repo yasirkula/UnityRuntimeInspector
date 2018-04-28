@@ -1,4 +1,7 @@
-﻿using System;
+﻿#if !UNITY_EDITOR && NETFX_CORE
+using System.Reflection;
+#endif
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -56,7 +59,11 @@ namespace RuntimeInspectorNamespace
 		public override bool SupportsType( Type type )
 		{
 			return ( type.IsArray && type.GetArrayRank() == 1 ) ||
+#if UNITY_EDITOR || !NETFX_CORE
 				( type.IsGenericType && type.GetGenericTypeDefinition() == typeof( List<> ) );
+#else
+				( type.GetTypeInfo().IsGenericType && type.GetGenericTypeDefinition() == typeof( List<> ) );
+#endif
 		}
 
 		protected override void OnBound()
@@ -212,7 +219,7 @@ namespace RuntimeInspectorNamespace
 						{
 							if( list == null )
 								list = (IList) Activator.CreateInstance( typeof( List<> ).MakeGenericType( BoundVariableType.GetGenericArguments()[0] ) );
-							
+
 							for( int i = 0; i < deltaLength; i++ )
 								list.Add( GetTemplateElement( list ) );
 						}
@@ -245,7 +252,11 @@ namespace RuntimeInspectorNamespace
 
 			object template = null;
 			Type elementType = isArray ? BoundVariableType.GetElementType() : BoundVariableType.GetGenericArguments()[0];
+#if UNITY_EDITOR || !NETFX_CORE
 			if( elementType.IsValueType )
+#else
+			if( elementType.GetTypeInfo().IsValueType )
+#endif
 			{
 				if( isArray && array != null && array.Length > 0 )
 					template = array.GetValue( array.Length - 1 );
@@ -265,7 +276,11 @@ namespace RuntimeInspectorNamespace
 			}
 			else if( elementType.IsArray )
 				template = Array.CreateInstance( elementType, 0 );
+#if UNITY_EDITOR || !NETFX_CORE
 			else if( elementType.IsGenericType && elementType.GetGenericTypeDefinition() == typeof( List<> ) )
+#else
+			else if( elementType.GetTypeInfo().IsGenericType && elementType.GetGenericTypeDefinition() == typeof( List<> ) )
+#endif
 				template = Activator.CreateInstance( typeof( List<> ).MakeGenericType( elementType ) );
 			else
 				template = elementType.Instantiate();

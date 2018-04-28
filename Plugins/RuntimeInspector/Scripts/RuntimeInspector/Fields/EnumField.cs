@@ -1,4 +1,7 @@
-﻿using System;
+﻿#if !UNITY_EDITOR && NETFX_CORE
+using System.Reflection;
+#endif
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -42,7 +45,11 @@ namespace RuntimeInspectorNamespace
 
 		public override bool SupportsType( Type type )
 		{
+#if UNITY_EDITOR || !NETFX_CORE
 			return type.IsEnum;
+#else
+			return type.GetTypeInfo().IsEnum;
+#endif
 		}
 
 		protected override void OnBound()

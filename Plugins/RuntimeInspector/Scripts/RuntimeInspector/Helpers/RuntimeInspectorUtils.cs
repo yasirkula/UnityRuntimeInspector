@@ -32,14 +32,14 @@ namespace RuntimeInspectorNamespace
 				{
 					m_draggedReferenceItemsCanvas = new GameObject( "DraggedReferencesCanvas" ).AddComponent<Canvas>();
 					m_draggedReferenceItemsCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-                    m_draggedReferenceItemsCanvas.sortingOrder = 987654;
+					m_draggedReferenceItemsCanvas.sortingOrder = 987654;
 					m_draggedReferenceItemsCanvas.gameObject.AddComponent<CanvasScaler>();
 
 					SceneManager.sceneLoaded -= OnSceneLoaded;
 					SceneManager.sceneLoaded += OnSceneLoaded;
 
 					Object.DontDestroyOnLoad( m_draggedReferenceItemsCanvas.gameObject );
-                }
+				}
 
 				return m_draggedReferenceItemsCanvas;
 			}
@@ -57,8 +57,8 @@ namespace RuntimeInspectorNamespace
 		{
 			if( str == null || str.Length == 0 )
 				return string.Empty;
-			
-            StringBuilder titleCaser = new StringBuilder( str.Length + 5 );
+
+			StringBuilder titleCaser = new StringBuilder( str.Length + 5 );
 			byte lastCharType = 1; // 0 -> lowercase, 1 -> _ (underscore), 2 -> number, 3 -> uppercase
 			int i = 0;
 			char ch = str[0];
@@ -75,11 +75,11 @@ namespace RuntimeInspectorNamespace
 
 					titleCaser.Append( ch );
 					lastCharType = 3;
-                }
+				}
 				else if( ch == '_' )
 				{
 					lastCharType = 1;
-                }
+				}
 				else if( char.IsNumber( ch ) )
 				{
 					if( lastCharType != 2 && titleCaser.Length > 0 )
@@ -87,7 +87,7 @@ namespace RuntimeInspectorNamespace
 
 					titleCaser.Append( ch );
 					lastCharType = 2;
-                }
+				}
 				else
 				{
 					if( lastCharType == 1 || lastCharType == 2 )
@@ -96,19 +96,19 @@ namespace RuntimeInspectorNamespace
 							titleCaser.Append( ' ' );
 
 						titleCaser.Append( char.ToUpper( ch ) );
-                    }
+					}
 					else
 						titleCaser.Append( ch );
 
 					lastCharType = 0;
-                }
+				}
 			}
 
 			if( titleCaser.Length == 0 )
 				return str;
 
 			return titleCaser.ToString();
-        }
+		}
 
 		public static string GetName( this Object obj )
 		{
@@ -227,7 +227,7 @@ namespace RuntimeInspectorNamespace
 					FieldInfo field = fields[i];
 					if( !field.IsLiteral && !field.IsInitOnly && field.FieldType.IsSerializable() )
 						validFieldCount++;
-                }
+				}
 
 				for( int i = 0; i < properties.Length; i++ )
 				{
@@ -275,17 +275,25 @@ namespace RuntimeInspectorNamespace
 
 				for( int i = 0; i < methods.Length; i++ )
 				{
+#if UNITY_EDITOR || !NETFX_CORE
 					if( !Attribute.IsDefined( methods[i], typeof( RuntimeInspectorButtonAttribute ), true ) )
+#else
+					if( !methods[i].IsDefined( typeof( RuntimeInspectorButtonAttribute ), true ) )
+#endif
 						continue;
 
 					if( methods[i].GetParameters().Length != 0 )
 						continue;
 
+#if UNITY_EDITOR || !NETFX_CORE
 					RuntimeInspectorButtonAttribute attribute = (RuntimeInspectorButtonAttribute) Attribute.GetCustomAttribute( methods[i], typeof( RuntimeInspectorButtonAttribute ), true );
+#else
+					RuntimeInspectorButtonAttribute attribute = (RuntimeInspectorButtonAttribute) methods[i].GetCustomAttribute( typeof( RuntimeInspectorButtonAttribute ), true );
+#endif
 					if( !attribute.IsInitializer || type.IsAssignableFrom( methods[i].ReturnType ) )
 						exposedMethods.Add( new ExposedMethod( methods[i], attribute, false ) );
 				}
-				
+
 				for( int i = 0; i < exposedExtensionMethods.Count; i++ )
 				{
 					ExposedExtensionMethodHolder exposedExtensionMethod = exposedExtensionMethods[i];
@@ -303,16 +311,28 @@ namespace RuntimeInspectorNamespace
 
 			return result;
 		}
-		
+
 		public static bool ShouldExposeInInspector( this MemberInfo variable, bool debugMode )
 		{
+#if UNITY_EDITOR || !NETFX_CORE
 			if( Attribute.IsDefined( variable, typeof( ObsoleteAttribute ) ) )
+#else
+			if( variable.IsDefined( typeof( ObsoleteAttribute ) ) )
+#endif
 				return false;
 
+#if UNITY_EDITOR || !NETFX_CORE
 			if( Attribute.IsDefined( variable, typeof( NonSerializedAttribute ) ) )
+#else
+			if( variable.IsDefined( typeof( NonSerializedAttribute ) ) )
+#endif
 				return false;
 
+#if UNITY_EDITOR || !NETFX_CORE
 			if( Attribute.IsDefined( variable, typeof( HideInInspector ) ) )
+#else
+			if( variable.IsDefined( typeof( HideInInspector ) ) )
+#endif
 				return false;
 
 			if( debugMode )
@@ -322,7 +342,11 @@ namespace RuntimeInspectorNamespace
 			if( variable is FieldInfo )
 			{
 				FieldInfo field = (FieldInfo) variable;
+#if UNITY_EDITOR || !NETFX_CORE
 				if( !field.IsPublic && !Attribute.IsDefined( field, typeof( SerializeField ) ) )
+#else
+				if( !field.IsPublic && !field.IsDefined( typeof( SerializeField ) ) )
+#endif
 					return false;
 			}
 
@@ -331,7 +355,11 @@ namespace RuntimeInspectorNamespace
 
 		private static bool IsSerializable( this Type type )
 		{
+#if UNITY_EDITOR || !NETFX_CORE
 			if( type.IsPrimitive || type == typeof( string ) || type.IsEnum )
+#else
+			if( type.GetTypeInfo().IsPrimitive || type == typeof( string ) || type.GetTypeInfo().IsEnum )
+#endif
 				return true;
 
 			if( typeof( Object ).IsAssignableFrom( type ) )
@@ -344,18 +372,26 @@ namespace RuntimeInspectorNamespace
 			{
 				if( type.GetArrayRank() != 1 )
 					return false;
-				
+
 				return type.GetElementType().IsSerializable();
 			}
+#if UNITY_EDITOR || !NETFX_CORE
 			else if( type.IsGenericType )
+#else
+			else if( type.GetTypeInfo().IsGenericType )
+#endif
 			{
 				if( type.GetGenericTypeDefinition() != typeof( List<> ) )
 					return false;
-				
+
 				return type.GetGenericArguments()[0].IsSerializable();
 			}
 
+#if UNITY_EDITOR || !NETFX_CORE
 			if( Attribute.IsDefined( type, typeof( SerializableAttribute ), false ) )
+#else
+			if( type.GetTypeInfo().IsDefined( typeof( SerializableAttribute ), false ) )
+#endif
 				return true;
 
 			return false;
@@ -368,10 +404,14 @@ namespace RuntimeInspectorNamespace
 				if( typeof( ScriptableObject ).IsAssignableFrom( type ) )
 					return ScriptableObject.CreateInstance( type );
 
+#if UNITY_EDITOR || !NETFX_CORE
 				if( type.GetConstructor( BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, Type.EmptyTypes, null ) != null )
 					return Activator.CreateInstance( type, true );
 
 				return FormatterServices.GetUninitializedObject( type );
+#else
+				return Activator.CreateInstance( type, true );
+#endif
 			}
 			catch
 			{
@@ -382,46 +422,61 @@ namespace RuntimeInspectorNamespace
 		// Credit: http://answers.unity3d.com/answers/239152/view.html
 		public static Type GetType( string typeName )
 		{
-			// Try Type.GetType() first. This will work with types defined
-			// by the Mono runtime, in the same assembly as the caller, etc.
-			var type = Type.GetType( typeName );
-			if( type != null )
-				return type;
-
-			// If the TypeName is a full name, then we can try loading the defining assembly directly
-			if( typeName.Contains( "." ) )
+			try
 			{
-				// Get the name of the assembly (Assumption is that we are using 
-				// fully-qualified type names)
-				var assemblyName = typeName.Substring( 0, typeName.IndexOf( '.' ) );
-
-				// Attempt to load the indicated Assembly
-				var assembly = Assembly.Load( assemblyName );
-				if( assembly == null )
-					return null;
-
-				// Ask that assembly to return the proper Type
-				type = assembly.GetType( typeName );
+				// Try Type.GetType() first. This will work with types defined
+				// by the Mono runtime, in the same assembly as the caller, etc.
+				var type = Type.GetType( typeName );
 				if( type != null )
 					return type;
-			}
-			else
-			{
-				type = Assembly.Load( "UnityEngine" ).GetType( "UnityEngine." + typeName );
-				if( type != null )
-					return type;
-			}
-
-			// Credit: https://forum.unity.com/threads/using-type-gettype-with-unity-objects.136580/#post-1799037
-			// Search all assemblies for type
-			foreach( Assembly assembly in AppDomain.CurrentDomain.GetAssemblies() )
-			{
-				foreach( Type t in assembly.GetTypes() )
+				
+				// If the TypeName is a full name, then we can try loading the defining assembly directly
+				if( typeName.Contains( "." ) )
 				{
-					if( t.Name == typeName )
-						return t;
+					// Get the name of the assembly (Assumption is that we are using 
+					// fully-qualified type names)
+					var assemblyName = typeName.Substring( 0, typeName.IndexOf( '.' ) );
+
+					// Attempt to load the indicated Assembly
+#if UNITY_EDITOR || !NETFX_CORE
+					Assembly assembly = Assembly.Load( assemblyName );
+#else
+					Assembly assembly = Assembly.Load( new AssemblyName( assemblyName ) );
+#endif
+					if( assembly == null )
+						return null;
+
+					// Ask that assembly to return the proper Type
+					type = assembly.GetType( typeName );
+					if( type != null )
+						return type;
 				}
+				else
+				{
+#if UNITY_EDITOR || !NETFX_CORE
+					type = Assembly.Load( "UnityEngine" ).GetType( "UnityEngine." + typeName );
+#else
+					type = Assembly.Load( new AssemblyName( "UnityEngine" ) ).GetType( "UnityEngine." + typeName );
+#endif
+					Debug.Log( type != null );
+					if( type != null )
+						return type;
+				}
+
+#if UNITY_EDITOR || !NETFX_CORE
+				// Credit: https://forum.unity.com/threads/using-type-gettype-with-unity-objects.136580/#post-1799037
+				// Search all assemblies for type
+				foreach( Assembly assembly in AppDomain.CurrentDomain.GetAssemblies() )
+				{
+					foreach( Type t in assembly.GetTypes() )
+					{
+						if( t.Name == typeName )
+							return t;
+					}
+				}
+#endif
 			}
+			catch { }
 
 			// The type just couldn't be found...
 			return null;
@@ -435,15 +490,23 @@ namespace RuntimeInspectorNamespace
 			MethodInfo[] methods = type.GetMethods( BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic );
 			for( int i = 0; i < methods.Length; i++ )
 			{
+#if UNITY_EDITOR || !NETFX_CORE
 				if( !Attribute.IsDefined( methods[i], typeof( RuntimeInspectorButtonAttribute ), true ) )
+#else
+				if( !methods[i].IsDefined( typeof( RuntimeInspectorButtonAttribute ), true ) )
+#endif
 					continue;
 
 				ParameterInfo[] parameters = methods[i].GetParameters();
 				if( parameters.Length != 1 )
 					continue;
 
-				Type parameterType = parameters[0].ParameterType;
+#if UNITY_EDITOR || !NETFX_CORE
 				RuntimeInspectorButtonAttribute attribute = (RuntimeInspectorButtonAttribute) Attribute.GetCustomAttribute( methods[i], typeof( RuntimeInspectorButtonAttribute ), true );
+#else
+				RuntimeInspectorButtonAttribute attribute = (RuntimeInspectorButtonAttribute) methods[i].GetCustomAttribute( typeof( RuntimeInspectorButtonAttribute ), true );
+#endif
+				Type parameterType = parameters[0].ParameterType;
 				if( !attribute.IsInitializer || parameterType.IsAssignableFrom( methods[i].ReturnType ) )
 					exposedExtensionMethods.Add( new ExposedExtensionMethodHolder( parameterType, methods[i], attribute ) );
 			}
