@@ -14,7 +14,7 @@ namespace RuntimeInspectorNamespace
 		private RuntimeHierarchy m_hierarchy;
 		public RuntimeHierarchy Hierarchy
 		{
-			protected get { return m_hierarchy; }
+			get { return m_hierarchy; }
 			set
 			{
 				if( m_hierarchy != value )
@@ -34,7 +34,7 @@ namespace RuntimeInspectorNamespace
 		private UISkin m_skin;
 		public UISkin Skin
 		{
-			protected get { return m_skin; }
+			get { return m_skin; }
 			set
 			{
 				if( m_skin != value || m_skinVersion != m_skin.Version )
@@ -242,6 +242,17 @@ namespace RuntimeInspectorNamespace
 			}
 			else if( !expandToggle.gameObject.activeSelf )
 				expandToggle.gameObject.SetActive( true );
+		}
+
+		public void RefreshNameOf( Transform target )
+		{
+			for( int i = children.Count - 1; i >= 0; i-- )
+			{
+				if( children[i].BoundTransform == target )
+					children[i].nameText.text = target.name;
+
+				children[i].RefreshNameOf( target );
+			}
 		}
 
 		protected virtual void RefreshContent() { }

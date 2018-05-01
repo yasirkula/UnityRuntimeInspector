@@ -20,6 +20,7 @@ GameObject:
   m_Component:
   - component: {fileID: 224431128458639770}
   - component: {fileID: 114514363149991454}
+  - component: {fileID: 114410649540535378}
   m_Layer: 5
   m_Name: RuntimeHierarchy
   m_TagString: Untagged
@@ -137,6 +138,17 @@ MonoBehaviour:
   m_Script: {fileID: -146154839, guid: f70555f144d8491a825f0804e09c671c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &114410649540535378
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1292172246486946}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: be531524081657c479afb27aaa9501ac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &114457265320618428
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -196,6 +208,7 @@ MonoBehaviour:
   pseudoScenesOrder: []
   m_createDraggedReferenceOnHold: 1
   m_draggedReferenceHoldTime: 0.4
+  m_canReorganizeItems: 0
   doubleClickThreshold: 0.5
   syncSelectionWithEditorHierarchy: 0
   m_connectedInspector: {fileID: 0}

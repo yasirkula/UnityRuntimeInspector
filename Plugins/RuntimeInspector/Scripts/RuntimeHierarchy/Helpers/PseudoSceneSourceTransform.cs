@@ -135,7 +135,7 @@ namespace RuntimeInspectorNamespace
 
 		private void RemoveChildrenFromScene()
 		{
-			if( !Hierarchy.IsNull() && !string.IsNullOrEmpty( m_sceneName ) )
+			if( Hierarchy.IsNull() || string.IsNullOrEmpty( m_sceneName ) )
 				return;
 
 			foreach( Transform removedChild in childrenCurrent )

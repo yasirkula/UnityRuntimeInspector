@@ -43,7 +43,9 @@ namespace RuntimeInspectorNamespace
 		{
 			if( draggingPointer != null )
 			{
-				if( Input.GetMouseButtonUp( 0 ) )
+				if( draggedReference.IsNull() )
+					draggingPointer = null;
+				else if( Input.GetMouseButtonUp( 0 ) )
 				{
 					ExecuteEvents.Execute( draggedReference.gameObject, draggingPointer, ExecuteEvents.endDragHandler );
 					if( EventSystem.current != null )
@@ -95,10 +97,13 @@ namespace RuntimeInspectorNamespace
 
 							if( !hitObject.IsNull() && EventSystem.current != null )
 							{
-								draggingPointer = new PointerEventData( EventSystem.current );
-								draggingPointer.pointerId = -111;
-								draggingPointer.pressPosition = Input.mousePosition;
-								draggingPointer.position = Input.mousePosition;
+								draggingPointer = new PointerEventData( EventSystem.current )
+								{
+									pointerId = -111,
+									pressPosition = Input.mousePosition,
+									position = Input.mousePosition,
+									button = PointerEventData.InputButton.Left
+								};
 
 								draggedReference = RuntimeInspectorUtils.CreateDraggedReferenceItem( hitObject, draggingPointer, draggedReferenceSkin );
 								if( draggedReference == null )

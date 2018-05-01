@@ -1,11 +1,14 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
-	public class DraggedReferenceItem : MonoBehaviour, IDragHandler, IEndDragHandler, IPointerClickHandler
+	public class DraggedReferenceItem : MonoBehaviour, IDragHandler, IEndDragHandler
 	{
+		private const float VALIDATE_INTERVAL = 5f;
+
 		private RectTransform rectTransform;
 
 		private Camera worldCamera;
@@ -23,7 +26,7 @@ namespace RuntimeInspectorNamespace
 		private Object m_reference;
 		public Object Reference { get { return m_reference; } }
 
-		private int pointerId = -98764;
+		private PointerEventData draggingPointer;
 
 		public void Initialize( Canvas canvas, Object reference, PointerEventData draggingPointer, UISkin skin )
 		{
@@ -33,7 +36,7 @@ namespace RuntimeInspectorNamespace
 			m_reference = reference;
 			referenceName.text = reference.GetNameWithType();
 
-			pointerId = draggingPointer.pointerId;
+			this.draggingPointer = draggingPointer;
 
 			if( canvas.renderMode == RenderMode.ScreenSpaceOverlay || ( canvas.renderMode == RenderMode.ScreenSpaceCamera && canvas.worldCamera == null ) )
 				worldCamera = null;
@@ -57,11 +60,32 @@ namespace RuntimeInspectorNamespace
 
             draggingPointer.pointerDrag = gameObject;
 			draggingPointer.dragging = true;
+
+			StartCoroutine( ValidatePointer() );
+		}
+
+		private IEnumerator ValidatePointer()
+		{
+			float nextValidation = VALIDATE_INTERVAL;
+
+			while( true )
+			{
+				yield return null;
+
+				nextValidation -= Time.unscaledDeltaTime;
+				if( nextValidation <= 0f )
+				{
+					nextValidation = VALIDATE_INTERVAL;
+
+					if( !draggingPointer.IsPointerValid() )
+						Destroy( gameObject );
+				}
+			}
 		}
 
 		public void OnDrag( PointerEventData eventData )
 		{
-			if( eventData.pointerId != pointerId )
+			if( eventData.pointerId != draggingPointer.pointerId )
 				return;
 
 			Vector2 touchPos;
@@ -71,11 +95,6 @@ namespace RuntimeInspectorNamespace
 		}
 
 		public void OnEndDrag( PointerEventData eventData )
-		{
-			Destroy( gameObject );
-		}
-
-		public void OnPointerClick( PointerEventData eventData )
 		{
 			Destroy( gameObject );
 		}

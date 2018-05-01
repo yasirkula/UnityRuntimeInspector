@@ -79,6 +79,7 @@ RuntimeHierarchy simply exposes the objects in your scenes to the user interface
 - **Pseudo Scenes Order**: the order of the pseudo-scenes from top to bottom in the hierarchy. Note that entering a pseudo-scene here does not automatically create it when the application starts. Pseudo-scenes can be created via the scripting API only
 - **Create Dragged Reference On Hold**: when enabled, if you click and hold on an object in the hierarchy for a while, a **dragged reference item** will be created that can be dropped on a *reference drawer* in the inspector to assign that object to that variable (similar to Unity's drag&drop reference assignment)
 - **Dragged Reference Hold Time**: this value defines the hold time in seconds before a dragged reference item is created
+- **Can Reorganize Items**: when enabled, dropping a dragged reference item that holds a Transform onto an object in the hierarchy will change the dragged Transform's parent (similar to parenting in Unity's Hierarchy)
 - **Double Click Threshold**: when an object in the hierarchy is double clicked, **OnItemDoubleClicked** event is raised (see *SCRIPTING API*). This value determines the maximum allowed delay between two clicks to register a double click
 - **Sync Selection With Editor Hierarchy**: simply synces the selected object between the Unity Hierarchy and this RuntimeHierarchy
 

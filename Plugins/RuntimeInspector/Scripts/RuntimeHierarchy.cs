@@ -68,6 +68,14 @@ namespace RuntimeInspectorNamespace
 		}
 
 		[SerializeField]
+		private bool m_canReorganizeItems = false;
+		public bool CanReorganizeItems
+		{
+			get { return m_canReorganizeItems; }
+			set { m_canReorganizeItems = value; }
+		}
+
+		[SerializeField]
 		private float doubleClickThreshold = 0.5f;
 		private float lastClickTime;
 
@@ -218,6 +226,20 @@ namespace RuntimeInspectorNamespace
 				sceneDrawers[i].Refresh();
 		}
 
+		public void RefreshNameOf( Transform target )
+		{
+			if( !target.IsNull() )
+			{
+				Scene targetScene = target.gameObject.scene;
+				for( int i = 0; i < sceneDrawers.Count; i++ )
+				{
+					IHierarchyRootContent content = sceneDrawers[i].Content;
+					if( ( content is HierarchyRootPseudoScene ) || ( (HierarchyRootScene) content ).Scene == targetScene )
+						sceneDrawers[i].RefreshNameOf( target );
+				}
+			}
+		}
+
 		protected override void RefreshSkin()
 		{
 			background.color = Skin.BackgroundColor;
@@ -283,7 +305,7 @@ namespace RuntimeInspectorNamespace
 			{
 				if( selection == CurrentSelection )
 					return true;
-
+				
 				Scene selectionScene = selection.gameObject.scene;
 				for( int i = 0; i < sceneDrawers.Count; i++ )
 				{
@@ -303,9 +325,6 @@ namespace RuntimeInspectorNamespace
 
 							return true;
 						}
-
-						if( content is HierarchyRootScene )
-							return false;
 					}
 				}
 			}

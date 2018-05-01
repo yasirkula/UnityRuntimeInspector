@@ -14,6 +14,8 @@ namespace RuntimeInspectorNamespace
 		private string currentTag = null;
 		private List<Component> components = new List<Component>( 8 );
 
+		private StringField nameField, tagField;
+
 		public override bool SupportsType( Type type )
 		{
 			return type == typeof( GameObject );
@@ -37,20 +39,49 @@ namespace RuntimeInspectorNamespace
 				return;
 
 			CreateDrawer( typeof( bool ), "Is Active", () => ( (GameObject) Value ).activeSelf, ( value ) => ( (GameObject) Value ).SetActive( (bool) value ) );
-			CreateDrawerForVariable( typeof( GameObject ).GetProperty( "name" ), "Name" );
-			CreateDrawer( typeof( string ), "Tag", () =>
+			nameField = CreateDrawer( typeof( string ), "Name", () => ( (GameObject) Value ).name, (value) =>
+			{
+				( (GameObject) Value ).name = (string) value;
+
+				RuntimeHierarchy hierarchy = Inspector.ConnectedHierarchy;
+				if( hierarchy != null )
+					hierarchy.RefreshNameOf( ( (GameObject) Value ).transform );
+			} ) as StringField;
+			tagField = CreateDrawer( typeof( string ), "Tag", () =>
 			{
 				GameObject go = (GameObject) Value;
 				if( !go.CompareTag( currentTag ) )
 					currentTag = go.tag;
 
 				return currentTag;
-			}, ( value ) => ( (GameObject) Value ).tag = (string) value );
-			//CreateDrawerForVariable( typeof( GameObject ).GetProperty( "tag" ), "Tag" );
+			}, ( value ) => ( (GameObject) Value ).tag = (string) value ) as StringField;
 			CreateDrawerForVariable( typeof( GameObject ).GetProperty( "layer" ), "Layer" );
-
+			
 			for( int i = 0; i < components.Count; i++ )
 				CreateDrawerForComponent( components[i] );
+
+			if( nameField != null )
+				nameField.SetterMode = StringField.Mode.OnSubmit;
+
+			if( tagField != null )
+				tagField.SetterMode = StringField.Mode.OnSubmit;
+		}
+
+		protected override void ClearElements()
+		{
+			if( nameField != null )
+			{
+				nameField.SetterMode = StringField.Mode.OnValueChange;
+				nameField = null;
+			}
+
+			if( tagField != null )
+			{
+				tagField.SetterMode = StringField.Mode.OnValueChange;
+				tagField = null;
+			}
+
+			base.ClearElements();
 		}
 
 		public override void Refresh()

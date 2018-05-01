@@ -22,6 +22,7 @@ GameObject:
   - component: {fileID: 114810597662585366}
   - component: {fileID: 114144096220550954}
   - component: {fileID: 114163117979347852}
+  - component: {fileID: 114235291683116016}
   m_Layer: 5
   m_Name: HierarchyItemRoot
   m_TagString: Untagged
@@ -209,6 +210,17 @@ MonoBehaviour:
   m_PreferredHeight: -1
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1
+--- !u!114 &114235291683116016
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1165314373957364}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: be531524081657c479afb27aaa9501ac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &114337546039104162
 MonoBehaviour:
   m_ObjectHideFlags: 1
