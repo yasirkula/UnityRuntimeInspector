@@ -361,13 +361,18 @@ namespace RuntimeInspectorNamespace
 				}
 
 				if( parent != null )
+				{
 					result = childItem.SelectTransform( target, next );
+
+					if( result.IsNull() )
+						result = null;
+				}
 			}
 
 			if( result.IsNull() && !wasExpanded )
 				IsExpanded = false;
 
-			return null;
+			return result;
 		}
 
 		protected int IndexOf( Transform transform )

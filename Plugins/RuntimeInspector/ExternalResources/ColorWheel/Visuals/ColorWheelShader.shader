@@ -5,6 +5,7 @@
 
 Shader "UI/ColorWheel" {
 	Properties {
+		_MainTex("Dummy", 2D) = "white" { }
 		_Color ("Color", Color) = (1,1,1,1)
 		//_BorderWhiteness ("Border Whiteness", Range(0.0,1.0)) = 1.0
 	}
@@ -49,6 +50,7 @@ Shader "UI/ColorWheel" {
 			}
 			
 			//Get the values from outside
+			sampler2D _MainTex;
 			fixed4 _Color;
 			//fixed _BorderWhiteness;
 
@@ -75,22 +77,21 @@ Shader "UI/ColorWheel" {
 				
 				//Set up PI
 				fixed PI = 3.14159265359;
+				fixed PI_INV = 3 / PI;
 
 				//Circular gradient
 				fixed cGrad = distance(i.uv, fixed2(0.5, 0.5));
 				
 				//Angle gradient
-				fixed aGrad = (atan2(1 - i.uv.x - 0.5, 1 - i.uv.y - 0.5) + PI) / (2 * PI);
-				fixed ang = aGrad * PI * 2;
+				fixed ang = atan2(1 - i.uv.x - 0.5, 1 - i.uv.y - 0.5) + PI;
 
 				//Calculate hue
 				fixed4 cWheel = 1;
 				
-				cWheel.r = clamp(2/PI * asin(cos(ang)) * 1.5 + 0.5, 0, 1);
-				cWheel.g = clamp(2/PI * asin(cos(2 * PI * (1.0/3.0) - ang)) * 1.5 + 0.5, 0, 1);
-				cWheel.b = clamp(2/PI * asin(cos(2 * PI * (2.0/3.0) - ang)) *  1.5 + 0.5, 0, 1);
-
-								
+				cWheel.r = clamp(PI_INV * asin(clamp(cos(ang), -0.99, 0.99)) + 0.5, 0, 1); // 0.01 flexibility -> fixes precision issues on WebGL
+				cWheel.g = clamp(PI_INV * asin(clamp(cos(2 * PI / 3.0 - ang), -0.99, 0.99)) + 0.5, 0, 1);
+				cWheel.b = clamp(PI_INV * asin(clamp(cos(4 * PI / 3.0 - ang), -0.99, 0.99)) + 0.5, 0, 1);
+	
 				//Calculate white part
 				//fixed aWhite = 1;// smoothCircle(0.025, cGrad);
 				
