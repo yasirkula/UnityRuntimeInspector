@@ -189,7 +189,7 @@ Note that dragged reference items are created on a separate **Screen Space - Ove
 ### E.3. CUSTOM PROPERTY DRAWERS
 **NOTE**: this section is about giving you a brief idea on how to create your own drawers. As the amount of information presented here might be overwhelming or boring, you are also recommended to examine some of the built-in drawers to have a better idea about the architecture. For starters, you can examine **BoolField** and continue with **BoundsField** and **GameObjectField**.
 
-You can introduce your own property drawers to the inspector to extend its functionality using a **Settings** asset mentioned in section **D.1**. Each property drawer extends from **InspectorField** base class. There is also an **ExpandableInspectorField** abstract class that allows you to create an expandable/collapsable property drawer like arrays and **ObjectReferenceField** class that allows you to create drawers that can be assigned values via the reference picker or via drag&drop.
+You can introduce your own property drawers to the inspector to extend its functionality using a **Settings** asset mentioned in section **D.1**. Each property drawer extends from **InspectorField** base class. There is also an **ExpandableInspectorField** abstract class that allows you to create an expandable/collapsable property drawer like arrays. Lastly, extending **ObjectReferenceField** class allows you to create drawers that can be assigned values via the reference picker or via drag&drop.
 
 #### E.3.1. InspectorField
 
