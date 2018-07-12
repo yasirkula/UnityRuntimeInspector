@@ -11,6 +11,8 @@ Shader "UI/ColorWheel" {
 	}
 	SubShader {
 		Lighting Off
+		ZWrite Off
+		ZTest Always
 		Blend SrcAlpha OneMinusSrcAlpha
 	
 		Pass{		

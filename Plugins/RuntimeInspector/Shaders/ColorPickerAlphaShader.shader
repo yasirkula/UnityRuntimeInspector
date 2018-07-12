@@ -9,6 +9,8 @@ Shader "UI/ColorPickerAlpha" {
 
 	SubShader {
 		Lighting Off
+		ZWrite Off
+		ZTest Always
 		Blend SrcAlpha OneMinusSrcAlpha
 	
 		Pass{		
