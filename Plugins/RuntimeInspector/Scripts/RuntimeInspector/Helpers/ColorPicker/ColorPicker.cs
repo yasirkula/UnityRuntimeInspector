@@ -157,7 +157,7 @@ namespace RuntimeInspectorNamespace
 		private void OnAlphaChanged( float alpha )
 		{
 			aInput.Text = "" + (int) ( alpha * 255 );
-			colorWheel.alpha = alpha;
+			colorWheel.Alpha = alpha;
 
 			Color color = colorWheel.Color;
 			color.a = alpha;

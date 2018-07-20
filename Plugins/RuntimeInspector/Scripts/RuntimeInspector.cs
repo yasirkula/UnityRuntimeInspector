@@ -17,7 +17,7 @@ namespace RuntimeInspectorNamespace
 		public object InspectedObject { get { return m_inspectedObject; } }
 
 		public bool IsBound { get { return !m_inspectedObject.IsNull(); } }
-		
+
 		[SerializeField]
 		private float refreshInterval = 0f;
 		private float nextRefreshTime = -1f;
@@ -123,7 +123,7 @@ namespace RuntimeInspectorNamespace
 				{
 					m_useTitleCaseNaming = value;
 					isDirty = true;
-                }
+				}
 			}
 		}
 
@@ -145,6 +145,7 @@ namespace RuntimeInspectorNamespace
 		[SerializeField]
 		private int poolCapacity = 10;
 		private Transform poolParent;
+		private static int aliveInspectors = 0;
 		private static Dictionary<Type, List<InspectorField>> drawersPool = new Dictionary<Type, List<InspectorField>>();
 
 		[SerializeField]
@@ -179,26 +180,30 @@ namespace RuntimeInspectorNamespace
 
 		private List<VariableSet> hiddenVariables = new List<VariableSet>( 32 );
 		private List<VariableSet> exposedVariables = new List<VariableSet>( 32 );
-		
+
 		protected override void Awake()
 		{
 			base.Awake();
 
 			drawArea = scrollView.content;
-			
+
 			GameObject poolParentGO = GameObject.Find( POOL_OBJECT_NAME );
 			if( poolParentGO == null )
+			{
 				poolParentGO = new GameObject( POOL_OBJECT_NAME );
+				DontDestroyOnLoad( poolParentGO );
+			}
 
 			poolParent = poolParentGO.transform;
-			
+			aliveInspectors++;
+
 			for( int i = 0; i < settings.Length; i++ )
 			{
 				VariableSet[] hiddenVariablesForTypes = settings[i].HiddenVariables;
 				for( int j = 0; j < hiddenVariablesForTypes.Length; j++ )
 				{
 					VariableSet hiddenVariablesSet = hiddenVariablesForTypes[j];
-                    if( hiddenVariablesSet.Init() )
+					if( hiddenVariablesSet.Init() )
 						hiddenVariables.Add( hiddenVariablesSet );
 				}
 
@@ -213,6 +218,17 @@ namespace RuntimeInspectorNamespace
 
 			ColorPicker.Instance.Close();
 			ObjectReferencePicker.Instance.Close();
+		}
+
+		private void OnDestroy()
+		{
+			if( --aliveInspectors == 0 )
+			{
+				if( !poolParent.IsNull() )
+					DestroyImmediate( poolParent.gameObject );
+
+				drawersPool.Clear();
+			}
 		}
 
 		protected override void Update()
@@ -237,7 +253,7 @@ namespace RuntimeInspectorNamespace
 					{
 						nextRefreshTime = Time.realtimeSinceStartup + refreshInterval;
 						Refresh();
-                    }
+					}
 				}
 			}
 			else if( currentDrawer != null )
@@ -268,7 +284,7 @@ namespace RuntimeInspectorNamespace
 		{
 			if( inspectLock )
 				return;
-			
+
 			isDirty = false;
 
 			if( OnInspectedObjectChanging != null )
@@ -332,7 +348,7 @@ namespace RuntimeInspectorNamespace
 				inspectLock = false;
 			}
 		}
-		
+
 		public void StopInspect()
 		{
 			if( inspectLock )
@@ -406,7 +422,7 @@ namespace RuntimeInspectorNamespace
 			for( int i = settings.Length - 1; i >= 0; i-- )
 			{
 				InspectorField[] drawers = searchReferenceFields ? settings[i].ReferenceDrawers : settings[i].StandardDrawers;
-                for( int j = drawers.Length - 1; j >= 0; j-- )
+				for( int j = drawers.Length - 1; j >= 0; j-- )
 				{
 					if( drawers[j].SupportsType( type ) )
 					{
@@ -438,7 +454,7 @@ namespace RuntimeInspectorNamespace
 			else
 				Destroy( drawer.gameObject );
 		}
-		
+
 		public ExposedVariablesEnumerator GetExposedVariablesForType( Type type )
 		{
 			MemberInfo[] allVariables = type.GetAllVariables();
@@ -468,7 +484,7 @@ namespace RuntimeInspectorNamespace
 						exposedVariablesForType.Add( exposedVariables[i] );
 				}
 			}
-			
+
 			return new ExposedVariablesEnumerator( allVariables, hiddenVariablesForType, exposedVariablesForType, m_debugMode,
 				m_exposePrivateFields, m_exposePublicFields, m_exposePrivateProperties, m_exposePublicProperties );
 		}

@@ -1,14 +1,6 @@
 ﻿// Copyright (c) 2015, Felix Kate All rights reserved.
 // Usage of this code is governed by a BSD-style license that can be found in the LICENSE file.
 
-/*<Description>
-For the new Unity GUI System won't work on older Unity Versions.
-Short script for handling the controls of the color picker GUI element.
-The user can drag the slider on the ring to change the hue and the slider in the box to set the blackness and saturation.
-If used without prefab add this to an image canvas element which useses the ColorWheelMaterial.
-Also needs 2 subobjects with images as slider graphics and an even trigger for clicking that references the OnClick() method of this script.
-*/
-
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -21,11 +13,6 @@ namespace RuntimeInspectorNamespace
 		private const float G_CONST = 2 * Mathf.PI * ( 1.0f / 3.0f );
 		private const float B_CONST = 2 * Mathf.PI * ( 2.0f / 3.0f );
 
-		private const int NON_EXISTING_TOUCH = -98456;
-
-		private bool initialized = false;
-
-		//Output Color
 		private Color m_color;
 		public Color Color
 		{
@@ -35,7 +22,7 @@ namespace RuntimeInspectorNamespace
 				if( m_color != value )
 				{
 					m_color = value;
-					m_color.a = alpha;
+					m_color.a = Alpha;
 
 					if( OnColorChanged != null )
 						OnColorChanged( m_color );
@@ -43,11 +30,9 @@ namespace RuntimeInspectorNamespace
 			}
 		}
 
-		[System.NonSerialized]
-		public float alpha = 1f;
+		public float Alpha { get; set; }
 
 		private RectTransform rectTransform;
-		private Image img;
 
 		[SerializeField]
 		private RectTransform SelectorOut;
@@ -56,127 +41,69 @@ namespace RuntimeInspectorNamespace
 		private RectTransform SelectorIn;
 
 		[SerializeField]
-		private RuntimeInspectorNamespace.WindowDragHandler colorPickerWindow;
+		private WindowDragHandler colorPickerWindow;
 
-		//Control values
 		private float outer;
 		private Vector2 inner;
-
-		private bool draggingOuter, draggingInner;
-
-		//The Components of the wheel
 		private Material mat;
-
+		private bool draggingOuter, draggingInner;
 		private float halfSize, halfSizeSqr, outerCirclePaddingSqr, innerSquareHalfSize;
 
-		private int pointerId = NON_EXISTING_TOUCH;
+		private int pointerId = -98765;
 
 		public delegate void OnColorChangedDelegate( Color32 color );
 		public event OnColorChangedDelegate OnColorChanged;
 
-		//Set up the transforms
 		private void Awake()
 		{
-			Initialize();
-
-			//Set first selected value to red (0° rotation and upper right corner in the box)
-			//PickColor( Color.red );
-		}
-
-		public void Initialize()
-		{
-			if( initialized )
-				return;
-
 			rectTransform = (RectTransform) transform;
-			img = GetComponent<Image>();
+			Image img = GetComponent<Image>();
 
-			//Calculate the half size
-			halfSize = rectTransform.sizeDelta.x * 0.5f;
-			halfSizeSqr = halfSize * halfSize;
-			outerCirclePaddingSqr = halfSizeSqr * 0.75f * 0.75f;
-			innerSquareHalfSize = halfSize * 0.5f;
-
-			//Set the material
 			mat = new Material( img.material );
 			img.material = mat;
+
+			UpdateProperties();
 		}
 
-		void OnRectTransformDimensionsChange()
+		private void OnRectTransformDimensionsChange()
 		{
-			Initialize();
+			if( rectTransform == null )
+				return;
 
-			//Calculate the half size
-			halfSize = rectTransform.sizeDelta.x * 0.5f;
-			halfSizeSqr = halfSize * halfSize;
-			outerCirclePaddingSqr = halfSizeSqr * 0.75f * 0.75f;
-			innerSquareHalfSize = halfSize * 0.5f;
-
-			PickColor( Color );
-		}
-
-		//Gets called after changes
-		void UpdateColor()
-		{
-			Color c = GetCurrentBaseColor();
-			mat.SetColor( "_Color", c );
-
-			//Add the colors of the inner box
-			c = Color.Lerp( c, Color.white, inner.x );
-			c = Color.Lerp( c, Color.black, inner.y );
-
-			Color = c;
-		}
-
-		//Method for setting the picker to a given color
-		public void PickColor( Color c )
-		{
-			alpha = c.a;
-
-			//Get hsb color from the rgb values
-			float max = Mathf.Max( c.r, c.g, c.b );
-			float min = Mathf.Min( c.r, c.g, c.b );
-
-			float hue = 0;
-			float sat = ( 1 - min );
-
-			if( max == min )
-				sat = 0;
-
-			hue = Mathf.Atan2( Mathf.Sqrt( 3 ) * ( c.g - c.b ), 2 * c.r - c.g - c.b );
-
-			//Set the sliders
-			outer = hue;
-			inner.x = 1 - sat;
-			inner.y = 1 - max;
-
-			//And update them once
-			Color = c;
-			mat.SetColor( "_Color", GetCurrentBaseColor() );
-
+			UpdateProperties();
 			UpdateSelectors();
 		}
 
-		private Color GetCurrentBaseColor()
+		private void UpdateProperties()
 		{
-			Color color = Color.white;
+			halfSize = rectTransform.rect.size.x * 0.5f;
+			halfSizeSqr = halfSize * halfSize;
+			outerCirclePaddingSqr = halfSizeSqr * 0.75f * 0.75f;
+			innerSquareHalfSize = halfSize * 0.5f;
+		}
 
-			//Calculation of rgb from degree with a modified 3 wave function
-			//Check out http://en.wikipedia.org/wiki/File:HSV-RGB-comparison.svg to understand how it should look
-			color.r = Mathf.Clamp( RGB_CONST * Mathf.Asin( Mathf.Cos( outer ) ) * 1.5f + 0.5f, 0f, 1f );
-			color.g = Mathf.Clamp( RGB_CONST * Mathf.Asin( Mathf.Cos( G_CONST - outer ) ) * 1.5f + 0.5f, 0f, 1f );
-			color.b = Mathf.Clamp( RGB_CONST * Mathf.Asin( Mathf.Cos( B_CONST - outer ) ) * 1.5f + 0.5f, 0f, 1f );
+		public void PickColor( Color c )
+		{
+			Alpha = c.a;
 
-			return color;
+			float h, s, v;
+			Color.RGBToHSV( c, out h, out s, out v );
+
+			outer = h * 2f * Mathf.PI;
+			inner.x = 1 - s;
+			inner.y = 1 - v;
+
+			UpdateSelectors();
+
+			Color = c;
+			mat.SetColor( "_Color", GetCurrentBaseColor() );
 		}
 
 		public void OnPointerDown( PointerEventData eventData )
 		{
-			if( pointerId != NON_EXISTING_TOUCH )
-				return;
-
 			Vector2 position;
-			RectTransformUtility.ScreenPointToLocalPointInRectangle( rectTransform, eventData.position, eventData.pressEventCamera, out position );
+			if( !RectTransformUtility.ScreenPointToLocalPointInRectangle( rectTransform, eventData.position, eventData.pressEventCamera, out position ) )
+				return;
 
 			//Check if click was in outer circle, inner box or neither
 			float distanceSqr = position.sqrMagnitude;
@@ -219,34 +146,24 @@ namespace RuntimeInspectorNamespace
 
 			draggingOuter = false;
 			draggingInner = false;
-			pointerId = NON_EXISTING_TOUCH;
+
+			pointerId = -98765;
 		}
 
 		private void GetSelectedColor( Vector2 pointerPos )
 		{
 			if( draggingOuter )
 			{
-				//Drag selector of outer circle
-
-				//Get mouse direction
 				Vector2 dir = -pointerPos.normalized;
-
-				//Calculate the radians
 				outer = Mathf.Atan2( -dir.x, -dir.y );
 
-				//And update
 				UpdateColor();
 			}
 			else if( draggingInner )
 			{
-				//Drag selector of inner box
-
-				//Get position inside the box
 				Vector2 dir = -pointerPos;
 				dir.x = Mathf.Clamp( dir.x, -innerSquareHalfSize, innerSquareHalfSize ) + innerSquareHalfSize;
 				dir.y = Mathf.Clamp( dir.y, -innerSquareHalfSize, innerSquareHalfSize ) + innerSquareHalfSize;
-
-				//Scale the value to 0 - 1;
 				inner = dir / halfSize;
 
 				UpdateColor();
@@ -255,9 +172,32 @@ namespace RuntimeInspectorNamespace
 			UpdateSelectors();
 		}
 
+		private void UpdateColor()
+		{
+			Color c = GetCurrentBaseColor();
+			mat.SetColor( "_Color", c );
+
+			c = Color.Lerp( c, Color.white, inner.x );
+			c = Color.Lerp( c, Color.black, inner.y );
+
+			Color = c;
+		}
+
+		private Color GetCurrentBaseColor()
+		{
+			Color color = Color.white;
+
+			//Calculation of rgb from degree with a modified 3 wave function
+			//Check out http://en.wikipedia.org/wiki/File:HSV-RGB-comparison.svg to understand how it should look
+			color.r = Mathf.Clamp( RGB_CONST * Mathf.Asin( Mathf.Cos( outer ) ) * 1.5f + 0.5f, 0f, 1f );
+			color.g = Mathf.Clamp( RGB_CONST * Mathf.Asin( Mathf.Cos( G_CONST - outer ) ) * 1.5f + 0.5f, 0f, 1f );
+			color.b = Mathf.Clamp( RGB_CONST * Mathf.Asin( Mathf.Cos( B_CONST - outer ) ) * 1.5f + 0.5f, 0f, 1f );
+
+			return color;
+		}
+
 		private void UpdateSelectors()
 		{
-			//Set the selectors positions
 			SelectorOut.anchoredPosition = new Vector2( Mathf.Sin( outer ) * halfSize * 0.85f, Mathf.Cos( outer ) * halfSize * 0.85f );
 			SelectorIn.anchoredPosition = new Vector2( innerSquareHalfSize - inner.x * halfSize, innerSquareHalfSize - inner.y * halfSize );
 		}

@@ -23,6 +23,7 @@ namespace RuntimeInspectorNamespace
 		[SerializeField]
 		private int poolCapacity = 64;
 		private Transform poolParent;
+		private static int aliveHierarchies = 0;
 		private static List<HierarchyItem> sceneDrawerPool = new List<HierarchyItem>( 8 );
 		private static List<HierarchyItem> transformDrawerPool;
 
@@ -44,6 +45,25 @@ namespace RuntimeInspectorNamespace
 						else
 							OnSceneUnloaded( SceneManager.GetSceneAt( i ) );
 					}
+				}
+			}
+		}
+
+		[SerializeField]
+		private bool m_exposeDontDestroyOnLoadScene = true;
+		public bool ExposeDontDestroyOnLoadScene
+		{
+			get { return m_exposeDontDestroyOnLoadScene; }
+			set
+			{
+				if( m_exposeDontDestroyOnLoadScene != value )
+				{
+					m_exposeDontDestroyOnLoadScene = value;
+
+					if( value )
+						OnSceneLoaded( GetDontDestroyOnLoadScene(), LoadSceneMode.Single );
+					else
+						OnSceneUnloaded( GetDontDestroyOnLoadScene() );
 				}
 			}
 		}
@@ -83,7 +103,7 @@ namespace RuntimeInspectorNamespace
 		[SerializeField]
 		private bool syncSelectionWithEditorHierarchy = false;
 #endif
-		
+
 		[SerializeField]
 		private RuntimeInspector m_connectedInspector;
 		public RuntimeInspector ConnectedInspector
@@ -152,7 +172,7 @@ namespace RuntimeInspectorNamespace
 		protected override void Awake()
 		{
 			base.Awake();
-			
+
 			drawArea = scrollView.content;
 
 			if( transformDrawerPool == null )
@@ -160,11 +180,15 @@ namespace RuntimeInspectorNamespace
 
 			GameObject poolParentGO = GameObject.Find( POOL_OBJECT_NAME );
 			if( poolParentGO == null )
+			{
 				poolParentGO = new GameObject( POOL_OBJECT_NAME );
+				DontDestroyOnLoad( poolParentGO );
+			}
 
 			poolParent = poolParentGO.transform;
-			
-			OnSelectionChanged += ( transform ) => 
+			aliveHierarchies++;
+
+			OnSelectionChanged += ( transform ) =>
 			{
 				if( !ConnectedInspector.IsNull() )
 				{
@@ -176,7 +200,7 @@ namespace RuntimeInspectorNamespace
 			};
 		}
 
-		void Start()
+		private void Start()
 		{
 			SceneManager.sceneLoaded += OnSceneLoaded;
 			SceneManager.sceneUnloaded += OnSceneUnloaded;
@@ -186,18 +210,35 @@ namespace RuntimeInspectorNamespace
 				for( int i = 0; i < SceneManager.sceneCount; i++ )
 					OnSceneLoaded( SceneManager.GetSceneAt( i ), LoadSceneMode.Single );
 			}
+
+			if( ExposeDontDestroyOnLoadScene )
+				OnSceneLoaded( GetDontDestroyOnLoadScene(), LoadSceneMode.Single );
+		}
+
+		private void OnDestroy()
+		{
+			if( --aliveHierarchies == 0 )
+			{
+				if( !poolParent.IsNull() )
+					DestroyImmediate( poolParent.gameObject );
+
+				sceneDrawerPool.Clear();
+
+				if( transformDrawerPool != null )
+					transformDrawerPool.Clear();
+			}
 		}
 
 #if UNITY_EDITOR
-		void OnEnable()
+		private void OnEnable()
 		{
 			UnityEditor.Selection.selectionChanged += OnEditorSelectionChanged;
 		}
 
-		void OnDisable()
+		private void OnDisable()
 		{
 			UnityEditor.Selection.selectionChanged -= OnEditorSelectionChanged;
-        }
+		}
 
 		private void OnEditorSelectionChanged()
 		{
@@ -305,7 +346,7 @@ namespace RuntimeInspectorNamespace
 			{
 				if( selection == CurrentSelection )
 					return true;
-				
+
 				Scene selectionScene = selection.gameObject.scene;
 				for( int i = 0; i < sceneDrawers.Count; i++ )
 				{
@@ -344,7 +385,7 @@ namespace RuntimeInspectorNamespace
 
 			if( !arg0.IsValid() )
 				return;
-			
+
 			for( int i = 0; i < sceneDrawers.Count; i++ )
 			{
 				if( ( sceneDrawers[i].Content is HierarchyRootScene ) && ( (HierarchyRootScene) sceneDrawers[i].Content ).Scene == arg0 )
@@ -352,7 +393,7 @@ namespace RuntimeInspectorNamespace
 			}
 
 			HierarchyItemRoot sceneDrawer = InstantiateSceneDrawer( new HierarchyRootScene( arg0 ) );
-            sceneDrawers.Add( sceneDrawer );
+			sceneDrawers.Add( sceneDrawer );
 
 			sceneDrawer.IsExpanded = true;
 		}
@@ -369,6 +410,26 @@ namespace RuntimeInspectorNamespace
 			}
 		}
 
+		private Scene GetDontDestroyOnLoadScene()
+		{
+			GameObject temp = null;
+			try
+			{
+				temp = new GameObject();
+				DontDestroyOnLoad( temp );
+				Scene dontDestroyOnLoad = temp.scene;
+				DestroyImmediate( temp );
+				temp = null;
+
+				return dontDestroyOnLoad;
+			}
+			finally
+			{
+				if( temp != null )
+					DestroyImmediate( temp );
+			}
+		}
+
 		public void AddToPseudoScene( string scene, Transform transform )
 		{
 			GetPseudoScene( scene, true ).AddChild( transform );
@@ -379,7 +440,7 @@ namespace RuntimeInspectorNamespace
 			HierarchyRootPseudoScene pseudoScene = GetPseudoScene( scene, true );
 			foreach( Transform transform in transforms )
 				pseudoScene.AddChild( transform );
-        }
+		}
 
 		public void RemoveFromPseudoScene( string scene, Transform transform, bool deleteSceneIfEmpty )
 		{
@@ -446,7 +507,7 @@ namespace RuntimeInspectorNamespace
 
 			return (HierarchyRootPseudoScene) pseudoSceneDrawer.Content;
 		}
-		
+
 		public void DeleteAllPseudoScenes()
 		{
 			for( int i = sceneDrawers.Count - 1; i >= 0; i-- )
