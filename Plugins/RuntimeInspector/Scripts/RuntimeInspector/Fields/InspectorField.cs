@@ -10,7 +10,7 @@ namespace RuntimeInspectorNamespace
 	{
 		public delegate object Getter();
 		public delegate void Setter( object value );
-		
+
 		private RuntimeInspector m_inspector;
 		public RuntimeInspector Inspector
 		{
@@ -96,7 +96,7 @@ namespace RuntimeInspectorNamespace
 
 		private Getter getter;
 		private Setter setter;
-		
+
 		public abstract bool SupportsType( Type type );
 
 		public virtual void Initialize() { }
@@ -166,7 +166,7 @@ namespace RuntimeInspectorNamespace
 			OnUnbound();
 			Inspector.PoolDrawer( this );
         }
-		
+
 		protected virtual void OnBound()
 		{
 			RefreshValue();
@@ -228,7 +228,7 @@ namespace RuntimeInspectorNamespace
 		protected RectTransform drawArea;
 
 		[SerializeField]
-		private PointerEventListener expandToggle;
+		private Button expandToggle;
 		private RectTransform expandToggleTransform;
 
 		[SerializeField]
@@ -236,7 +236,7 @@ namespace RuntimeInspectorNamespace
 
 		[SerializeField]
 		private Image expandArrow; // Expand Arrow's sprite should look right at 0 rotation
-		
+
 		protected List<InspectorField> elements = new List<InspectorField>( 8 );
 		private List<ExposedMethodField> exposedMethods = new List<ExposedMethodField>();
 
@@ -253,7 +253,7 @@ namespace RuntimeInspectorNamespace
 
 				if( expandArrow != null )
 					expandArrow.rectTransform.localEulerAngles = m_isExpanded ? new Vector3( 0f, 0f, -90f ) : Vector3.zero;
-				
+
 				if( m_isExpanded )
 					Refresh();
 			}
@@ -262,9 +262,9 @@ namespace RuntimeInspectorNamespace
 		public override void Initialize()
 		{
 			base.Initialize();
-			
+
 			expandToggleTransform = (RectTransform) expandToggle.transform;
-			expandToggle.PointerClick += (eventData) => IsExpanded = !m_isExpanded;
+			expandToggle.onClick.AddListener(() => IsExpanded = !m_isExpanded);
 			IsExpanded = m_isExpanded;
 		}
 
@@ -283,7 +283,7 @@ namespace RuntimeInspectorNamespace
 			Vector2 expandToggleSizeDelta = expandToggleTransform.sizeDelta;
 			expandToggleSizeDelta.y = Skin.LineHeight;
 			expandToggleTransform.sizeDelta = expandToggleSizeDelta;
-			
+
 			layoutGroup.padding.top = Skin.LineHeight;
 			expandArrow.color = Skin.ExpandArrowColor;
 
@@ -359,7 +359,7 @@ namespace RuntimeInspectorNamespace
 		public override void Refresh()
 		{
 			base.Refresh();
-			
+
 			if( m_isExpanded )
 			{
 				if( Length != elements.Count )
