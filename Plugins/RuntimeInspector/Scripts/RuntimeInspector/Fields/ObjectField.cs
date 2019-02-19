@@ -68,7 +68,7 @@ namespace RuntimeInspectorNamespace
 			}
 
 			initializeObjectButton.gameObject.SetActive( false );
-			
+
 			foreach( MemberInfo variables in Inspector.GetExposedVariablesForType( Value.GetType() ) )
 				CreateDrawerForVariable( variables );
 		}

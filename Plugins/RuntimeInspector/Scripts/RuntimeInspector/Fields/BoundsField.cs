@@ -19,7 +19,7 @@ namespace RuntimeInspectorNamespace
 		public override void Initialize()
 		{
 			base.Initialize();
-			
+
 			centerVariable = typeof( Bounds ).GetProperty( "center" );
 			extentsVariable = typeof( Bounds ).GetProperty( "extents" );
 		}
@@ -32,7 +32,7 @@ namespace RuntimeInspectorNamespace
 		protected override void OnBound()
 		{
 			base.OnBound();
-			
+
 			inputCenter.BindTo( this, centerVariable, "Center:" );
 			inputExtents.BindTo( this, extentsVariable, "Extents:" );
 		}
@@ -60,7 +60,7 @@ namespace RuntimeInspectorNamespace
 			inputCenter.Depth = Depth + 1;
 			inputExtents.Depth = Depth + 1;
 		}
-		
+
 		public override void Refresh()
 		{
 			base.Refresh();

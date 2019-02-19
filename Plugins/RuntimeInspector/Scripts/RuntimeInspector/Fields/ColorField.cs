@@ -19,7 +19,7 @@ namespace RuntimeInspectorNamespace
 
 			colorImg = inputColor.GetComponent<Image>();
 			inputColor.PointerClick += ShowColorPicker;
-        }
+		}
 
 		public override bool SupportsType( Type type )
 		{
@@ -30,8 +30,8 @@ namespace RuntimeInspectorNamespace
 		{
 			base.OnBound();
 			isColor32 = BoundVariableType == typeof( Color32 );
-        }
-		
+		}
+
 		private void ShowColorPicker( PointerEventData eventData )
 		{
 			if( isColor32 )
@@ -55,7 +55,7 @@ namespace RuntimeInspectorNamespace
 			base.Refresh();
 
 			if( isColor32 )
-	            colorImg.color = (Color32) Value;
+				colorImg.color = (Color32) Value;
 			else
 				colorImg.color = (Color) Value;
 		}

@@ -70,13 +70,13 @@ namespace RuntimeInspectorNamespace
 
 			cancelButton.onClick.AddListener( Cancel );
 			okButton.onClick.AddListener( Close );
-        }
+		}
 
 		void Start()
 		{
 			colorWheel.OnColorChanged += OnSelectedColorChanged;
 			alphaSlider.OnValueChanged += OnAlphaChanged;
-			
+
 			rInput.DefaultEmptyValue = "0";
 			gInput.DefaultEmptyValue = "0";
 			bInput.DefaultEmptyValue = "0";
@@ -94,7 +94,7 @@ namespace RuntimeInspectorNamespace
 
 			OnSelectedColorChanged( colorWheel.Color );
 		}
-		
+
 		public void Show( ColorWheelControl.OnColorChangedDelegate onColorChanged, Color initialColor )
 		{
 			initialValue = initialColor;
@@ -106,7 +106,7 @@ namespace RuntimeInspectorNamespace
 			this.onColorChanged = onColorChanged;
 
 			( (RectTransform) panel.transform ).anchoredPosition = Vector2.zero;
-            gameObject.SetActive( true );
+			gameObject.SetActive( true );
 		}
 
 		public void Cancel()
@@ -120,7 +120,7 @@ namespace RuntimeInspectorNamespace
 		public void Close()
 		{
 			onColorChanged = null;
-            gameObject.SetActive( false );
+			gameObject.SetActive( false );
 		}
 
 		protected override void RefreshSkin()
@@ -182,7 +182,7 @@ namespace RuntimeInspectorNamespace
 				{
 					color.a = value;
 					alphaSlider.Value = value / 255f;
-                }
+				}
 
 				alphaSlider.Color = color;
 				colorWheel.PickColor( color );

@@ -24,7 +24,7 @@ namespace RuntimeInspectorNamespace
 				return m_instance;
 			}
 		}
-		
+
 		public delegate void OnReferenceChanged( Object reference );
 		private OnReferenceChanged onReferenceChanged;
 
@@ -33,13 +33,13 @@ namespace RuntimeInspectorNamespace
 
 		[SerializeField]
 		private Image scrollbar;
-		
+
 		[SerializeField]
 		private InputField searchBar;
 
 		[SerializeField]
 		private Image searchIcon;
-		
+
 		[SerializeField]
 		private Image searchBarBackground;
 
@@ -94,14 +94,14 @@ namespace RuntimeInspectorNamespace
 			initialValue = initialReference;
 			this.onReferenceChanged = onReferenceChanged;
 
-            panel.rectTransform.anchoredPosition = Vector2.zero;
+			panel.rectTransform.anchoredPosition = Vector2.zero;
 			gameObject.SetActive( true );
 
 			selectPromptText.text = "Select " + referenceType.Name;
 			currentlySelectedObject = initialReference;
 
 			GenerateReferenceItems( references, referenceType );
-        }
+		}
 
 		public void Cancel()
 		{
@@ -152,11 +152,11 @@ namespace RuntimeInspectorNamespace
 			filteredReferences.Clear();
 			searchBar.text = string.Empty;
 
-            this.references.Add( null );
+			this.references.Add( null );
 			Array.Sort( references, ( ref1, ref2 ) => ref1.GetName().CompareTo( ref2.GetName() ) );
 
 			bool isTexture = referenceType == typeof( Texture ) || referenceType == typeof( Texture ) || referenceType == typeof( Sprite );
-            for( int i = 0; i < references.Length; i++ )
+			for( int i = 0; i < references.Length; i++ )
 			{
 				if( references[i].IsNull() )
 					continue;
@@ -172,7 +172,7 @@ namespace RuntimeInspectorNamespace
 			}
 
 			OnSearchTextChanged( string.Empty );
-			
+
 			listView.UpdateList();
 		}
 
@@ -207,10 +207,10 @@ namespace RuntimeInspectorNamespace
 			{
 				it.IsSelected = true;
 				currentlySelectedItem = it;
-            }
+			}
 			else
 				it.IsSelected = false;
-			
+
 			it.Skin = Skin;
 		}
 

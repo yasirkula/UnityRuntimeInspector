@@ -80,7 +80,7 @@ namespace RuntimeInspectorNamespace
 				return equalsFunction( value1, value2 );
 			}
 		}
-		
+
 		[SerializeField]
 		private BoundInputField input;
 		private NumberParser parser;

@@ -86,7 +86,7 @@ namespace RuntimeInspectorNamespace
 
 		private void OnApplicationQuit()
 		{
-			isQuitting = true;	
+			isQuitting = true;
 		}
 
 		private void OnTransformChildrenChanged()
@@ -113,7 +113,7 @@ namespace RuntimeInspectorNamespace
 				}
 
 				RemoveChildrenFromScene();
-					
+
 				HashSet<Transform> temp = childrenCurrent;
 				childrenCurrent = childrenNew;
 				childrenNew = temp;

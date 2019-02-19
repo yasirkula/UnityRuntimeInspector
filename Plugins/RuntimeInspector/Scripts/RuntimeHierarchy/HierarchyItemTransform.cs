@@ -13,7 +13,7 @@ namespace RuntimeInspectorNamespace
 
 		private IEnumerator pointerHeldCoroutine = null;
 		private float nextNameRefreshTime = -1f;
-		
+
 		private bool m_isActive = true;
 		protected override bool IsActive
 		{

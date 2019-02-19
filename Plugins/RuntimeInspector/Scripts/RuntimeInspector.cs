@@ -159,6 +159,7 @@ namespace RuntimeInspectorNamespace
 		[SerializeField]
 		private RuntimeInspectorSettings[] settings;
 
+		[Header( "Internal Variables" )]
 		[SerializeField]
 		private ScrollRect scrollView;
 		private RectTransform drawArea;
@@ -216,6 +217,9 @@ namespace RuntimeInspectorNamespace
 				}
 			}
 
+			RuntimeInspectorUtils.IgnoredSearchEntries.Add( drawArea );
+			RuntimeInspectorUtils.IgnoredSearchEntries.Add( poolParent );
+
 			ColorPicker.Instance.Close();
 			ObjectReferencePicker.Instance.Close();
 		}
@@ -225,10 +229,15 @@ namespace RuntimeInspectorNamespace
 			if( --aliveInspectors == 0 )
 			{
 				if( !poolParent.IsNull() )
+				{
+					RuntimeInspectorUtils.IgnoredSearchEntries.Remove( poolParent );
 					DestroyImmediate( poolParent.gameObject );
+				}
 
 				drawersPool.Clear();
 			}
+
+			RuntimeInspectorUtils.IgnoredSearchEntries.Remove( drawArea );
 		}
 
 		protected override void Update()

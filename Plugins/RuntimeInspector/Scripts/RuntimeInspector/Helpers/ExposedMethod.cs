@@ -40,7 +40,7 @@ namespace RuntimeInspectorNamespace
 
 			if( method.IsStatic )
 				return method.Invoke( null, null );
-			
+
 			if( source != null )
 				return method.Invoke( source, null );
 

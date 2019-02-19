@@ -55,7 +55,7 @@ namespace RuntimeInspectorNamespace
 		{
 			contentTransform.anchoredPosition = Vector2.zero;
 
-            float newHeight = Mathf.Max( 1f, adapter.Count * itemHeight );
+			float newHeight = Mathf.Max( 1f, adapter.Count * itemHeight );
 			contentTransform.sizeDelta = new Vector2( 0f, newHeight );
 			viewportHeight = viewportTransform.rect.height;
 
@@ -97,7 +97,7 @@ namespace RuntimeInspectorNamespace
 			if( adapter.Count > 0 )
 			{
 				float contentPos = contentTransform.anchoredPosition.y - 1f;
-				
+
 				int newTopIndex = (int) ( contentPos * _1OverItemHeight );
 				int newBottomIndex = (int) ( ( contentPos + viewportHeight + 2f ) * _1OverItemHeight );
 

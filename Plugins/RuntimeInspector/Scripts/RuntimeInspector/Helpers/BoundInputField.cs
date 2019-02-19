@@ -49,6 +49,17 @@ namespace RuntimeInspectorNamespace
 
 					inputField.textComponent.SetSkinInputFieldText( m_skin );
 					inputFieldBackground.color = m_skin.InputFieldNormalBackgroundColor;
+
+					Text placeholder = inputField.placeholder as Text;
+					if( placeholder != null )
+					{
+						float placeholderAlpha = placeholder.color.a;
+						placeholder.SetSkinInputFieldText( m_skin );
+
+						Color placeholderColor = placeholder.color;
+						placeholderColor.a = placeholderAlpha;
+						placeholder.color = placeholderColor;
+					}
 				}
 			}
 		}
@@ -84,7 +95,7 @@ namespace RuntimeInspectorNamespace
 
 			inputAltered = true;
 
-            if( str == null || str.Length == 0 )
+			if( str == null || str.Length == 0 )
 				str = DefaultEmptyValue;
 
 			if( OnValueChanged != null )
@@ -97,7 +108,7 @@ namespace RuntimeInspectorNamespace
 		private void InputFieldValueSubmitted( string str )
 		{
 			inputFieldBackground.color = Skin.InputFieldNormalBackgroundColor;
-			
+
 			if( !inputAltered )
 			{
 				inputField.text = recentText;
@@ -106,7 +117,7 @@ namespace RuntimeInspectorNamespace
 
 			inputAltered = false;
 
-            if( str == null || str.Length == 0 )
+			if( str == null || str.Length == 0 )
 				str = DefaultEmptyValue;
 
 			if( OnValueSubmitted != null )

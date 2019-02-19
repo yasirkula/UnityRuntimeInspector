@@ -10,7 +10,7 @@ namespace RuntimeInspectorNamespace
 		private Button invokeButton;
 
 		protected ExposedMethod boundMethod;
-		
+
 		public override bool SupportsType( Type type )
 		{
 			return type == typeof( ExposedMethod );

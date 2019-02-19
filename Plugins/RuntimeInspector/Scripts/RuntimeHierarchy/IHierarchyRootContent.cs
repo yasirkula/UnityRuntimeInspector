@@ -5,10 +5,8 @@ namespace RuntimeInspectorNamespace
 {
 	public interface IHierarchyRootContent
 	{
-		bool IsValid { get; }
-		int ChildCount { get; }
 		string Name { get; }
-		
+		bool IsValid { get; }
 		List<GameObject> Children { get; set; }
 
 		void Refresh();

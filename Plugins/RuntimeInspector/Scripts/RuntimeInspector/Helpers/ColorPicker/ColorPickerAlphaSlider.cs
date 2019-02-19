@@ -40,7 +40,7 @@ namespace RuntimeInspectorNamespace
 		void Awake()
 		{
 			rectTransform = (RectTransform) transform;
-        }
+		}
 
 		public void OnPointerDown( PointerEventData eventData )
 		{

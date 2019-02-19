@@ -22,7 +22,7 @@ namespace RuntimeInspectorNamespace
 
 		[SerializeField]
 		private float raycastRange = float.MaxValue;
-		
+
 		private bool pointerDown = false;
 		private float pointerDownTime;
 		private Vector2 pointerDownPos;

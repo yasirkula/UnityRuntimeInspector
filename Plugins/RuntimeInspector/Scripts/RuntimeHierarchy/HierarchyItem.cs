@@ -70,7 +70,7 @@ namespace RuntimeInspectorNamespace
 		private Image expandArrow; // Expand Arrow's sprite should look right at 0 rotation
 
 		protected List<HierarchyItemTransform> children = new List<HierarchyItemTransform>( 4 );
-		
+
 		protected abstract bool IsValid { get; }
 		protected abstract int ChildCount { get; }
 
@@ -106,14 +106,14 @@ namespace RuntimeInspectorNamespace
 			set
 			{
 				m_isSelected = value;
-				
+
 				if( m_isSelected )
 				{
 					background.color = Skin.SelectedItemBackgroundColor;
 
 					Color textColor = Skin.SelectedItemTextColor;
 					textColor.a = IsActive ? 1f : INACTIVE_ITEM_TEXT_ALPHA;
-                    nameText.color = textColor;
+					nameText.color = textColor;
 				}
 				else
 				{
@@ -159,7 +159,7 @@ namespace RuntimeInspectorNamespace
 			layoutGroup.padding.top = Skin.LineHeight;
 
 			contentTransform.sizeDelta = new Vector2( 0f, Skin.LineHeight );
-			
+
 			nameText.SetSkinText( Skin );
 
 			if( expandArrow != null )
@@ -169,7 +169,7 @@ namespace RuntimeInspectorNamespace
 
 			for( int i = 0; i < children.Count; i++ )
 				children[i].Skin = Skin;
-        }
+		}
 
 		public virtual void Refresh()
 		{
@@ -259,7 +259,12 @@ namespace RuntimeInspectorNamespace
 
 		private void GenerateChildItem( Transform child, int index )
 		{
-			HierarchyItemTransform item = Hierarchy.InstantiateTransformDrawer( drawArea );
+			HierarchyItemTransform item;
+			if( this is HierarchyItemRoot && ( (HierarchyItemRoot) this ).Content is HierarchyRootSearch )
+				item = Hierarchy.InstantiateSearchEntryDrawer( drawArea );
+			else
+				item = Hierarchy.InstantiateTransformDrawer( drawArea );
+
 			item.transform.SetSiblingIndex( index );
 			item.BindTo( child );
 
@@ -313,7 +318,7 @@ namespace RuntimeInspectorNamespace
 		public HierarchyItem SelectTransform( Transform target, Transform nextInPath = null )
 		{
 			bool isInitSearch = nextInPath == null;
-            if( isInitSearch )
+			if( isInitSearch )
 				nextInPath = target.root;
 
 			RefreshContent();
@@ -337,13 +342,13 @@ namespace RuntimeInspectorNamespace
 				else
 					return null;
 			}
-			
+
 			bool wasExpanded = IsExpanded;
 			if( !wasExpanded )
 				IsExpanded = true;
 
 			HierarchyItemTransform childItem = children[childIndex];
-            if( childItem.BoundTransform == target )
+			if( childItem.BoundTransform == target )
 			{
 				Hierarchy.OnClicked( childItem );
 				return childItem;

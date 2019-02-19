@@ -33,7 +33,7 @@ namespace RuntimeInspectorNamespace
 
 			Content = null;
 			childObjects.Clear();
-        }
+		}
 
 		protected override void OnSkinChanged()
 		{
@@ -46,7 +46,7 @@ namespace RuntimeInspectorNamespace
 			if( Content.IsValid )
 				Content.Refresh();
 		}
-		
+
 		protected override Transform GetChild( int index )
 		{
 			return childObjects[index].transform;

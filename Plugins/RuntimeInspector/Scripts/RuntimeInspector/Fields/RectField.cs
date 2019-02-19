@@ -60,7 +60,7 @@ namespace RuntimeInspectorNamespace
 		protected override void OnBound()
 		{
 			base.OnBound();
-			
+
 			Rect val = (Rect) Value;
 			inputX.Text = "" + val.x;
 			inputY.Text = "" + val.y;

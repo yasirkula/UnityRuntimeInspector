@@ -22,10 +22,10 @@ namespace RuntimeInspectorNamespace
 					( (RectTransform) transform ).sizeDelta = new Vector2( 0f, Skin.LineHeight );
 
 					int previewDimensions = Mathf.Max( 5, Skin.LineHeight - 7 );
-                    texturePreviewLayoutElement.SetWidth( previewDimensions );
+					texturePreviewLayoutElement.SetWidth( previewDimensions );
 					texturePreviewLayoutElement.SetHeight( previewDimensions );
 
-                    referenceNameText.SetSkinText( m_skin );
+					referenceNameText.SetSkinText( m_skin );
 
 					IsSelected = m_isSelected;
 				}
@@ -41,7 +41,7 @@ namespace RuntimeInspectorNamespace
 
 		[SerializeField]
 		private Text referenceNameText;
-		
+
 		private bool m_isSelected = false;
 		public bool IsSelected
 		{
@@ -62,11 +62,11 @@ namespace RuntimeInspectorNamespace
 				}
 			}
 		}
-		
+
 		void Awake()
 		{
 			texturePreviewLayoutElement = texturePreview.GetComponent<LayoutElement>();
-            GetComponent<PointerEventListener>().PointerClick += (eventData) => OnClick();
+			GetComponent<PointerEventListener>().PointerClick += ( eventData ) => OnClick();
 		}
 
 		public void SetContent( Object reference )

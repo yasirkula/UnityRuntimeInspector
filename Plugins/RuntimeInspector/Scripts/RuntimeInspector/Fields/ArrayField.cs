@@ -24,7 +24,7 @@ namespace RuntimeInspectorNamespace
 
 		private bool isArray;
 		private Type elementType;
-		
+
 		protected override int Length
 		{
 			get
@@ -100,7 +100,7 @@ namespace RuntimeInspectorNamespace
 		{
 			if( Value == null )
 				return;
-			
+
 			if( isArray )
 			{
 				Array array = (Array) Value;
@@ -109,7 +109,7 @@ namespace RuntimeInspectorNamespace
 					InspectorField elementDrawer = Inspector.CreateDrawerForType( elementType, drawArea, Depth + 1 );
 					if( elementDrawer == null )
 						break;
-					
+
 					int j = i;
 					elementDrawer.BindTo( elementType, string.Empty, () => ( (Array) Value ).GetValue( j ), ( value ) =>
 					{
@@ -121,7 +121,7 @@ namespace RuntimeInspectorNamespace
 					elementDrawer.NameRaw = Inspector.ArrayIndicesStartAtOne ? ( i + 1 ) + ":" : i + ":";
 					elements.Add( elementDrawer );
 				}
-            }
+			}
 			else
 			{
 				IList list = (IList) Value;
@@ -133,7 +133,7 @@ namespace RuntimeInspectorNamespace
 
 					int j = i;
 					string variableName = Inspector.ArrayIndicesStartAtOne ? ( i + 1 ) + ":" : i + ":";
-					elementDrawer.BindTo( elementType, variableName, () => ( (IList) Value )[j], ( value ) => 
+					elementDrawer.BindTo( elementType, variableName, () => ( (IList) Value )[j], ( value ) =>
 					{
 						IList _list = (IList) Value;
 						_list[j] = value;
@@ -160,7 +160,7 @@ namespace RuntimeInspectorNamespace
 					Array _array = (Array) Value;
 					_array.SetValue( assignableObject, Length - 1 );
 					Value = _array;
-				} 
+				}
 				else
 				{
 					IList _list = (IList) Value;
@@ -188,7 +188,7 @@ namespace RuntimeInspectorNamespace
 			if( int.TryParse( input, out value ) && value >= 0 )
 			{
 				int currLength = Length;
-                if( currLength != value )
+				if( currLength != value )
 				{
 					if( isArray )
 					{
@@ -198,7 +198,7 @@ namespace RuntimeInspectorNamespace
 						{
 							if( array != null )
 								Array.ConstrainedCopy( array, 0, newArray, 0, currLength );
-							
+
 							for( int i = currLength; i < value; i++ )
 							{
 								object template = GetTemplateElement( array );
@@ -208,7 +208,7 @@ namespace RuntimeInspectorNamespace
 						}
 						else
 							Array.ConstrainedCopy( array, 0, newArray, 0, value );
-						
+
 						Value = newArray;
 					}
 					else

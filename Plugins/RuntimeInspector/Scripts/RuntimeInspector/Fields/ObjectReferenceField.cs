@@ -34,7 +34,7 @@ namespace RuntimeInspectorNamespace
 			{
 				inspectReferenceButton.PointerClick += InspectReference;
 				inspectReferenceImage = inspectReferenceButton.GetComponent<Image>();
-            }
+			}
 		}
 
 		public override bool SupportsType( Type type )
@@ -63,7 +63,7 @@ namespace RuntimeInspectorNamespace
 		{
 			base.OnBound();
 			OnReferenceChanged( (Object) Value );
-        }
+		}
 
 		protected virtual void OnReferenceChanged( Object reference )
 		{
@@ -72,7 +72,7 @@ namespace RuntimeInspectorNamespace
 
 			if( referenceNameText != null )
 				referenceNameText.text = reference.GetNameWithType( BoundVariableType );
-			
+
 			if( inspectReferenceButton != null )
 				inspectReferenceButton.gameObject.SetActive( Value != null && !Value.Equals( null ) );
 		}
@@ -99,7 +99,7 @@ namespace RuntimeInspectorNamespace
 			{
 				inspectReferenceImage.color = Skin.TextColor.Tint( 0.1f );
 				inspectReferenceImage.GetComponent<LayoutElement>().SetWidth( Mathf.Max( Skin.LineHeight - 8, 6 ) );
-            }
+			}
 		}
 
 		public override void Refresh()
@@ -109,6 +109,6 @@ namespace RuntimeInspectorNamespace
 
 			if( lastValue != Value )
 				OnReferenceChanged( (Object) Value );
-        }
+		}
 	}
 }

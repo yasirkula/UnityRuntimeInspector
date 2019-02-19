@@ -30,7 +30,7 @@ namespace RuntimeInspectorNamespace
 
 		[SerializeField]
 		private Dropdown input;
-		
+
 		private static Dictionary<Type, List<string>> enumNames = new Dictionary<Type, List<string>>();
 		private static Dictionary<Type, List<object>> enumValues = new Dictionary<Type, List<object>>();
 
@@ -86,7 +86,7 @@ namespace RuntimeInspectorNamespace
 		protected override void OnSkinChanged()
 		{
 			base.OnSkinChanged();
-			
+
 			Vector2 templateSizeDelta = templateTransform.sizeDelta;
 			templateSizeDelta.y = Skin.LineHeight;
 			templateTransform.sizeDelta = templateSizeDelta;

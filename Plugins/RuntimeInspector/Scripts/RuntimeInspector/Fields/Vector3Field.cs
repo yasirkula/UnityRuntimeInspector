@@ -31,7 +31,7 @@ namespace RuntimeInspectorNamespace
 			inputX.Initialize();
 			inputY.Initialize();
 			inputZ.Initialize();
-			
+
 			inputX.OnValueChanged += OnValueChanged;
 			inputY.OnValueChanged += OnValueChanged;
 			inputZ.OnValueChanged += OnValueChanged;

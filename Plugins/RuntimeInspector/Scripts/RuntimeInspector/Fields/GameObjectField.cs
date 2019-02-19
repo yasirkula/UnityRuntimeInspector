@@ -9,7 +9,7 @@ namespace RuntimeInspectorNamespace
 {
 	public class GameObjectField : ExpandableInspectorField
 	{
-		protected override int Length { get { return components.Count + 4; } }
+		protected override int Length { get { return components.Count + 4; } } // 4: active, name, tag, layer
 
 		private string currentTag = null;
 		private List<Component> components = new List<Component>( 8 );
@@ -39,7 +39,7 @@ namespace RuntimeInspectorNamespace
 				return;
 
 			CreateDrawer( typeof( bool ), "Is Active", () => ( (GameObject) Value ).activeSelf, ( value ) => ( (GameObject) Value ).SetActive( (bool) value ) );
-			nameField = CreateDrawer( typeof( string ), "Name", () => ( (GameObject) Value ).name, (value) =>
+			nameField = CreateDrawer( typeof( string ), "Name", () => ( (GameObject) Value ).name, ( value ) =>
 			{
 				( (GameObject) Value ).name = (string) value;
 
@@ -56,7 +56,7 @@ namespace RuntimeInspectorNamespace
 				return currentTag;
 			}, ( value ) => ( (GameObject) Value ).tag = (string) value ) as StringField;
 			CreateDrawerForVariable( typeof( GameObject ).GetProperty( "layer" ), "Layer" );
-			
+
 			for( int i = 0; i < components.Count; i++ )
 				CreateDrawerForComponent( components[i] );
 
@@ -99,7 +99,7 @@ namespace RuntimeInspectorNamespace
 					if( components[i].IsNull() )
 						components.RemoveAt( i );
 				}
-            }
+			}
 		}
 	}
 }

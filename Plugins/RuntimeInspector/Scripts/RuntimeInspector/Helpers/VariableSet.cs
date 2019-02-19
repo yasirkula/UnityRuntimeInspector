@@ -23,7 +23,7 @@ namespace RuntimeInspectorNamespace
 			type = RuntimeInspectorUtils.GetType( m_type );
 			if( type == null )
 				return false;
-			
+
 			variables = new HashSet<string>();
 			for( int i = 0; i < m_variables.Length; i++ )
 			{
@@ -32,7 +32,7 @@ namespace RuntimeInspectorNamespace
 				else
 				{
 					AddAllVariablesToSet();
-                    break;
+					break;
 				}
 			}
 

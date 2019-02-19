@@ -148,7 +148,7 @@ namespace RuntimeInspectorNamespace
 				}
 			}
 		}
-		
+
 		[SerializeField]
 		private Color m_inputFieldNormalBackgroundColor = Color.white;
 		public Color InputFieldNormalBackgroundColor
@@ -238,7 +238,7 @@ namespace RuntimeInspectorNamespace
 				}
 			}
 		}
-		
+
 		[SerializeField]
 		private Color m_selectedItemBackgroundColor = Color.blue;
 		public Color SelectedItemBackgroundColor

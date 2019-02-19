@@ -8,7 +8,7 @@ namespace RuntimeInspectorNamespace
 	{
 		public MemberInfo Current { get { return variables[index]; } }
 		object IEnumerator.Current { get { return Current; } }
-		
+
 		private int index;
 		private MemberInfo[] variables;
 
@@ -25,7 +25,7 @@ namespace RuntimeInspectorNamespace
 			index = -1;
 
 			this.variables = variables;
-			
+
 			this.hiddenVariables = hiddenVariables;
 			this.exposedVariables = exposedVariables;
 
@@ -36,7 +36,7 @@ namespace RuntimeInspectorNamespace
 			this.exposePrivateProperties = exposePrivateProperties;
 			this.exposePublicProperties = exposePublicProperties;
 		}
-		
+
 		public void Dispose() { }
 
 		public IEnumerator<MemberInfo> GetEnumerator()
@@ -86,7 +86,7 @@ namespace RuntimeInspectorNamespace
 		public void Reset()
 		{
 			index = -1;
-        }
+		}
 
 		private bool IsVariableInExposedVariablesList( string variableName )
 		{

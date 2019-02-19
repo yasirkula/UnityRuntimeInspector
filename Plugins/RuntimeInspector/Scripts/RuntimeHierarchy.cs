@@ -13,12 +13,32 @@ namespace RuntimeInspectorNamespace
 		public delegate void DoubleClickDelegate( Transform selection );
 
 		[SerializeField]
-		private float refreshInterval = 0f;
-		private float nextRefreshTime = -1f;
+		[UnityEngine.Serialization.FormerlySerializedAs( "refreshInterval" )]
+		private float m_refreshInterval = 0f;
+		public float RefreshInterval
+		{
+			get { return m_refreshInterval; }
+			set { m_refreshInterval = value; }
+		}
 
 		[SerializeField]
 		private float m_objectNamesRefreshInterval = 10f;
-		public float ObjectNamesRefreshInterval { get { return m_objectNamesRefreshInterval; } }
+		public float ObjectNamesRefreshInterval
+		{
+			get { return m_objectNamesRefreshInterval; }
+			set { m_objectNamesRefreshInterval = value; }
+		}
+
+		[SerializeField]
+		private float m_searchRefreshInterval = 5f;
+		public float SearchRefreshInterval
+		{
+			get { return m_searchRefreshInterval; }
+			set { m_searchRefreshInterval = value; }
+		}
+
+		private float nextHierarchyRefreshTime = -1f;
+		private float nextSearchRefreshTime = -1f;
 
 		[SerializeField]
 		private int poolCapacity = 64;
@@ -26,6 +46,7 @@ namespace RuntimeInspectorNamespace
 		private static int aliveHierarchies = 0;
 		private static List<HierarchyItem> sceneDrawerPool = new List<HierarchyItem>( 8 );
 		private static List<HierarchyItem> transformDrawerPool;
+		private static List<HierarchyItem> searchEntryDrawerPool;
 
 		[SerializeField]
 		private bool m_exposeUnityScenes = true;
@@ -96,54 +117,15 @@ namespace RuntimeInspectorNamespace
 		}
 
 		[SerializeField]
-		private float doubleClickThreshold = 0.5f;
-		private float lastClickTime;
-
-#if UNITY_EDITOR
-		[SerializeField]
-		private bool syncSelectionWithEditorHierarchy = false;
-#endif
-
-		[SerializeField]
-		private RuntimeInspector m_connectedInspector;
-		public RuntimeInspector ConnectedInspector
+		[UnityEngine.Serialization.FormerlySerializedAs( "doubleClickThreshold" )]
+		private float m_doubleClickThreshold = 0.5f;
+		public float DoubleClickThreshold
 		{
-			get { return m_connectedInspector; }
-			set
-			{
-				if( m_connectedInspector != value )
-				{
-					m_connectedInspector = value;
-					if( CurrentSelection != null )
-						m_connectedInspector.Inspect( CurrentSelection.gameObject );
-				}
-			}
+			get { return m_doubleClickThreshold; }
+			set { m_doubleClickThreshold = value; }
 		}
 
-		[SerializeField]
-		private ScrollRect scrollView;
-		private RectTransform drawArea;
-
-		[SerializeField]
-		private Image background;
-
-		[SerializeField]
-		private Image scrollbar;
-
-		private List<HierarchyItemRoot> sceneDrawers = new List<HierarchyItemRoot>( 8 );
-
-		[SerializeField]
-		private HierarchyItemRoot sceneDrawerPrefab;
-
-		[SerializeField]
-		private HierarchyItemTransform transformDrawerPrefab;
-
-		private HierarchyItem currentlySelectedDrawer = null;
-
-		private Dictionary<string, HierarchyItemRoot> pseudoSceneDrawers = new Dictionary<string, HierarchyItemRoot>();
-
-		public event SelectionChangedDelegate OnSelectionChanged;
-		public event DoubleClickDelegate OnItemDoubleClicked;
+		private float lastClickTime;
 
 		private Transform m_currentSelection = null;
 		public Transform CurrentSelection
@@ -169,14 +151,97 @@ namespace RuntimeInspectorNamespace
 			}
 		}
 
+		public string SearchTerm
+		{
+			get { return searchInputField.text; }
+			set { searchInputField.text = value; }
+		}
+
+		private bool m_isInSearchMode = false;
+		public bool IsInSearchMode { get { return m_isInSearchMode; } }
+
+#if UNITY_EDITOR
+		[SerializeField]
+		private bool syncSelectionWithEditorHierarchy = false;
+#endif
+
+		[SerializeField]
+		private RuntimeInspector m_connectedInspector;
+		public RuntimeInspector ConnectedInspector
+		{
+			get { return m_connectedInspector; }
+			set
+			{
+				if( m_connectedInspector != value )
+				{
+					m_connectedInspector = value;
+					if( CurrentSelection != null )
+						m_connectedInspector.Inspect( CurrentSelection.gameObject );
+				}
+			}
+		}
+
+		[Header( "Internal Variables" )]
+		[SerializeField]
+		private ScrollRect scrollView;
+
+		[SerializeField]
+		private RectTransform drawAreaHierarchy;
+
+		[SerializeField]
+		private RectTransform drawAreaSearchResults;
+
+		[SerializeField]
+		private Image background;
+
+		[SerializeField]
+		private Image scrollbar;
+
+		[SerializeField]
+		private InputField searchInputField;
+
+		[SerializeField]
+		private Image searchIcon;
+
+		[SerializeField]
+		private Image searchInputFieldBackground;
+
+		[SerializeField]
+		private LayoutElement searchBarLayoutElement;
+
+		[SerializeField]
+		private Image selectedPathBackground;
+
+		[SerializeField]
+		private Text selectedPathText;
+
+		private List<HierarchyItemRoot> sceneDrawers = new List<HierarchyItemRoot>( 8 );
+		private List<HierarchyItemRoot> searchSceneDrawers = new List<HierarchyItemRoot>( 8 );
+
+		[SerializeField]
+		private HierarchyItemRoot sceneDrawerPrefab;
+
+		[SerializeField]
+		private HierarchyItemTransform transformDrawerPrefab;
+
+		[SerializeField]
+		private HierarchyItemSearchEntry searchEntryDrawerPrefab;
+
+		private HierarchyItem currentlySelectedDrawer = null;
+
+		private Dictionary<string, HierarchyItemRoot> pseudoSceneDrawers = new Dictionary<string, HierarchyItemRoot>();
+
+		public event SelectionChangedDelegate OnSelectionChanged;
+		public event DoubleClickDelegate OnItemDoubleClicked;
+
 		protected override void Awake()
 		{
 			base.Awake();
 
-			drawArea = scrollView.content;
-
 			if( transformDrawerPool == null )
 				transformDrawerPool = new List<HierarchyItem>( poolCapacity );
+			if( searchEntryDrawerPool == null )
+				searchEntryDrawerPool = new List<HierarchyItem>( poolCapacity );
 
 			GameObject poolParentGO = GameObject.Find( POOL_OBJECT_NAME );
 			if( poolParentGO == null )
@@ -198,6 +263,12 @@ namespace RuntimeInspectorNamespace
 						ConnectedInspector.Inspect( transform.gameObject );
 				}
 			};
+
+			searchInputField.onValueChanged.AddListener( OnSearchTermChanged );
+
+			RuntimeInspectorUtils.IgnoredSearchEntries.Add( drawAreaHierarchy );
+			RuntimeInspectorUtils.IgnoredSearchEntries.Add( drawAreaSearchResults );
+			RuntimeInspectorUtils.IgnoredSearchEntries.Add( poolParent );
 		}
 
 		private void Start()
@@ -220,13 +291,21 @@ namespace RuntimeInspectorNamespace
 			if( --aliveHierarchies == 0 )
 			{
 				if( !poolParent.IsNull() )
+				{
+					RuntimeInspectorUtils.IgnoredSearchEntries.Remove( poolParent );
 					DestroyImmediate( poolParent.gameObject );
+				}
 
 				sceneDrawerPool.Clear();
 
 				if( transformDrawerPool != null )
 					transformDrawerPool.Clear();
+				if( searchEntryDrawerPool != null )
+					searchEntryDrawerPool.Clear();
 			}
+
+			RuntimeInspectorUtils.IgnoredSearchEntries.Remove( drawAreaHierarchy );
+			RuntimeInspectorUtils.IgnoredSearchEntries.Remove( drawAreaSearchResults );
 		}
 
 #if UNITY_EDITOR
@@ -254,10 +333,16 @@ namespace RuntimeInspectorNamespace
 		{
 			base.Update();
 
-			if( Time.realtimeSinceStartup > nextRefreshTime )
+			if( Time.realtimeSinceStartup > nextHierarchyRefreshTime )
 			{
-				nextRefreshTime = Time.realtimeSinceStartup + refreshInterval;
+				nextHierarchyRefreshTime = Time.realtimeSinceStartup + m_refreshInterval;
 				Refresh();
+			}
+
+			if( m_isInSearchMode && Time.realtimeSinceStartup > nextSearchRefreshTime )
+			{
+				nextSearchRefreshTime = Time.realtimeSinceStartup + m_searchRefreshInterval;
+				RefreshSearchResults();
 			}
 		}
 
@@ -265,6 +350,29 @@ namespace RuntimeInspectorNamespace
 		{
 			for( int i = 0; i < sceneDrawers.Count; i++ )
 				sceneDrawers[i].Refresh();
+		}
+
+		public void RefreshSearchResults()
+		{
+			if( !m_isInSearchMode )
+				return;
+
+			for( int i = 0; i < searchSceneDrawers.Count; i++ )
+			{
+				HierarchyItemRoot sceneDrawer = searchSceneDrawers[i];
+				sceneDrawer.Refresh();
+
+				if( sceneDrawer.Content.Children.Count > 0 )
+				{
+					if( !sceneDrawer.gameObject.activeSelf )
+					{
+						sceneDrawer.gameObject.SetActive( true );
+						sceneDrawer.IsExpanded = true;
+					}
+				}
+				else if( sceneDrawer.gameObject.activeSelf )
+					sceneDrawer.gameObject.SetActive( false );
+			}
 		}
 
 		public void RefreshNameOf( Transform target )
@@ -278,6 +386,14 @@ namespace RuntimeInspectorNamespace
 					if( ( content is HierarchyRootPseudoScene ) || ( (HierarchyRootScene) content ).Scene == targetScene )
 						sceneDrawers[i].RefreshNameOf( target );
 				}
+
+				if( m_isInSearchMode )
+				{
+					RefreshSearchResults();
+
+					for( int i = 0; i < searchSceneDrawers.Count; i++ )
+						searchSceneDrawers[i].RefreshNameOf( target );
+				}
 			}
 		}
 
@@ -286,10 +402,33 @@ namespace RuntimeInspectorNamespace
 			background.color = Skin.BackgroundColor;
 			scrollbar.color = Skin.ScrollbarColor;
 
+			searchInputField.textComponent.SetSkinInputFieldText( Skin );
+			searchInputFieldBackground.color = Skin.InputFieldNormalBackgroundColor.Tint( 0.08f );
+			searchIcon.color = Skin.ButtonTextColor;
+			searchBarLayoutElement.SetHeight( Skin.LineHeight );
+
+			selectedPathBackground.color = Skin.BackgroundColor.Tint( 0.1f );
+			selectedPathText.SetSkinButtonText( Skin );
+
+			Text placeholder = searchInputField.placeholder as Text;
+			if( placeholder != null )
+			{
+				float placeholderAlpha = placeholder.color.a;
+				placeholder.SetSkinInputFieldText( Skin );
+
+				Color placeholderColor = placeholder.color;
+				placeholderColor.a = placeholderAlpha;
+				placeholder.color = placeholderColor;
+			}
+
 			for( int i = 0; i < sceneDrawers.Count; i++ )
 				sceneDrawers[i].Skin = Skin;
 
-			LayoutRebuilder.ForceRebuildLayoutImmediate( drawArea );
+			for( int i = 0; i < searchSceneDrawers.Count; i++ )
+				searchSceneDrawers[i].Skin = Skin;
+
+			LayoutRebuilder.ForceRebuildLayoutImmediate( drawAreaHierarchy );
+			LayoutRebuilder.ForceRebuildLayoutImmediate( drawAreaSearchResults );
 		}
 
 		public void OnClicked( HierarchyItem drawer )
@@ -298,7 +437,7 @@ namespace RuntimeInspectorNamespace
 			{
 				if( OnItemDoubleClicked != null )
 				{
-					if( !drawer.IsNull() && Time.realtimeSinceStartup - lastClickTime <= doubleClickThreshold )
+					if( !drawer.IsNull() && Time.realtimeSinceStartup - lastClickTime <= m_doubleClickThreshold )
 					{
 						lastClickTime = 0f;
 						if( drawer is HierarchyItemTransform )
@@ -327,7 +466,25 @@ namespace RuntimeInspectorNamespace
 				drawer.IsSelected = true;
 
 				if( drawer is HierarchyItemTransform )
-					CurrentSelection = ( (HierarchyItemTransform) drawer ).BoundTransform;
+				{
+					Transform clickedTransform = ( (HierarchyItemTransform) drawer ).BoundTransform;
+					CurrentSelection = clickedTransform;
+
+					if( drawer is HierarchyItemSearchEntry && !clickedTransform.IsNull() )
+					{
+						// Fetch the object's path and show it in Hierarchy
+						System.Text.StringBuilder sb = new System.Text.StringBuilder( 200 ).AppendLine( "Path:" );
+
+						while( !clickedTransform.IsNull() )
+						{
+							sb.Append( "  " ).AppendLine( clickedTransform.name );
+							clickedTransform = clickedTransform.parent;
+						}
+
+						selectedPathText.text = sb.Append( "  " ).Append( drawer.GetComponentInParent<HierarchyItemRoot>().Content.Name ).ToString();
+						selectedPathBackground.gameObject.SetActive( true );
+					}
+				}
 				else
 					CurrentSelection = null;
 			}
@@ -356,12 +513,12 @@ namespace RuntimeInspectorNamespace
 						HierarchyItem selectionItem = sceneDrawers[i].SelectTransform( selection );
 						if( selectionItem != null )
 						{
-							if( drawArea.sizeDelta.y > 0f )
+							if( drawAreaHierarchy.sizeDelta.y > 0f )
 							{
 								// Focus on selected HierarchyItem
-								LayoutRebuilder.ForceRebuildLayoutImmediate( drawArea );
-								Vector3 localPos = drawArea.InverseTransformPoint( selectionItem.transform.position );
-								scrollView.verticalNormalizedPosition = Mathf.Clamp01( 1f + localPos.y / drawArea.sizeDelta.y );
+								LayoutRebuilder.ForceRebuildLayoutImmediate( drawAreaHierarchy );
+								Vector3 localPos = drawAreaHierarchy.InverseTransformPoint( selectionItem.transform.position );
+								scrollView.verticalNormalizedPosition = Mathf.Clamp01( 1f + localPos.y / drawAreaHierarchy.sizeDelta.y );
 							}
 
 							return true;
@@ -378,6 +535,41 @@ namespace RuntimeInspectorNamespace
 			OnClicked( null );
 		}
 
+		private void OnSearchTermChanged( string search )
+		{
+			if( search != null )
+				search = search.Trim();
+
+			if( string.IsNullOrEmpty( search ) )
+			{
+				if( m_isInSearchMode )
+				{
+					scrollView.verticalNormalizedPosition = 1f;
+					selectedPathBackground.gameObject.SetActive( false );
+					m_isInSearchMode = false;
+				}
+			}
+			else
+			{
+				if( !m_isInSearchMode )
+				{
+					scrollView.verticalNormalizedPosition = 1f;
+					nextSearchRefreshTime = Time.realtimeSinceStartup + m_searchRefreshInterval;
+					m_isInSearchMode = true;
+
+					RefreshSearchResults();
+					for( int i = 0; i < searchSceneDrawers.Count; i++ )
+						searchSceneDrawers[i].IsExpanded = true;
+				}
+				else
+					RefreshSearchResults();
+			}
+
+			drawAreaHierarchy.gameObject.SetActive( !m_isInSearchMode );
+			drawAreaSearchResults.gameObject.SetActive( m_isInSearchMode );
+			scrollView.content = m_isInSearchMode ? drawAreaSearchResults : drawAreaHierarchy;
+		}
+
 		private void OnSceneLoaded( Scene arg0, LoadSceneMode arg1 )
 		{
 			if( !ExposeUnityScenes )
@@ -392,8 +584,11 @@ namespace RuntimeInspectorNamespace
 					return;
 			}
 
-			HierarchyItemRoot sceneDrawer = InstantiateSceneDrawer( new HierarchyRootScene( arg0 ) );
+			HierarchyItemRoot sceneDrawer = InstantiateSceneDrawer( new HierarchyRootScene( arg0 ), drawAreaHierarchy );
 			sceneDrawers.Add( sceneDrawer );
+
+			HierarchyItemRoot searchResultDrawer = InstantiateSceneDrawer( new HierarchyRootSearch( this, sceneDrawer.Content ), drawAreaSearchResults );
+			searchSceneDrawers.Add( searchResultDrawer );
 
 			sceneDrawer.IsExpanded = true;
 		}
@@ -406,6 +601,9 @@ namespace RuntimeInspectorNamespace
 				{
 					sceneDrawers[i].Unbind();
 					sceneDrawers.RemoveAt( i );
+
+					searchSceneDrawers[i].Unbind();
+					searchSceneDrawers.RemoveAt( i );
 				}
 			}
 		}
@@ -422,6 +620,11 @@ namespace RuntimeInspectorNamespace
 				temp = null;
 
 				return dontDestroyOnLoad;
+			}
+			catch( System.Exception e )
+			{
+				Debug.LogException( e );
+				return new Scene();
 			}
 			finally
 			{
@@ -450,7 +653,7 @@ namespace RuntimeInspectorNamespace
 
 			pseudoScene.RemoveChild( transform );
 
-			if( deleteSceneIfEmpty && pseudoScene.ChildCount == 0 )
+			if( deleteSceneIfEmpty && pseudoScene.Children.Count == 0 )
 				DeletePseudoScene( scene );
 		}
 
@@ -463,7 +666,7 @@ namespace RuntimeInspectorNamespace
 			foreach( Transform transform in transforms )
 				pseudoScene.RemoveChild( transform );
 
-			if( deleteSceneIfEmpty && pseudoScene.ChildCount == 0 )
+			if( deleteSceneIfEmpty && pseudoScene.Children.Count == 0 )
 				DeletePseudoScene( scene );
 		}
 
@@ -489,10 +692,6 @@ namespace RuntimeInspectorNamespace
 
 		private HierarchyRootPseudoScene CreatePseudoSceneInternal( string scene )
 		{
-			HierarchyItemRoot pseudoSceneDrawer = InstantiateSceneDrawer( new HierarchyRootPseudoScene( scene ) );
-			sceneDrawers.Add( pseudoSceneDrawer );
-			pseudoSceneDrawers[scene] = pseudoSceneDrawer;
-
 			int index = 0;
 			for( int i = 0; i < pseudoScenesOrder.Length; i++ )
 			{
@@ -503,7 +702,17 @@ namespace RuntimeInspectorNamespace
 					index++;
 			}
 
+			HierarchyItemRoot pseudoSceneDrawer = InstantiateSceneDrawer( new HierarchyRootPseudoScene( scene ), drawAreaHierarchy );
+			sceneDrawers.Insert( index, pseudoSceneDrawer );
+			pseudoSceneDrawers[scene] = pseudoSceneDrawer;
+
+			HierarchyItemRoot searchResultDrawer = InstantiateSceneDrawer( new HierarchyRootSearch( this, pseudoSceneDrawer.Content ), drawAreaSearchResults );
+			searchSceneDrawers.Insert( index, searchResultDrawer );
+
 			pseudoSceneDrawer.transform.SetSiblingIndex( index );
+			pseudoSceneDrawer.IsExpanded = true;
+
+			searchResultDrawer.transform.SetSiblingIndex( index );
 
 			return (HierarchyRootPseudoScene) pseudoSceneDrawer.Content;
 		}
@@ -516,6 +725,9 @@ namespace RuntimeInspectorNamespace
 				{
 					sceneDrawers[i].Unbind();
 					sceneDrawers.RemoveAt( i );
+
+					searchSceneDrawers[i].Unbind();
+					searchSceneDrawers.RemoveAt( i );
 				}
 			}
 
@@ -534,14 +746,17 @@ namespace RuntimeInspectorNamespace
 					sceneDrawers[i].Unbind();
 					sceneDrawers.RemoveAt( i );
 
+					searchSceneDrawers[i].Unbind();
+					searchSceneDrawers.RemoveAt( i );
+
 					return;
 				}
 			}
 		}
 
-		private HierarchyItemRoot InstantiateSceneDrawer( IHierarchyRootContent target )
+		public HierarchyItemRoot InstantiateSceneDrawer( IHierarchyRootContent target, Transform drawerParent )
 		{
-			HierarchyItemRoot sceneDrawer = (HierarchyItemRoot) InstantiateDrawer( sceneDrawerPool, sceneDrawerPrefab, drawArea );
+			HierarchyItemRoot sceneDrawer = (HierarchyItemRoot) InstantiateDrawer( sceneDrawerPool, sceneDrawerPrefab, drawerParent );
 			sceneDrawer.BindTo( target );
 
 			return sceneDrawer;
@@ -550,6 +765,11 @@ namespace RuntimeInspectorNamespace
 		public HierarchyItemTransform InstantiateTransformDrawer( Transform drawerParent )
 		{
 			return (HierarchyItemTransform) InstantiateDrawer( transformDrawerPool, transformDrawerPrefab, drawerParent );
+		}
+
+		public HierarchyItemSearchEntry InstantiateSearchEntryDrawer( Transform drawerParent )
+		{
+			return (HierarchyItemSearchEntry) InstantiateDrawer( searchEntryDrawerPool, searchEntryDrawerPrefab, drawerParent );
 		}
 
 		private HierarchyItem InstantiateDrawer( List<HierarchyItem> drawerPool, HierarchyItem drawerPrefab, Transform drawerParent )
@@ -587,12 +807,12 @@ namespace RuntimeInspectorNamespace
 
 			if( drawer is HierarchyItemTransform )
 			{
-				HierarchyItemTransform transformDrawer = (HierarchyItemTransform) drawer;
-				if( transformDrawerPool.Count < poolCapacity )
+				List<HierarchyItem> pool = drawer is HierarchyItemSearchEntry ? searchEntryDrawerPool : transformDrawerPool;
+				if( pool.Count < poolCapacity )
 				{
 					drawer.gameObject.SetActive( false );
 					drawer.transform.SetParent( poolParent, false );
-					transformDrawerPool.Add( transformDrawer );
+					pool.Add( drawer );
 				}
 				else
 					Destroy( drawer.gameObject );

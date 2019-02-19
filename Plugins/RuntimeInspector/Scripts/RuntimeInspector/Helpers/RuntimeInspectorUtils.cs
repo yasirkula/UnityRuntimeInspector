@@ -13,15 +13,17 @@ namespace RuntimeInspectorNamespace
 {
 	public static class RuntimeInspectorUtils
 	{
-		private static Dictionary<Type, MemberInfo[]> typeToVariables = new Dictionary<Type, MemberInfo[]>( 89 );
-		private static Dictionary<Type, ExposedMethod[]> typeToExposedMethods = new Dictionary<Type, ExposedMethod[]>( 89 );
+		private static readonly Dictionary<Type, MemberInfo[]> typeToVariables = new Dictionary<Type, MemberInfo[]>( 89 );
+		private static readonly Dictionary<Type, ExposedMethod[]> typeToExposedMethods = new Dictionary<Type, ExposedMethod[]>( 89 );
 
-		private static HashSet<Type> serializableUnityTypes = new HashSet<Type>() { typeof( Vector2 ), typeof( Vector3 ), typeof( Vector4), typeof( Rect ), typeof( Quaternion ),
-				typeof( Matrix4x4 ), typeof( Color ), typeof( Color32 ), typeof( LayerMask ), typeof( Bounds ),
-				typeof( AnimationCurve ), typeof( Gradient ), typeof( RectOffset ), typeof( GUIStyle )};
+		private static readonly HashSet<Type> serializableUnityTypes = new HashSet<Type>() { typeof( Vector2 ), typeof( Vector3 ), typeof( Vector4),
+				typeof( Rect ), typeof( Quaternion ), typeof( Matrix4x4 ), typeof( Color ), typeof( Color32 ), typeof( LayerMask ),
+				typeof( Bounds ), typeof( AnimationCurve ), typeof( Gradient ), typeof( RectOffset ), typeof( GUIStyle ) };
 
-		private static List<ExposedExtensionMethodHolder> exposedExtensionMethods = new List<ExposedExtensionMethodHolder>();
+		private static readonly List<ExposedExtensionMethodHolder> exposedExtensionMethods = new List<ExposedExtensionMethodHolder>();
 		public static Type ExposedExtensionMethodsHolder { set { GetExposedExtensionMethods( value ); } }
+
+		public static readonly HashSet<Transform> IgnoredSearchEntries = new HashSet<Transform>();
 
 		private static Canvas m_draggedReferenceItemsCanvas = null;
 		public static Canvas DraggedReferenceItemsCanvas
@@ -440,7 +442,7 @@ namespace RuntimeInspectorNamespace
 				var type = Type.GetType( typeName );
 				if( type != null )
 					return type;
-				
+
 				// If the TypeName is a full name, then we can try loading the defining assembly directly
 				if( typeName.Contains( "." ) )
 				{

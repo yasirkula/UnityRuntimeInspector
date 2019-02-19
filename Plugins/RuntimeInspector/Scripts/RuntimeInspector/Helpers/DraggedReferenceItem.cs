@@ -58,7 +58,7 @@ namespace RuntimeInspectorNamespace
 
 			OnDrag( draggingPointer );
 
-            draggingPointer.pointerDrag = gameObject;
+			draggingPointer.pointerDrag = gameObject;
 			draggingPointer.dragging = true;
 
 			StartCoroutine( ValidatePointer() );

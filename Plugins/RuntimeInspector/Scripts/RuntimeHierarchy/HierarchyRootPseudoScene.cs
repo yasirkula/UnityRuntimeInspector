@@ -5,11 +5,9 @@ namespace RuntimeInspectorNamespace
 {
 	public class HierarchyRootPseudoScene : IHierarchyRootContent
 	{
-		public bool IsValid { get { return true; } }
-		public int ChildCount { get { return Children.Count; } }
+		private readonly string name;
 		public string Name { get { return name; } }
-
-		private string name;
+		public bool IsValid { get { return true; } }
 		public List<GameObject> Children { get; set; }
 
 		public HierarchyRootPseudoScene( string name )

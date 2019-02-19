@@ -7,9 +7,9 @@ namespace RuntimeInspectorNamespace
 	[AttributeUsage( AttributeTargets.Method, Inherited = true, AllowMultiple = false )]
 	public class RuntimeInspectorButtonAttribute : Attribute
 	{
-		private string m_label;
-		private bool m_isInitializer;
-		private ButtonVisibility m_visibility;
+		private readonly string m_label;
+		private readonly bool m_isInitializer;
+		private readonly ButtonVisibility m_visibility;
 
 		public string Label { get { return m_label; } }
 		public bool IsInitializer { get { return m_isInitializer; } }

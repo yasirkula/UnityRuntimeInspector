@@ -14,7 +14,7 @@ namespace RuntimeInspectorNamespace
 		public InspectorField[] ReferenceDrawers { get { return m_referenceDrawers; } }
 
 		[SerializeField]
-        private VariableSet[] m_hiddenVariables;
+		private VariableSet[] m_hiddenVariables;
 		public VariableSet[] HiddenVariables { get { return m_hiddenVariables; } }
 
 		[SerializeField]

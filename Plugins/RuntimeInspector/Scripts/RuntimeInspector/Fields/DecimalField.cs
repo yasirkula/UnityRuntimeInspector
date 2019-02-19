@@ -36,7 +36,7 @@ namespace RuntimeInspectorNamespace
 					parseFunction = null;
 					equalsFunction = null;
 				}
-            }
+			}
 
 			public bool TryParse( string input, out object value )
 			{
@@ -48,7 +48,7 @@ namespace RuntimeInspectorNamespace
 				return equalsFunction( value1, value2 );
 			}
 		}
-		
+
 		[SerializeField]
 		private BoundInputField input;
 		private NumberParser parser;

@@ -6,7 +6,7 @@ namespace RuntimeInspectorNamespace
 	public class WindowDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 	{
 		private const int NON_EXISTING_TOUCH = -98456;
-		
+
 		private RectTransform rectTransform;
 
 		private int pointerId = NON_EXISTING_TOUCH;
