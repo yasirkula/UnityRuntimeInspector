@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -67,9 +68,9 @@ namespace RuntimeInspectorNamespace
 			return type == typeof( float ) || type == typeof( double ) || type == typeof( decimal );
 		}
 
-		protected override void OnBound()
+        protected override void OnBound(MemberInfo member)
 		{
-			base.OnBound();
+            base.OnBound(member);
 
 			parser = new NumberParser( BoundVariableType );
 			input.Text = "" + Value;

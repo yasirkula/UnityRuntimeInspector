@@ -1,6 +1,4 @@
-﻿#if !UNITY_EDITOR && NETFX_CORE
-using System.Reflection;
-#endif
+﻿using System.Reflection;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -52,9 +50,9 @@ namespace RuntimeInspectorNamespace
 #endif
 		}
 
-		protected override void OnBound()
+        protected override void OnBound(MemberInfo member)
 		{
-			base.OnBound();
+            base.OnBound(member);
 
 			if( !enumNames.TryGetValue( BoundVariableType, out currEnumNames ) || !enumValues.TryGetValue( BoundVariableType, out currEnumValues ) )
 			{

@@ -29,9 +29,9 @@ namespace RuntimeInspectorNamespace
 			return type == typeof( Bounds );
 		}
 
-		protected override void OnBound()
+        protected override void OnBound(MemberInfo member)
 		{
-			base.OnBound();
+            base.OnBound(member);
 
 			inputCenter.BindTo( this, centerVariable, "Center:" );
 			inputExtents.BindTo( this, extentsVariable, "Extents:" );

@@ -1,6 +1,4 @@
-﻿#if !UNITY_EDITOR && NETFX_CORE
-using System.Reflection;
-#endif
+﻿using System.Reflection;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -66,9 +64,9 @@ namespace RuntimeInspectorNamespace
 #endif
 		}
 
-		protected override void OnBound()
+		protected override void OnBound(MemberInfo member)
 		{
-			base.OnBound();
+			base.OnBound(member);
 
 			isArray = BoundVariableType.IsArray;
 			elementType = isArray ? BoundVariableType.GetElementType() : BoundVariableType.GetGenericArguments()[0];
@@ -111,7 +109,7 @@ namespace RuntimeInspectorNamespace
 						break;
 
 					int j = i;
-					elementDrawer.BindTo( elementType, string.Empty, () => ( (Array) Value ).GetValue( j ), ( value ) =>
+					elementDrawer.BindTo( elementType, null, string.Empty, () => ( (Array) Value ).GetValue( j ), ( value ) =>
 					{
 						Array _array = (Array) Value;
 						_array.SetValue( value, j );
@@ -133,7 +131,7 @@ namespace RuntimeInspectorNamespace
 
 					int j = i;
 					string variableName = Inspector.ArrayIndicesStartAtOne ? ( i + 1 ) + ":" : i + ":";
-					elementDrawer.BindTo( elementType, variableName, () => ( (IList) Value )[j], ( value ) =>
+					elementDrawer.BindTo( elementType, null, variableName, () => ( (IList) Value )[j], ( value ) =>
 					{
 						IList _list = (IList) Value;
 						_list[j] = value;

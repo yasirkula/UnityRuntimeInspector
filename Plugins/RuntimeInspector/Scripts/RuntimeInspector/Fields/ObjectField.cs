@@ -53,10 +53,10 @@ namespace RuntimeInspectorNamespace
 #endif
 		}
 
-		protected override void OnBound()
+        protected override void OnBound(MemberInfo member)
 		{
 			elementsInitialized = false;
-			base.OnBound();
+            base.OnBound(member);
 		}
 
 		protected override void GenerateElements()

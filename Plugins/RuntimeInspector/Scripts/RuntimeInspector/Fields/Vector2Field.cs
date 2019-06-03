@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -37,9 +38,9 @@ namespace RuntimeInspectorNamespace
 			return type == typeof( Vector2 );
 		}
 
-		protected override void OnBound()
+        protected override void OnBound(MemberInfo member)
 		{
-			base.OnBound();
+            base.OnBound(member);
 
 			Vector2 val = (Vector2) Value;
 			inputX.Text = "" + val.x;

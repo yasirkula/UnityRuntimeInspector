@@ -1,6 +1,4 @@
-﻿#if !UNITY_EDITOR && NETFX_CORE
-using System.Reflection;
-#endif
+﻿using System.Reflection;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -21,9 +19,9 @@ namespace RuntimeInspectorNamespace
 			return type == typeof( GameObject );
 		}
 
-		protected override void OnBound()
+        protected override void OnBound(MemberInfo member)
 		{
-			base.OnBound();
+            base.OnBound(member);
 			currentTag = ( (GameObject) Value ).tag;
 		}
 

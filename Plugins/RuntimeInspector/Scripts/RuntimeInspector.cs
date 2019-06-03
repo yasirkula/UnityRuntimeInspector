@@ -333,7 +333,7 @@ namespace RuntimeInspectorNamespace
 				InspectorField inspectedObjectDrawer = CreateDrawerForType( obj.GetType(), drawArea, 0, false );
 				if( inspectedObjectDrawer != null )
 				{
-					inspectedObjectDrawer.BindTo( obj.GetType(), string.Empty, () => m_inspectedObject, ( value ) => m_inspectedObject = value );
+					inspectedObjectDrawer.BindTo( obj.GetType(), null, string.Empty, () => m_inspectedObject, ( value ) => m_inspectedObject = value );
 					inspectedObjectDrawer.NameRaw = obj.GetNameWithType();
 					inspectedObjectDrawer.Refresh();
 

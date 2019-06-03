@@ -114,9 +114,9 @@ namespace RuntimeInspectorNamespace
 #else
 				if( !parent.BoundVariableType.GetTypeInfo().IsValueType )
 #endif
-					BindTo( field.FieldType, variableName, () => field.GetValue( parent.Value ), ( value ) => field.SetValue( parent.Value, value ) );
+					BindTo( field.FieldType, member, variableName, () => field.GetValue( parent.Value ), ( value ) => field.SetValue( parent.Value, value ) );
 				else
-					BindTo( field.FieldType, variableName, () => field.GetValue( parent.Value ), ( value ) =>
+					BindTo( field.FieldType, member, variableName, () => field.GetValue( parent.Value ), ( value ) =>
 					{
 						field.SetValue( parent.Value, value );
 						parent.Value = parent.Value;
@@ -133,9 +133,9 @@ namespace RuntimeInspectorNamespace
 #else
 				if( !parent.BoundVariableType.GetTypeInfo().IsValueType )
 #endif
-					BindTo( property.PropertyType, variableName, () => property.GetValue( parent.Value, null ), ( value ) => property.SetValue( parent.Value, value, null ) );
+					BindTo( property.PropertyType, member, variableName, () => property.GetValue( parent.Value, null ), ( value ) => property.SetValue( parent.Value, value, null ) );
 				else
-					BindTo( property.PropertyType, variableName, () => property.GetValue( parent.Value, null ), ( value ) =>
+					BindTo( property.PropertyType, member, variableName, () => property.GetValue( parent.Value, null ), ( value ) =>
 					{
 						property.SetValue( parent.Value, value, null );
 						parent.Value = parent.Value;
@@ -145,7 +145,7 @@ namespace RuntimeInspectorNamespace
 				throw new ArgumentException( "Member can either be a field or a property" );
 		}
 
-		public void BindTo( Type variableType, string variableName, Getter getter, Setter setter )
+		public void BindTo( Type variableType, MemberInfo member, string variableName, Getter getter, Setter setter )
 		{
 			m_boundVariableType = variableType;
 			Name = variableName;
@@ -153,7 +153,7 @@ namespace RuntimeInspectorNamespace
 			this.getter = getter;
 			this.setter = setter;
 
-			OnBound();
+			OnBound(member);
 		}
 
 		public void Unbind()
@@ -167,7 +167,7 @@ namespace RuntimeInspectorNamespace
 			Inspector.PoolDrawer( this );
 		}
 
-		protected virtual void OnBound()
+		protected virtual void OnBound(MemberInfo member)
 		{
 			RefreshValue();
 		}
@@ -334,7 +334,7 @@ namespace RuntimeInspectorNamespace
 						ExposedMethodField methodDrawer = (ExposedMethodField) Inspector.CreateDrawerForType( typeof( ExposedMethod ), drawArea, Depth + 1, false );
 						if( methodDrawer != null )
 						{
-							methodDrawer.BindTo( typeof( ExposedMethod ), string.Empty, () => Value, ( value ) => Value = value );
+							methodDrawer.BindTo( typeof( ExposedMethod ), null, string.Empty, () => Value, ( value ) => Value = value );
 							methodDrawer.SetBoundMethod( method );
 
 							exposedMethods.Add( methodDrawer );
@@ -378,7 +378,7 @@ namespace RuntimeInspectorNamespace
 				if( variableName == null )
 					variableName = component.GetType().Name + " component";
 
-				variableDrawer.BindTo( component.GetType(), string.Empty, () => component, ( value ) => { } );
+				variableDrawer.BindTo( component.GetType(), null, string.Empty, () => component, ( value ) => { } );
 				variableDrawer.NameRaw = variableName;
 
 				elements.Add( variableDrawer );
@@ -390,6 +390,8 @@ namespace RuntimeInspectorNamespace
 		protected InspectorField CreateDrawerForVariable( MemberInfo variable, string variableName = null )
 		{
 			Type variableType = variable is FieldInfo ? ( (FieldInfo) variable ).FieldType : ( (PropertyInfo) variable ).PropertyType;
+            if ((variableType == typeof(float) || variableType == typeof(int)) && variable.GetCustomAttribute<RangeAttribute>() != null)
+                variableType = typeof(RangeAttribute);
 			InspectorField variableDrawer = Inspector.CreateDrawerForType( variableType, drawArea, Depth + 1 );
 			if( variableDrawer != null )
 			{
@@ -405,7 +407,7 @@ namespace RuntimeInspectorNamespace
 			InspectorField variableDrawer = Inspector.CreateDrawerForType( variableType, drawArea, Depth + 1, drawObjectsAsFields );
 			if( variableDrawer != null )
 			{
-				variableDrawer.BindTo( variableType, variableName, getter, setter );
+				variableDrawer.BindTo( variableType, null, variableName, getter, setter );
 				elements.Add( variableDrawer );
 			}
 

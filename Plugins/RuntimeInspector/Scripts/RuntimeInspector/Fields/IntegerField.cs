@@ -1,6 +1,4 @@
-﻿#if !UNITY_EDITOR && NETFX_CORE
-using System.Reflection;
-#endif
+﻿using System.Reflection;
 using System;
 using UnityEngine;
 
@@ -106,9 +104,9 @@ namespace RuntimeInspectorNamespace
 				type == typeof( short ) || type == typeof( ushort ) || type == typeof( char ) );
 		}
 
-		protected override void OnBound()
+        protected override void OnBound(MemberInfo member)
 		{
-			base.OnBound();
+            base.OnBound(member);
 
 			parser = new NumberParser( BoundVariableType );
 			input.Text = "" + Value;
