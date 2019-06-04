@@ -39,8 +39,12 @@ namespace RuntimeInspectorNamespace
 
             if (rangeAttribute != null)
             {
+                // Setting min/max will call OnValueChanged and replace our value with whatever the slider previously had (which
+                // could be a recycled value), so store the correct value and restore after setting up min/max.
+                var value = Value;
                 input.minValue = rangeAttribute.min;
                 input.maxValue = rangeAttribute.max;
+                input.value = (float)value;
             }
         }
 
