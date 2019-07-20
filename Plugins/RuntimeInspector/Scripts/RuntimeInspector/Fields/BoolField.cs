@@ -6,11 +6,13 @@ namespace RuntimeInspectorNamespace
 {
 	public class BoolField : InspectorField
 	{
+#pragma warning disable 0649
 		[SerializeField]
 		private Image toggleBackground;
 
 		[SerializeField]
 		private Toggle input;
+#pragma warning restore 0649
 
 		public override void Initialize()
 		{

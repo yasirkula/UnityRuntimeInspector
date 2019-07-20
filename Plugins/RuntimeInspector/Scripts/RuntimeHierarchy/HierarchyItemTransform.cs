@@ -44,6 +44,11 @@ namespace RuntimeInspectorNamespace
 			BoundTransform = target;
 			nameText.text = target.name;
 
+			bool isVisible = !RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Contains( target );
+			if( isVisible && Hierarchy.GameObjectFilter != null )
+				isVisible = Hierarchy.GameObjectFilter( target );
+
+			gameObject.SetActive( isVisible );
 			Refresh();
 		}
 

@@ -28,6 +28,7 @@ namespace RuntimeInspectorNamespace
 		public delegate void OnReferenceChanged( Object reference );
 		private OnReferenceChanged onReferenceChanged;
 
+#pragma warning disable 0649
 		[SerializeField]
 		private Image panel;
 
@@ -66,6 +67,7 @@ namespace RuntimeInspectorNamespace
 
 		[SerializeField]
 		private ObjectReferencePickerItem referenceItemPrefab;
+#pragma warning restore 0649
 
 		private List<Object> references = new List<Object>( 64 );
 		private List<Object> filteredReferences = new List<Object>( 64 );

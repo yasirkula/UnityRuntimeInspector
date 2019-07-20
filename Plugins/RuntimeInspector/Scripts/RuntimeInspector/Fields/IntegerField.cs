@@ -81,8 +81,11 @@ namespace RuntimeInspectorNamespace
 			}
 		}
 
+#pragma warning disable 0649
 		[SerializeField]
 		private BoundInputField input;
+#pragma warning restore 0649
+
 		private NumberParser parser;
 
 		public override void Initialize()

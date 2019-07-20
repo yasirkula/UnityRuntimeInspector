@@ -10,8 +10,10 @@ namespace RuntimeInspectorNamespace
 {
 	public class TextureReferenceField : ObjectReferenceField
 	{
+#pragma warning disable 0649
 		[SerializeField]
 		private RawImage referencePreview;
+#pragma warning restore 0649
 
 		protected override float HeightMultiplier { get { return 2f; } }
 

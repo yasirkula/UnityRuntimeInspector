@@ -47,6 +47,7 @@ namespace RuntimeInspectorNamespace
 			}
 		}
 
+#pragma warning disable 0649
 		[SerializeField]
 		protected LayoutGroup layoutGroup;
 
@@ -68,6 +69,7 @@ namespace RuntimeInspectorNamespace
 
 		[SerializeField]
 		private Image expandArrow; // Expand Arrow's sprite should look right at 0 rotation
+#pragma warning restore 0649
 
 		protected List<HierarchyItemTransform> children = new List<HierarchyItemTransform>( 4 );
 

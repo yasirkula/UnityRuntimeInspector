@@ -10,6 +10,7 @@ namespace RuntimeInspectorNamespace
 	public class RuntimeInspector : SkinnedWindow
 	{
 		public delegate object InspectedObjectChangingDelegate( object previousInspectedObject, object newInspectedObject );
+		public delegate void ComponentFilterDelegate( GameObject gameObject, List<Component> components );
 
 		private const string POOL_OBJECT_NAME = "RuntimeInspectorPool";
 
@@ -18,6 +19,7 @@ namespace RuntimeInspectorNamespace
 
 		public bool IsBound { get { return !m_inspectedObject.IsNull(); } }
 
+#pragma warning disable 0649
 		[SerializeField]
 		private float refreshInterval = 0f;
 		private float nextRefreshTime = -1f;
@@ -169,12 +171,24 @@ namespace RuntimeInspectorNamespace
 
 		[SerializeField]
 		private Image scrollbar;
+#pragma warning restore 0649
 
 		private InspectorField currentDrawer = null;
 		private bool inspectLock = false;
 		private bool isDirty = false;
 
 		public InspectedObjectChangingDelegate OnInspectedObjectChanging;
+
+		private ComponentFilterDelegate m_componentFilter;
+		public ComponentFilterDelegate ComponentFilter
+		{
+			get { return m_componentFilter; }
+			set
+			{
+				m_componentFilter = value;
+				Refresh();
+			}
+		}
 
 		private Dictionary<Type, InspectorField> typeToDrawer = new Dictionary<Type, InspectorField>( 89 );
 		private Dictionary<Type, InspectorField> typeToReferenceDrawer = new Dictionary<Type, InspectorField>( 89 );
@@ -217,8 +231,8 @@ namespace RuntimeInspectorNamespace
 				}
 			}
 
-			RuntimeInspectorUtils.IgnoredSearchEntries.Add( drawArea );
-			RuntimeInspectorUtils.IgnoredSearchEntries.Add( poolParent );
+			RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Add( drawArea );
+			RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Add( poolParent );
 
 			ColorPicker.Instance.Close();
 			ObjectReferencePicker.Instance.Close();
@@ -230,14 +244,14 @@ namespace RuntimeInspectorNamespace
 			{
 				if( !poolParent.IsNull() )
 				{
-					RuntimeInspectorUtils.IgnoredSearchEntries.Remove( poolParent );
+					RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Remove( poolParent );
 					DestroyImmediate( poolParent.gameObject );
 				}
 
 				drawersPool.Clear();
 			}
 
-			RuntimeInspectorUtils.IgnoredSearchEntries.Remove( drawArea );
+			RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Remove( drawArea );
 		}
 
 		protected override void Update()

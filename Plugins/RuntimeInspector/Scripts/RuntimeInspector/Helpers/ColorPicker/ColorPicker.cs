@@ -20,6 +20,7 @@ namespace RuntimeInspectorNamespace
 			}
 		}
 
+#pragma warning disable 0649
 		[SerializeField]
 		private Image panel;
 
@@ -55,6 +56,7 @@ namespace RuntimeInspectorNamespace
 
 		[SerializeField]
 		private Button okButton;
+#pragma warning restore 0649
 
 		private Color initialValue;
 		private ColorWheelControl.OnColorChangedDelegate onColorChanged;

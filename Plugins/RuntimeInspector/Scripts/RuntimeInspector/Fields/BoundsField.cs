@@ -6,10 +6,12 @@ namespace RuntimeInspectorNamespace
 {
 	public class BoundsField : InspectorField
 	{
+#pragma warning disable 0649
 		[SerializeField]
 		private Vector3Field inputCenter;
 		[SerializeField]
 		private Vector3Field inputExtents;
+#pragma warning restore 0649
 
 		private MemberInfo centerVariable;
 		private MemberInfo extentsVariable;

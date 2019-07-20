@@ -14,6 +14,7 @@ namespace RuntimeInspectorNamespace
 		private Camera worldCamera;
 		private RectTransform canvasTransform;
 
+#pragma warning disable 0649
 		[SerializeField]
 		private LayoutElement borderLayoutElement;
 
@@ -22,6 +23,7 @@ namespace RuntimeInspectorNamespace
 
 		[SerializeField]
 		private Text referenceName;
+#pragma warning restore 0649
 
 		private Object m_reference;
 		public Object Reference { get { return m_reference; } }

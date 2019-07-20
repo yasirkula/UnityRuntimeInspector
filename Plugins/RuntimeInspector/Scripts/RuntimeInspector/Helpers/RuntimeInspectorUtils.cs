@@ -23,7 +23,7 @@ namespace RuntimeInspectorNamespace
 		private static readonly List<ExposedExtensionMethodHolder> exposedExtensionMethods = new List<ExposedExtensionMethodHolder>();
 		public static Type ExposedExtensionMethodsHolder { set { GetExposedExtensionMethods( value ); } }
 
-		public static readonly HashSet<Transform> IgnoredSearchEntries = new HashSet<Transform>();
+		public static readonly HashSet<Transform> IgnoredTransformsInHierarchy = new HashSet<Transform>();
 
 		private static Canvas m_draggedReferenceItemsCanvas = null;
 		public static Canvas DraggedReferenceItemsCanvas

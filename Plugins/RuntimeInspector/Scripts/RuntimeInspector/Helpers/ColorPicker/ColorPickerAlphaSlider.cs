@@ -10,11 +10,13 @@ namespace RuntimeInspectorNamespace
 
 		private RectTransform rectTransform;
 
+#pragma warning disable 0649
 		[SerializeField]
 		private Image alphaImage;
 
 		[SerializeField]
 		private RectTransform selector;
+#pragma warning restore 0649
 
 		private float m_value;
 		public float Value

@@ -4,6 +4,7 @@ namespace RuntimeInspectorNamespace
 {
 	public abstract class SkinnedWindow : MonoBehaviour
 	{
+#pragma warning disable 0649
 		[SerializeField]
 		private UISkin m_skin;
 		private int m_skinVersion = 0;
@@ -19,6 +20,7 @@ namespace RuntimeInspectorNamespace
 				}
 			}
 		}
+#pragma warning restore 0649
 
 		protected virtual void Awake()
 		{

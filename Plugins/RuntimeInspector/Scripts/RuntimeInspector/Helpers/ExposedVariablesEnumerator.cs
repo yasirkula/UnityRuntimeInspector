@@ -10,14 +10,14 @@ namespace RuntimeInspectorNamespace
 		object IEnumerator.Current { get { return Current; } }
 
 		private int index;
-		private MemberInfo[] variables;
+		private readonly MemberInfo[] variables;
 
-		private List<VariableSet> hiddenVariables, exposedVariables;
+		private readonly List<VariableSet> hiddenVariables, exposedVariables;
 
-		private bool debugMode;
+		private readonly bool debugMode;
 
-		private bool exposePrivateFields, exposePublicFields;
-		private bool exposePrivateProperties, exposePublicProperties;
+		private readonly bool exposePrivateFields, exposePublicFields;
+		private readonly bool exposePrivateProperties, exposePublicProperties;
 
 		public ExposedVariablesEnumerator( MemberInfo[] variables, List<VariableSet> hiddenVariables, List<VariableSet> exposedVariables, bool debugMode,
 			bool exposePrivateFields, bool exposePublicFields, bool exposePrivateProperties, bool exposePublicProperties )

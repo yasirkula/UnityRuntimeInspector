@@ -6,6 +6,7 @@ namespace RuntimeInspectorNamespace
 {
 	public class DraggedReferenceSourceUI : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IBeginDragHandler
 	{
+#pragma warning disable 0649
 		[SerializeField]
 		private Object m_reference;
 		public Object Reference
@@ -19,6 +20,7 @@ namespace RuntimeInspectorNamespace
 
 		[SerializeField]
 		private float holdTime = 0.4f;
+#pragma warning restore 0649
 
 		private IEnumerator pointerHeldCoroutine = null;
 

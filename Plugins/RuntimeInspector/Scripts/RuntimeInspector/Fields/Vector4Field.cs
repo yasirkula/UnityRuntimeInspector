@@ -6,6 +6,7 @@ namespace RuntimeInspectorNamespace
 {
 	public class Vector4Field : InspectorField
 	{
+#pragma warning disable 0649
 		[SerializeField]
 		private BoundInputField inputX;
 
@@ -29,6 +30,7 @@ namespace RuntimeInspectorNamespace
 
 		[SerializeField]
 		private Text labelW;
+#pragma warning restore 0649
 
 		private bool isQuaternion;
 

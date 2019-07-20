@@ -10,6 +10,7 @@ namespace RuntimeInspectorNamespace
 {
 	public class EnumField : InspectorField
 	{
+#pragma warning disable 0649
 		[SerializeField]
 		private Image background;
 
@@ -30,6 +31,7 @@ namespace RuntimeInspectorNamespace
 
 		[SerializeField]
 		private Dropdown input;
+#pragma warning restore 0649
 
 		private static Dictionary<Type, List<string>> enumNames = new Dictionary<Type, List<string>>();
 		private static Dictionary<Type, List<object>> enumValues = new Dictionary<Type, List<object>>();

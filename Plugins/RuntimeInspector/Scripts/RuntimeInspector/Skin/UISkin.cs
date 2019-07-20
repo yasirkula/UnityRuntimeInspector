@@ -14,6 +14,7 @@ namespace RuntimeInspectorNamespace
 			m_version = Random.Range( int.MinValue, int.MaxValue );
 		}
 
+#pragma warning disable 0649
 		[SerializeField]
 		private Font m_font;
 		public Font Font
@@ -268,5 +269,6 @@ namespace RuntimeInspectorNamespace
 				}
 			}
 		}
+#pragma warning restore 0649
 	}
 }

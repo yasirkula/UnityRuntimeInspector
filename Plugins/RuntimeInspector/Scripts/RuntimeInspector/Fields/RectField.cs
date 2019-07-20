@@ -6,6 +6,7 @@ namespace RuntimeInspectorNamespace
 {
 	public class RectField : InspectorField
 	{
+#pragma warning disable 0649
 		[SerializeField]
 		private BoundInputField inputX;
 
@@ -29,6 +30,7 @@ namespace RuntimeInspectorNamespace
 
 		[SerializeField]
 		private Text labelH;
+#pragma warning restore 0649
 
 		protected override float HeightMultiplier { get { return 2f; } }
 

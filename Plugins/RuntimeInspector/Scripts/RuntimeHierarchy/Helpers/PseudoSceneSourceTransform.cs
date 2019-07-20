@@ -5,6 +5,7 @@ namespace RuntimeInspectorNamespace
 {
 	public class PseudoSceneSourceTransform : MonoBehaviour
 	{
+#pragma warning disable 0649
 		[SerializeField]
 		private RuntimeHierarchy m_hierarchy;
 		public RuntimeHierarchy Hierarchy
@@ -57,6 +58,7 @@ namespace RuntimeInspectorNamespace
 				}
 			}
 		}
+#pragma warning restore 0649
 
 		private HashSet<Transform> childrenCurrent = new HashSet<Transform>();
 		private HashSet<Transform> childrenNew = new HashSet<Transform>();

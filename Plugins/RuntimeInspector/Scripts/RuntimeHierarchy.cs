@@ -11,7 +11,9 @@ namespace RuntimeInspectorNamespace
 
 		public delegate void SelectionChangedDelegate( Transform selection );
 		public delegate void DoubleClickDelegate( Transform selection );
+		public delegate bool GameObjectFilterDelegate( Transform transform );
 
+#pragma warning disable 0649
 		[SerializeField]
 		[UnityEngine.Serialization.FormerlySerializedAs( "refreshInterval" )]
 		private float m_refreshInterval = 0f;
@@ -226,13 +228,46 @@ namespace RuntimeInspectorNamespace
 
 		[SerializeField]
 		private HierarchyItemSearchEntry searchEntryDrawerPrefab;
+#pragma warning restore 0649
 
 		private HierarchyItem currentlySelectedDrawer = null;
 
 		private Dictionary<string, HierarchyItemRoot> pseudoSceneDrawers = new Dictionary<string, HierarchyItemRoot>();
 
-		public event SelectionChangedDelegate OnSelectionChanged;
-		public event DoubleClickDelegate OnItemDoubleClicked;
+		public SelectionChangedDelegate OnSelectionChanged;
+		public DoubleClickDelegate OnItemDoubleClicked;
+
+		private GameObjectFilterDelegate m_gameObjectDelegate;
+		public GameObjectFilterDelegate GameObjectFilter
+		{
+			get { return m_gameObjectDelegate; }
+			set
+			{
+				m_gameObjectDelegate = value;
+
+				for( int i = 0; i < sceneDrawers.Count; i++ )
+				{
+					if( sceneDrawers[i].IsExpanded )
+					{
+						sceneDrawers[i].IsExpanded = false;
+						sceneDrawers[i].IsExpanded = true;
+					}
+				}
+
+				if( m_isInSearchMode )
+				{
+					for( int i = 0; i < searchSceneDrawers.Count; i++ )
+					{
+						HierarchyItemRoot sceneDrawer = searchSceneDrawers[i];
+						if( sceneDrawer.gameObject.activeSelf && sceneDrawer.IsExpanded )
+						{
+							sceneDrawer.IsExpanded = false;
+							sceneDrawer.IsExpanded = true;
+						}
+					}
+				}
+			}
+		}
 
 		protected override void Awake()
 		{
@@ -266,9 +301,9 @@ namespace RuntimeInspectorNamespace
 
 			searchInputField.onValueChanged.AddListener( OnSearchTermChanged );
 
-			RuntimeInspectorUtils.IgnoredSearchEntries.Add( drawAreaHierarchy );
-			RuntimeInspectorUtils.IgnoredSearchEntries.Add( drawAreaSearchResults );
-			RuntimeInspectorUtils.IgnoredSearchEntries.Add( poolParent );
+			RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Add( drawAreaHierarchy );
+			RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Add( drawAreaSearchResults );
+			RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Add( poolParent );
 		}
 
 		private void Start()
@@ -292,7 +327,7 @@ namespace RuntimeInspectorNamespace
 			{
 				if( !poolParent.IsNull() )
 				{
-					RuntimeInspectorUtils.IgnoredSearchEntries.Remove( poolParent );
+					RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Remove( poolParent );
 					DestroyImmediate( poolParent.gameObject );
 				}
 
@@ -304,8 +339,8 @@ namespace RuntimeInspectorNamespace
 					searchEntryDrawerPool.Clear();
 			}
 
-			RuntimeInspectorUtils.IgnoredSearchEntries.Remove( drawAreaHierarchy );
-			RuntimeInspectorUtils.IgnoredSearchEntries.Remove( drawAreaSearchResults );
+			RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Remove( drawAreaHierarchy );
+			RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Remove( drawAreaSearchResults );
 		}
 
 #if UNITY_EDITOR

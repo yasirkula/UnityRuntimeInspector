@@ -35,7 +35,7 @@ namespace RuntimeInspectorNamespace
 				if( obj.IsNull() )
 					continue;
 
-				if( RuntimeInspectorUtils.IgnoredSearchEntries.Contains( obj.transform ) )
+				if( RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Contains( obj.transform ) )
 					continue;
 
 				if( obj.name.IndexOf( searchTerm, System.StringComparison.OrdinalIgnoreCase ) >= 0 )
@@ -50,7 +50,7 @@ namespace RuntimeInspectorNamespace
 			for( int i = 0; i < obj.childCount; i++ )
 			{
 				Transform child = obj.GetChild( i );
-				if( RuntimeInspectorUtils.IgnoredSearchEntries.Contains( child ) )
+				if( RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Contains( child ) )
 					continue;
 
 				if( child.name.IndexOf( searchTerm, System.StringComparison.OrdinalIgnoreCase ) >= 0 )

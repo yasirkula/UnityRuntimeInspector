@@ -8,8 +8,10 @@ namespace RuntimeInspectorNamespace
 {
 	public class ObjectField : ExpandableInspectorField
 	{
+#pragma warning disable 0649
 		[SerializeField]
 		private Button initializeObjectButton;
+#pragma warning restore 0649
 
 		private bool elementsInitialized = false;
 

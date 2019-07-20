@@ -99,6 +99,9 @@ namespace RuntimeInspectorNamespace
 					if( components[i].IsNull() )
 						components.RemoveAt( i );
 				}
+
+				if( Inspector.ComponentFilter != null )
+					Inspector.ComponentFilter( go, components );
 			}
 		}
 	}

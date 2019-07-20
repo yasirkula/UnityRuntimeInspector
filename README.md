@@ -126,6 +126,8 @@ private object OnlyInspectObjectsWithRenderer( object previousInspectedObject, o
 }
 ```
 
+- You can register to the `ComponentFilter` delegate of the inspector to filter the list of visible components of a GameObject in the inspector (e.g. hide some components)
+- You can register to the `GameObjectFilter` delegate of the hierarchy to hide some objects from the hierarchy (or, you can add those objects to `RuntimeInspectorUtils.IgnoredTransformsInHierarchy` and they will be hidden from all hierarchies; just make sure to remove them from this *HashSet* before they are destroyed)
 - You can register to the `OnItemDoubleClicked` event of the hierarchy to get notified when an object in the hierarchy is double clicked
 - You can add **RuntimeInspectorButton** attribute to your functions to expose them as buttons in the inspector. These buttons appear when an object of that type is inspected. This attribute takes 3 parameters:
   - **string label**: the text that will appear on the button

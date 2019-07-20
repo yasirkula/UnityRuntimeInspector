@@ -85,6 +85,7 @@ namespace RuntimeInspectorNamespace
 
 		protected virtual float HeightMultiplier { get { return 1f; } }
 
+#pragma warning disable 0649
 		[SerializeField]
 		protected LayoutElement layoutElement;
 
@@ -93,6 +94,7 @@ namespace RuntimeInspectorNamespace
 
 		[SerializeField]
 		private Image variableNameMask;
+#pragma warning restore 0649
 
 		private Getter getter;
 		private Setter setter;
@@ -224,6 +226,7 @@ namespace RuntimeInspectorNamespace
 
 	public abstract class ExpandableInspectorField : InspectorField
 	{
+#pragma warning disable 0649
 		[SerializeField]
 		protected RectTransform drawArea;
 
@@ -236,6 +239,7 @@ namespace RuntimeInspectorNamespace
 
 		[SerializeField]
 		private Image expandArrow; // Expand Arrow's sprite should look right at 0 rotation
+#pragma warning restore 0649
 
 		protected List<InspectorField> elements = new List<InspectorField>( 8 );
 		private List<ExposedMethodField> exposedMethods = new List<ExposedMethodField>();

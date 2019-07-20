@@ -46,6 +46,7 @@ namespace RuntimeInspectorNamespace
 					Initialize();
 
 					m_skin = value;
+					m_skinVersion = m_skin.Version;
 
 					inputField.textComponent.SetSkinInputFieldText( m_skin );
 					inputFieldBackground.color = m_skin.InputFieldNormalBackgroundColor;

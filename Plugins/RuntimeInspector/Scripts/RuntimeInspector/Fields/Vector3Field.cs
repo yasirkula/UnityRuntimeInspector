@@ -6,6 +6,7 @@ namespace RuntimeInspectorNamespace
 {
 	public class Vector3Field : InspectorField
 	{
+#pragma warning disable 0649
 		[SerializeField]
 		private BoundInputField inputX;
 
@@ -23,6 +24,7 @@ namespace RuntimeInspectorNamespace
 
 		[SerializeField]
 		private Text labelZ;
+#pragma warning restore 0649
 
 		public override void Initialize()
 		{
