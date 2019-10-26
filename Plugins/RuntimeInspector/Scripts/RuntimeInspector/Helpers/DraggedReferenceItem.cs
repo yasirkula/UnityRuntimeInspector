@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -43,7 +43,7 @@ namespace RuntimeInspectorNamespace
 			if( canvas.renderMode == RenderMode.ScreenSpaceOverlay || ( canvas.renderMode == RenderMode.ScreenSpaceCamera && canvas.worldCamera == null ) )
 				worldCamera = null;
 			else
-				worldCamera = canvas.worldCamera ?? Camera.main;
+				worldCamera = canvas.worldCamera ? canvas.worldCamera : Camera.main;
 
 			if( skin != null )
 			{
