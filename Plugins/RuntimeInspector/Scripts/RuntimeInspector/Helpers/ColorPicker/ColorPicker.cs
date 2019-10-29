@@ -25,7 +25,7 @@ namespace RuntimeInspectorNamespace
 		private Image panel;
 
 		[SerializeField]
-		private ColorWheelControl colorWheel;
+		private FlexibleColorPicker colorWheel;
 
 		[SerializeField]
 		private ColorPickerAlphaSlider alphaSlider;
@@ -59,7 +59,7 @@ namespace RuntimeInspectorNamespace
 #pragma warning restore 0649
 
 		private Color initialValue;
-		private ColorWheelControl.OnColorChangedDelegate onColorChanged;
+		private FlexibleColorPicker.ColorChanged onColorChanged;
 
 		protected override void Awake()
 		{
@@ -94,15 +94,22 @@ namespace RuntimeInspectorNamespace
 			bInput.OnValueChanged += OnRGBAChanged;
 			aInput.OnValueChanged += OnRGBAChanged;
 
-			OnSelectedColorChanged( colorWheel.Color );
+			OnSelectedColorChanged( colorWheel.color );
 		}
 
-		public void Show( ColorWheelControl.OnColorChangedDelegate onColorChanged, Color initialColor )
+		public void Show( FlexibleColorPicker.ColorChanged onColorChanged, Color initialColor )
 		{
 			initialValue = initialColor;
 
 			this.onColorChanged = null;
-			colorWheel.PickColor( initialColor );
+
+
+            //colorWheel.PickColor( initialColor );
+            colorWheel.startingColor = initialColor;
+            colorWheel.color = initialColor;
+
+
+
 			alphaSlider.Color = initialColor;
 			alphaSlider.Value = initialColor.a;
 			this.onColorChanged = onColorChanged;
@@ -113,7 +120,7 @@ namespace RuntimeInspectorNamespace
 
 		public void Cancel()
 		{
-			if( colorWheel.Color != initialValue && onColorChanged != null )
+			if( colorWheel.color != initialValue && onColorChanged != null )
 				onColorChanged( initialValue );
 
 			Close();
@@ -143,7 +150,7 @@ namespace RuntimeInspectorNamespace
 			okButton.SetSkinButton( Skin );
 		}
 
-		private void OnSelectedColorChanged( Color32 color )
+		private void OnSelectedColorChanged( Color color )
 		{
 			rInput.Text = "" + color.r;
 			gInput.Text = "" + color.g;
@@ -159,9 +166,9 @@ namespace RuntimeInspectorNamespace
 		private void OnAlphaChanged( float alpha )
 		{
 			aInput.Text = "" + (int) ( alpha * 255 );
-			colorWheel.Alpha = alpha;
+			colorWheel.color = new Color(colorWheel.color.r, colorWheel.color.g, colorWheel.color.b, alpha);
 
-			Color color = colorWheel.Color;
+			Color color = colorWheel.color;
 			color.a = alpha;
 
 			if( onColorChanged != null )
@@ -173,7 +180,7 @@ namespace RuntimeInspectorNamespace
 			byte value;
 			if( byte.TryParse( input, out value ) )
 			{
-				Color32 color = colorWheel.Color;
+				Color32 color = colorWheel.color;
 				if( source == rInput )
 					color.r = value;
 				else if( source == gInput )
@@ -187,8 +194,13 @@ namespace RuntimeInspectorNamespace
 				}
 
 				alphaSlider.Color = color;
-				colorWheel.PickColor( color );
-				return true;
+
+
+				//colorWheel.PickColor( color );
+                colorWheel.color = color;
+
+
+                return true;
 			}
 
 			return false;
