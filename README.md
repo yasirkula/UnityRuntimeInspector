@@ -8,7 +8,7 @@
 
 ## A. ABOUT
 
-This is a simple yet powerful runtime **Inspector** and **Hierarchy** solution for Unity 3D that should work on pretty much any platform that Unity supports, including mobile platforms. Simply import **RuntimeInspector.unitypackage** to your project to get started!
+This is a simple yet powerful runtime **Inspector** and **Hierarchy** solution for Unity 3D that should work on pretty much any platform that Unity supports, including mobile platforms. Simply import [RuntimeInspector.unitypackage](https://github.com/yasirkula/UnityRuntimeInspector/releases) to your project to get started!
 
 ## B. LICENSE
 

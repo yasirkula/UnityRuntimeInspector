@@ -323,6 +323,9 @@ namespace RuntimeInspectorNamespace
 
 		private void OnDestroy()
 		{
+			SceneManager.sceneLoaded -= OnSceneLoaded;
+			SceneManager.sceneUnloaded -= OnSceneUnloaded;
+
 			if( --aliveHierarchies == 0 )
 			{
 				if( !poolParent.IsNull() )
@@ -538,6 +541,9 @@ namespace RuntimeInspectorNamespace
 			{
 				if( selection == CurrentSelection )
 					return true;
+
+				// Make sure that the contents of the hierarchy are up-to-date
+				Refresh();
 
 				Scene selectionScene = selection.gameObject.scene;
 				for( int i = 0; i < sceneDrawers.Count; i++ )

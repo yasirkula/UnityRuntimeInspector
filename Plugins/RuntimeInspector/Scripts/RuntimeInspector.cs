@@ -416,7 +416,7 @@ namespace RuntimeInspectorNamespace
 					InspectorField instance = drawerPool[i];
 					drawerPool.RemoveAt( i );
 
-					if( instance != null && !instance.Equals( null ) )
+					if( instance )
 					{
 						instance.transform.SetParent( drawerParent, false );
 						instance.gameObject.SetActive( true );

@@ -114,7 +114,7 @@ namespace RuntimeInspectorNamespace
 
 		public static string GetName( this Object obj )
 		{
-			if( obj == null || obj.Equals( null ) )
+			if( !obj )
 				return "None";
 
 			return obj.name;
@@ -135,7 +135,7 @@ namespace RuntimeInspectorNamespace
 
 		public static Texture GetTexture( this Object obj )
 		{
-			if( obj != null && !obj.Equals( null ) )
+			if( obj )
 			{
 				if( obj is Texture )
 					return (Texture) obj;
