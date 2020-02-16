@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Reflection;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
@@ -16,8 +18,15 @@ namespace RuntimeInspectorNamespace
 		public Mode SetterMode
 		{
 			get { return m_setterMode; }
-			set { m_setterMode = value; }
+			set
+			{
+				m_setterMode = value;
+				input.CacheTextOnValueChange = m_setterMode == Mode.OnValueChange;
+			}
 		}
+
+		private int lineCount = 1;
+		protected override float HeightMultiplier { get { return lineCount; } }
 
 		public override void Initialize()
 		{
@@ -34,6 +43,33 @@ namespace RuntimeInspectorNamespace
 			return type == typeof( string );
 		}
 
+		protected override void OnBound( MemberInfo variable )
+		{
+			base.OnBound( variable );
+
+			int prevLineCount = lineCount;
+			if( variable == null )
+				lineCount = 1;
+			else
+			{
+				MultilineAttribute multilineAttribute = variable.GetAttribute<MultilineAttribute>();
+				if( multilineAttribute != null )
+					lineCount = Mathf.Max( 1, multilineAttribute.lines );
+				else if( variable.HasAttribute<TextAreaAttribute>() )
+					lineCount = 3;
+				else
+					lineCount = 1;
+			}
+
+			if( prevLineCount != lineCount )
+			{
+				input.BackingField.lineType = lineCount > 1 ? InputField.LineType.MultiLineNewline : InputField.LineType.SingleLine;
+				input.BackingField.textComponent.alignment = lineCount > 1 ? TextAnchor.UpperLeft : TextAnchor.MiddleLeft;
+
+				OnSkinChanged();
+			}
+		}
+
 		private bool OnValueChanged( BoundInputField source, string input )
 		{
 			if( m_setterMode == Mode.OnValueChange )
@@ -47,6 +83,7 @@ namespace RuntimeInspectorNamespace
 			if( m_setterMode == Mode.OnSubmit )
 				Value = input;
 
+			Inspector.RefreshDelayed();
 			return true;
 		}
 

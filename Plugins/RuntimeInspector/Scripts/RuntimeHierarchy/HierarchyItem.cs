@@ -71,7 +71,7 @@ namespace RuntimeInspectorNamespace
 		private Image expandArrow; // Expand Arrow's sprite should look right at 0 rotation
 #pragma warning restore 0649
 
-		protected List<HierarchyItemTransform> children = new List<HierarchyItemTransform>( 4 );
+		protected readonly List<HierarchyItemTransform> children = new List<HierarchyItemTransform>( 4 );
 
 		protected abstract bool IsValid { get; }
 		protected abstract int ChildCount { get; }

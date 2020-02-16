@@ -9,12 +9,17 @@ namespace RuntimeInspectorNamespace
 
 		private bool initialized = false;
 		private bool inputValid = true;
+		private bool inputAltered = false;
 
 		private InputField inputField;
 		private Image inputFieldBackground;
+		public InputField BackingField { get { return inputField; } }
 
 		[System.NonSerialized]
 		public string DefaultEmptyValue = string.Empty;
+
+		[System.NonSerialized]
+		public bool CacheTextOnValueChange = true;
 
 		private string recentText = string.Empty;
 		public string Text
@@ -65,8 +70,6 @@ namespace RuntimeInspectorNamespace
 			}
 		}
 
-		private bool inputAltered = false;
-
 		public OnValueChangedDelegate OnValueChanged;
 		public OnValueChangedDelegate OnValueSubmitted;
 
@@ -102,6 +105,9 @@ namespace RuntimeInspectorNamespace
 			if( OnValueChanged != null )
 			{
 				inputValid = OnValueChanged( this, str );
+				if( inputValid && CacheTextOnValueChange )
+					recentText = str;
+
 				inputFieldBackground.color = inputValid ? Skin.InputFieldNormalBackgroundColor : Skin.InputFieldInvalidBackgroundColor;
 			}
 		}
@@ -125,14 +131,11 @@ namespace RuntimeInspectorNamespace
 			{
 				if( OnValueSubmitted( this, str ) )
 					recentText = str;
-				else
-					inputField.text = recentText;
 			}
 			else if( inputValid )
 				recentText = str;
-			else
-				inputField.text = recentText;
 
+			inputField.text = recentText;
 			inputValid = true;
 		}
 	}

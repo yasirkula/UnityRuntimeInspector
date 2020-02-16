@@ -145,10 +145,10 @@ namespace RuntimeInspectorNamespace
 
 		private void OnSelectedColorChanged( Color32 color )
 		{
-			rInput.Text = "" + color.r;
-			gInput.Text = "" + color.g;
-			bInput.Text = "" + color.b;
-			aInput.Text = "" + color.a;
+			rInput.Text = color.r.ToString();
+			gInput.Text = color.g.ToString();
+			bInput.Text = color.b.ToString();
+			aInput.Text = color.a.ToString();
 
 			alphaSlider.Color = color;
 
@@ -158,7 +158,7 @@ namespace RuntimeInspectorNamespace
 
 		private void OnAlphaChanged( float alpha )
 		{
-			aInput.Text = "" + (int) ( alpha * 255 );
+			aInput.Text = ( (int) ( alpha * 255 ) ).ToString();
 			colorWheel.Alpha = alpha;
 
 			Color color = colorWheel.Color;

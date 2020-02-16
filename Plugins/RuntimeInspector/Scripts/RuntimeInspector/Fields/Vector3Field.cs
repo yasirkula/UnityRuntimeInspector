@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -26,6 +27,10 @@ namespace RuntimeInspectorNamespace
 		private Text labelZ;
 #pragma warning restore 0649
 
+#if UNITY_2017_2_OR_NEWER
+		private bool isVector3Int;
+#endif
+
 		public override void Initialize()
 		{
 			base.Initialize();
@@ -38,6 +43,10 @@ namespace RuntimeInspectorNamespace
 			inputY.OnValueChanged += OnValueChanged;
 			inputZ.OnValueChanged += OnValueChanged;
 
+			inputX.OnValueSubmitted += OnValueSubmitted;
+			inputY.OnValueSubmitted += OnValueSubmitted;
+			inputZ.OnValueSubmitted += OnValueSubmitted;
+
 			inputX.DefaultEmptyValue = "0";
 			inputY.DefaultEmptyValue = "0";
 			inputZ.DefaultEmptyValue = "0";
@@ -45,37 +54,82 @@ namespace RuntimeInspectorNamespace
 
 		public override bool SupportsType( Type type )
 		{
+#if UNITY_2017_2_OR_NEWER
+			if( type == typeof( Vector3Int ) )
+				return true;
+#endif
 			return type == typeof( Vector3 );
 		}
 
-		protected override void OnBound()
+		protected override void OnBound( MemberInfo variable )
 		{
-			base.OnBound();
+			base.OnBound( variable );
 
-			Vector3 val = (Vector3) Value;
-			inputX.Text = "" + val.x;
-			inputY.Text = "" + val.y;
-			inputZ.Text = "" + val.z;
+#if UNITY_2017_2_OR_NEWER
+			isVector3Int = BoundVariableType == typeof( Vector3Int );
+			if( isVector3Int )
+			{
+				Vector3Int val = (Vector3Int) Value;
+				inputX.Text = val.x.ToString();
+				inputY.Text = val.y.ToString();
+				inputZ.Text = val.z.ToString();
+			}
+			else
+#endif
+			{
+				Vector3 val = (Vector3) Value;
+				inputX.Text = val.x.ToString();
+				inputY.Text = val.y.ToString();
+				inputZ.Text = val.z.ToString();
+			}
 		}
 
 		private bool OnValueChanged( BoundInputField source, string input )
 		{
-			float value;
-			if( float.TryParse( input, out value ) )
+#if UNITY_2017_2_OR_NEWER
+			if( isVector3Int )
 			{
-				Vector3 val = (Vector3) Value;
-				if( source == inputX )
-					val.x = value;
-				else if( source == inputY )
-					val.y = value;
-				else
-					val.z = value;
+				int value;
+				if( int.TryParse( input, out value ) )
+				{
+					Vector3Int val = (Vector3Int) Value;
+					if( source == inputX )
+						val.x = value;
+					else if( source == inputY )
+						val.y = value;
+					else
+						val.z = value;
 
-				Value = val;
-				return true;
+					Value = val;
+					return true;
+				}
+			}
+			else
+#endif
+			{
+				float value;
+				if( float.TryParse( input, out value ) )
+				{
+					Vector3 val = (Vector3) Value;
+					if( source == inputX )
+						val.x = value;
+					else if( source == inputY )
+						val.y = value;
+					else
+						val.z = value;
+
+					Value = val;
+					return true;
+				}
 			}
 
 			return false;
+		}
+
+		private bool OnValueSubmitted( BoundInputField source, string input )
+		{
+			Inspector.RefreshDelayed();
+			return OnValueChanged( source, input );
 		}
 
 		protected override void OnSkinChanged()
@@ -93,16 +147,34 @@ namespace RuntimeInspectorNamespace
 
 		public override void Refresh()
 		{
-			Vector3 prevVal = (Vector3) Value;
-			base.Refresh();
-			Vector3 val = (Vector3) Value;
+#if UNITY_2017_2_OR_NEWER
+			if( isVector3Int )
+			{
+				Vector3Int prevVal = (Vector3Int) Value;
+				base.Refresh();
+				Vector3Int val = (Vector3Int) Value;
 
-			if( val.x != prevVal.x )
-				inputX.Text = "" + val.x;
-			if( val.y != prevVal.y )
-				inputY.Text = "" + val.y;
-			if( val.z != prevVal.z )
-				inputZ.Text = "" + val.z;
+				if( val.x != prevVal.x )
+					inputX.Text = val.x.ToString();
+				if( val.y != prevVal.y )
+					inputY.Text = val.y.ToString();
+				if( val.z != prevVal.z )
+					inputZ.Text = val.z.ToString();
+			}
+			else
+#endif
+			{
+				Vector3 prevVal = (Vector3) Value;
+				base.Refresh();
+				Vector3 val = (Vector3) Value;
+
+				if( val.x != prevVal.x )
+					inputX.Text = val.x.ToString();
+				if( val.y != prevVal.y )
+					inputY.Text = val.y.ToString();
+				if( val.z != prevVal.z )
+					inputZ.Text = val.z.ToString();
+			}
 		}
 	}
 }

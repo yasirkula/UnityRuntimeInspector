@@ -15,6 +15,7 @@ This is a simple yet powerful runtime **Inspector** and **Hierarchy** solution f
 Runtime Inspector & Hierarchy is licensed under the [MIT License](LICENSE) ([Asset Store version](https://www.assetstore.unity3d.com/en/#!/content/111349) is governed by the [Asset Store EULA](https://unity3d.com/legal/as_terms)). Please note that this asset uses an external asset which is licensed under the [BSD 3-Clause License](https://github.com/fkate/Unity_ColorWheel/blob/master/LICENSE).
 
 ## C. HOW TO USE
+
 - To use the hierarchy in your scene, drag&drop the **RuntimeHierarchy** prefab to your canvas
 - To use the inspector in your scene, drag&drop the **RuntimeInspector** prefab to your canvas
 
@@ -25,6 +26,7 @@ You can also connect the hierarchy to the inspector so that whenever an object r
 Note that these connections are *one-directional*, meaning that assigning the inspector to the hierarchy will not automatically assign the hierarchy to the inspector or vice versa. Also note that the inspector and the hierarchy are **not** singletons and therefore, you can have several instances of them in your scene at a time with different configurations.
 
 ## D. FEATURES
+
 - The hierarchy costs **1 SetPass call** and **~5 batches** (assuming that **Sprite Packing** is enabled in *Editor Settings*)
 - The inspector costs **1 SetPass call** and **~10 batches** (assuming that **Sprite Packing** is enabled in *Editor Settings*)
 - Both panels are heavily optimized in terms of GC in order not to generate any unnecessary garbage. By default, both the inspector and the hierarchy are refreshed every frame to reflect any changes to their user interface immediately. This generates some garbage especially for the inspector as, most of the time, the inspected object has variables of value types. These variables are *boxed* when accessed via reflection and this boxing creates some unavoidable garbage. However, this process can be greatly optimized by increasing the **Refresh Interval** of the inspector and/or the hierarchy
@@ -54,10 +56,11 @@ RuntimeInspector works similar to the editor Inspector. It can expose commonly u
 - **Expose Public Properties**: when enabled, public properties can be exposed
 - **Array Indices Start At One**: when enabled, exposed arrays and lists start their indices at 1 instead of 0 (just a visual change)
 - **Use Title Case Naming**: when enabled, variable names are displayed in title case format (e.g. *m_myVariable* becomes *My Variable*)
-- **Nest Limit**: imagine exposing a linked list. This variable defines how many nodes you can expose in the inspector starting from the beginning node until the inspector stops exposing any further nodes
+- **Nest Limit**: imagine exposing a linked list. This variable defines how many nodes you can expose in the inspector starting from the initial node until the inspector stops exposing any further nodes
+- **Inspected Object Header Visibility**: if the inspected object has a collapsible header, determines that header's visibility
 - **Pool Capacity**: the UI elements are pooled to avoid unnecessary *Instantiate* and *Destroy* calls. This value defines the pool capacity for each of the UI elements individually. On standalone platforms, you can increase this value for better performance
 - **Settings**: an array of settings for the inspector. A new settings asset can be created using the **Create-RuntimeInspector-Settings** context menu. A setting asset stores 4 different things:
-  - **Standard Drawers** and **Reference Drawers**: a drawer is a prefab used to expose a single variable in the inspector. For variables that extend **UnityEngine.Object**, a reference drawer is created and for all the other variables, a standard drawer is created. Think of it like this: when you select a GameObject in Unity Hierarchy, it is exposed in Unity Inspector using a standard drawer with all of its variables and components. When you create a script with a public GameObject variable, the variable is exposed in Unity Inspector using a reference drawer
+  - **Standard Drawers** and **Reference Drawers**: a drawer is a prefab used to expose a single variable in the inspector. For variables that extend **UnityEngine.Object**, a reference drawer is created and for other variables, a standard drawer is created
     - While searching for a suitable drawer for a variable, the corresponding drawers list is traversed from bottom to top until a drawer that supports that variable type is found. If such a drawer is not found, that variable is not exposed
   - **Hidden Variables**: allows you to hide some variables from the inspector for a given type and all the types that extend/implement it. You can enter asterisk character (\*) to hide all the variables for that type
   - **Exposed Variables**: allows you to expose (counter) some hidden variables. A variable goes through a number of filters before it is exposed:
@@ -68,7 +71,7 @@ RuntimeInspector works similar to the editor Inspector. It can expose commonly u
   5. It must be serializable or *Debug Mode* must be enabled
   - So, to expose only a specific set of variables for a given type, you can hide all of its variables by entering an asterisk to its *Hidden Variables* and then entering the set of exposed variables to its *Exposed Variables*
 
-You are advised not to change the **InternalSettings** but create a separate Settings asset and add it to the **Settings** array of the inspector if you want to tweak its settings. Otherwise, when *InternalSettings* is changed on an update, your settings might be overridden.
+While changing the inspector's settings, you are advised not to touch **InternalSettings**; instead create a separate Settings asset and add it to the **Settings** array of the inspector. Otherwise, when *InternalSettings* is changed in an update, your settings might get overridden.
 
 ### D.2. HIERARCHY
 
@@ -92,6 +95,7 @@ RuntimeHierarchy simply exposes the objects in your scenes to the user interface
 **NOTE:** by default, RuntimeHierarchy won't show objects under the *DontDestroyOnLoad* scene. Please see this topic for a workaround: https://forum.unity.com/threads/runtime-inspector-and-hierarchy-open-source.501220/#post-3518458
 
 ## E. SCRIPTING API
+
 Values of the variables that are mentioned in **D.1** and **D.2** sections can be tweaked at runtime via their corresponding properties. Any changes to these properties will be reflected to UI immediately. Here, you will find some interesting things that you can do with the inspector and the hierarchy via scripting:
 
 - You can change the inspected object in the inspector using the following functions:
@@ -137,6 +141,7 @@ private object OnlyInspectObjectsWithRenderer( object previousInspectedObject, o
 - Although you can't add *RuntimeInspectorButton* attribute to Unity's built-in functions, you can show buttons under built-in Unity types via **extension methods**. You must write all such extension methods in a single static class, mark the methods with *RuntimeInspectorButton* attribute and then introduce these functions to the RuntimeInspector as following: `RuntimeInspectorUtils.ExposedExtensionMethodsHolder = typeof( TheScriptThatContainsTheExtensionsMethods );`
 
 ### E.1. PSEUDO-SCENES
+
 You can use the following functions to add object(s) to pseudo-scenes in the hierarchy:
 
 ```csharp
@@ -162,9 +167,11 @@ public void DeleteAllPseudoScenes();
 ```
 
 #### E.1.1. PseudoSceneSourceTransform
+
 This helper component allows you to add an object's children to a pseudo-scene in the hierarchy. When a child is added to or removed from the object, this component refreshes the pseudo-scene automatically. If **HideOnDisable** is enabled, the object's children are removed from the pseudo-scene when the object is disabled.
 
 ### E.2. DRAGGED REFERENCE ITEMS
+
 In section **D.2**, it is mentioned that you can drag&drop objects from the hierarchy to the variables in the inspector to assign these objects to those variables. However, you are not limited with just hierarchy. There are two helper components that you can use to create dragged reference items for other objects:
 
 - **DraggedReferenceSourceCamera**: when attached to a camera, casts a ray to your scene at each mouse click and creates a dragged reference item if you hold on an object for a while. You can register to the **ProcessRaycastHit** delegate of this component to filter the objects than can create a dragged reference item. For example, if you want only objects with tag *NPC* to be able to create a dragged reference item, you can use the following function:
@@ -191,6 +198,7 @@ public static DraggedReferenceItem CreateDraggedReferenceItem( Object reference,
 Note that dragged reference items are created on a separate **Screen Space - Overlay** canvas so that they can be drawn on top of everything. You may want to change this canvas's properties for UI consistency (like its *CanvasScaler*'s properties). In that case, simply use the **RuntimeInspectorUtils.DraggedReferenceItemsCanvas** property to access this canvas.
 
 ### E.3. CUSTOM PROPERTY DRAWERS
+
 **NOTE**: this section is about giving you a brief idea on how to create your own drawers. As the amount of information presented here might be overwhelming or boring, you are also recommended to examine some of the built-in drawers to have a better idea about the architecture. For starters, you can examine **BoolField** and continue with **BoundsField** and **GameObjectField**.
 
 You can introduce your own property drawers to the inspector to extend its functionality using a **Settings** asset mentioned in section **D.1**. Each property drawer extends from **InspectorField** base class. There is also an **ExpandableInspectorField** abstract class that allows you to create an expandable/collapsable property drawer like arrays. Lastly, extending **ObjectReferenceField** class allows you to create drawers that can be assigned values via the reference picker or via drag&drop.
@@ -213,9 +221,10 @@ Each property drawer has access to the following properties:
 - **float HeightMultiplier**: affects the height of the drawer
 
 There are some special functions on drawers that are invoked on certain circumstances:
-- **bool SupportsType( Type type )**: returns whether or not this property drawer can expose (supports) a certain type in the inspector
 - **void Initialize()**: should be used instead of *Awake*/*Start* to initialize the drawer
-- **void OnBound()**: called when the drawer is bound to a variable via reflection
+- **bool SupportsType( Type type )**: returns whether or not this property drawer can expose (supports) a certain type in the inspector
+- **bool CanBindTo( Type type, MemberInfo variable )**: returns whether or not this drawer can expose the provided *variable*. This function is called only if *SupportsType* returns *true*. This function is useful for drawers that can expose only variables with specific attribute(s) (e.g. *NumberRangeField* queries RangeAttribute). Please note that the *variable* parameter **can be** *null*. By default, this function returns true
+- **void OnBound( MemberInfo variable )**: called when the drawer is bound to a variable via reflection. Please note that the *variable* parameter **can be** *null*
 - **void OnUnbound()**: called when the drawer is unbound from the variable that it was bound to
 - **void OnInspectorChanged()**: called when the *Inspector* property of the drawer is changed
 - **void OnSkinChanged()**: called when the *Skin* property of the drawer is changed. Your custom drawers must adjust their UI elements' visual appearance here to comply with the assigned skin's standards
@@ -237,8 +246,8 @@ Sub-drawers of an ExpandableInspectorField should be stored in the `protected Li
 You can create sub-drawers using the `RuntimeInspector.CreateDrawerForType( Type type, Transform drawerParent, int depth, bool drawObjectsAsFields = true )` function. If no property drawer is found that can expose this type, the function returns *null*. Here, for ExpandableInspectorField's, the **drawerParent** parameter should be set as the **drawArea** variable of the ExpandableInspectorField. If the **drawObjectsAsFields** parameter is set to true and if the type extends **UnityEngine.Object**, *Reference Drawers* are searched for a drawer that supports this type. Otherwise *Standard Drawers* are searched.
 
 After creating sub-drawers, *ExpandableInspectorField*'s must bind their sub-drawers to their corresponding variables manually. This is done via the following **BindTo** functions of the *InspectorField* class:
-- `BindTo( InspectorField parent, MemberInfo member, string variableName = null )`: binds the object to a **MemberInfo** (it can be received via reflection). Here, **parent** parameter should be set to this *ExpandableInspectorField*. If **variableName** is set to null, its value is fetched directly from the MemberInfo parameter
-- `BindTo( Type variableType, string variableName, Getter getter, Setter setter )`: this one allows you to define your own getter and setter functions for this sub-drawer. For example, *ArrayField* uses this function because there is no direct MemberInfo to access an element of an array. With this method, you can use custom functions instead of MemberInfo's to get/set the values of the bound objects (ArrayField uses *Array.GetValue* for its elements' getter function and *Array.SetValue* for its elements' setter function)
+- `BindTo( InspectorField parent, MemberInfo variable, string variableName = null )`: binds the object to a **MemberInfo** (it can be received via reflection). Here, **parent** parameter should be set to this *ExpandableInspectorField*. If **variableName** is set to null, its value is fetched directly from the MemberInfo parameter
+- `BindTo( Type variableType, string variableName, Getter getter, Setter setter, MemberInfo variable = null )`: this one allows you to define your own getter and setter functions for this sub-drawer. For example, *ArrayField* uses this function because there is no direct MemberInfo to access an element of an array. With this method, you can use custom functions instead of MemberInfo's to get/set the values of the bound objects (ArrayField uses *Array.GetValue* for its elements' getter function and *Array.SetValue* for its elements' setter function)
 
 There are actually some helper functions in ExpandableInspectorField to easily create sub-drawers without having to call *CreateDrawerForType* or *BindTo* manually:
 - `InspectorField CreateDrawerForComponent( Component component, string variableName = null )`: creates a *Standard Drawer* for a component
@@ -256,8 +265,9 @@ Property drawers that extend **ObjectReferenceField** class have access to the `
 **PointerEventListener**: this is a simple helper component that invokes **PointerDown** event pressed, **PointerUp** event when released and **PointerClick** event when clicked
 
 **BoundInputField**: most of the built-in drawers use this component for their input fields. This helper component allows you to validate the input of the input field when the input has changed and get notified when the input is submitted. It has the following properties and functions:
-- **string DefaultEmptyValue**: the default value that the input field will have when its input is empty. For DecimalField and IntegerField drawers, this value is "0"
+- **string DefaultEmptyValue**: the default value that the input field will have when its input is empty. For example, NumberField sets this value to "0"
 - **string Text**: a property to refresh the current value of the input field. If the input field is currently focused and being edited, then this property will not change its text immediately but store the value in a variable so that it can be used when the input field is no longer focused. Also, setting this property will not invoke the *OnValueChanged* event
 - **UISkin Skin**: the skin that this input field uses. When set, input field will adjust its UI accordingly
 - **OnValueChangedDelegate OnValueChanged**: called while the value of input field is being edited (called at each change to the input). The **OnValueChangedDelegate** has the following signature: `bool OnValueChangedDelegate( BoundInputField source, string input )`. A function that is registered to this event should parse the **input** and return *true* if the input is valid, *false* otherwise
 - **OnValueChangedDelegate OnValueSubmitted**: called when user finishes editing the value of input field. Similar to *OnValueChanged*, a function that is registered to this event should parse the **input** and return *true* only if the input is valid
+- **bool CacheTextOnValueChange**: determines what will happen when user stops editing the input field while its contents are invalid (i.e. its background has turned red). If this variable is set to *true*, input field's text will revert to the latest value that returned *true* for OnValueChanged. Otherwise, the text will revert to the value input field had when it was focused

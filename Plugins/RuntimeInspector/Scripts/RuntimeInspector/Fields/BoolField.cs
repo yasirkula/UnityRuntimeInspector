@@ -28,6 +28,7 @@ namespace RuntimeInspectorNamespace
 		private void OnValueChanged( bool input )
 		{
 			Value = input;
+			Inspector.RefreshDelayed();
 		}
 
 		protected override void OnSkinChanged()

@@ -46,7 +46,7 @@ namespace RuntimeInspectorNamespace
 		private int poolCapacity = 64;
 		private Transform poolParent;
 		private static int aliveHierarchies = 0;
-		private static List<HierarchyItem> sceneDrawerPool = new List<HierarchyItem>( 8 );
+		private static readonly List<HierarchyItem> sceneDrawerPool = new List<HierarchyItem>( 8 );
 		private static List<HierarchyItem> transformDrawerPool;
 		private static List<HierarchyItem> searchEntryDrawerPool;
 
@@ -217,9 +217,6 @@ namespace RuntimeInspectorNamespace
 		[SerializeField]
 		private Text selectedPathText;
 
-		private List<HierarchyItemRoot> sceneDrawers = new List<HierarchyItemRoot>( 8 );
-		private List<HierarchyItemRoot> searchSceneDrawers = new List<HierarchyItemRoot>( 8 );
-
 		[SerializeField]
 		private HierarchyItemRoot sceneDrawerPrefab;
 
@@ -232,7 +229,9 @@ namespace RuntimeInspectorNamespace
 
 		private HierarchyItem currentlySelectedDrawer = null;
 
-		private Dictionary<string, HierarchyItemRoot> pseudoSceneDrawers = new Dictionary<string, HierarchyItemRoot>();
+		private readonly List<HierarchyItemRoot> sceneDrawers = new List<HierarchyItemRoot>( 8 );
+		private readonly List<HierarchyItemRoot> searchSceneDrawers = new List<HierarchyItemRoot>( 8 );
+		private readonly Dictionary<string, HierarchyItemRoot> pseudoSceneDrawers = new Dictionary<string, HierarchyItemRoot>();
 
 		public SelectionChangedDelegate OnSelectionChanged;
 		public DoubleClickDelegate OnItemDoubleClicked;

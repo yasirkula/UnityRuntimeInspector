@@ -1,9 +1,7 @@
-﻿#if !UNITY_EDITOR && NETFX_CORE
-using System.Reflection;
-#endif
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -26,6 +24,8 @@ namespace RuntimeInspectorNamespace
 
 		private bool isArray;
 		private Type elementType;
+
+		private readonly List<bool> elementsExpandedStates = new List<bool>();
 
 		protected override int Length
 		{
@@ -56,6 +56,7 @@ namespace RuntimeInspectorNamespace
 			sizeInput.OnValueChanged += OnSizeInputBeingChanged;
 			sizeInput.OnValueSubmitted += OnSizeChanged;
 			sizeInput.DefaultEmptyValue = "0";
+			sizeInput.CacheTextOnValueChange = false;
 		}
 
 		public override bool SupportsType( Type type )
@@ -68,9 +69,9 @@ namespace RuntimeInspectorNamespace
 #endif
 		}
 
-		protected override void OnBound()
+		protected override void OnBound( MemberInfo variable )
 		{
-			base.OnBound();
+			base.OnBound( variable );
 
 			isArray = BoundVariableType.IsArray;
 			elementType = isArray ? BoundVariableType.GetElementType() : BoundVariableType.GetGenericArguments()[0];
@@ -79,7 +80,9 @@ namespace RuntimeInspectorNamespace
 		protected override void OnUnbound()
 		{
 			base.OnUnbound();
+
 			sizeInput.Text = "0";
+			elementsExpandedStates.Clear();
 		}
 
 		protected override void OnSkinChanged()
@@ -96,6 +99,15 @@ namespace RuntimeInspectorNamespace
 		{
 			base.OnDepthChanged();
 			sizeText.rectTransform.sizeDelta = new Vector2( -Skin.IndentAmount * ( Depth + 1 ), 0f );
+		}
+
+		protected override void ClearElements()
+		{
+			elementsExpandedStates.Clear();
+			for( int i = 0; i < elements.Count; i++ )
+				elementsExpandedStates.Add( ( elements[i] is ExpandableInspectorField ) ? ( (ExpandableInspectorField) elements[i] ).IsExpanded : false );
+
+			base.ClearElements();
 		}
 
 		protected override void GenerateElements()
@@ -120,7 +132,10 @@ namespace RuntimeInspectorNamespace
 						Value = _array;
 					} );
 
-					elementDrawer.NameRaw = Inspector.ArrayIndicesStartAtOne ? ( i + 1 ) + ":" : i + ":";
+					if( i < elementsExpandedStates.Count && elementsExpandedStates[i] && elementDrawer is ExpandableInspectorField )
+						( (ExpandableInspectorField) elementDrawer ).IsExpanded = true;
+
+					elementDrawer.NameRaw = Inspector.ArrayIndicesStartAtOne ? ( ( i + 1 ) + ":" ) : ( i + ":" );
 					elements.Add( elementDrawer );
 				}
 			}
@@ -134,7 +149,7 @@ namespace RuntimeInspectorNamespace
 						break;
 
 					int j = i;
-					string variableName = Inspector.ArrayIndicesStartAtOne ? ( i + 1 ) + ":" : i + ":";
+					string variableName = Inspector.ArrayIndicesStartAtOne ? ( ( i + 1 ) + ":" ) : ( i + ":" );
 					elementDrawer.BindTo( elementType, variableName, () => ( (IList) Value )[j], ( value ) =>
 					{
 						IList _list = (IList) Value;
@@ -142,11 +157,15 @@ namespace RuntimeInspectorNamespace
 						Value = _list;
 					} );
 
+					if( i < elementsExpandedStates.Count && elementsExpandedStates[i] && elementDrawer is ExpandableInspectorField )
+						( (ExpandableInspectorField) elementDrawer ).IsExpanded = true;
+
 					elements.Add( elementDrawer );
 				}
 			}
 
-			sizeInput.Text = "" + Length;
+			sizeInput.Text = Length.ToString();
+			elementsExpandedStates.Clear();
 		}
 
 		public void OnDrop( PointerEventData eventData )
@@ -154,7 +173,7 @@ namespace RuntimeInspectorNamespace
 			Object assignableObject = RuntimeInspectorUtils.GetAssignableObjectFromDraggedReferenceItem( eventData, elementType );
 			if( assignableObject != null )
 			{
-				if( !OnSizeChanged( null, "" + ( Length + 1 ) ) )
+				if( !OnSizeChanged( null, ( Length + 1 ).ToString() ) )
 					return;
 
 				if( isArray )
@@ -234,7 +253,7 @@ namespace RuntimeInspectorNamespace
 						Value = list;
 					}
 
-					Refresh();
+					Inspector.RefreshDelayed();
 				}
 
 				return true;

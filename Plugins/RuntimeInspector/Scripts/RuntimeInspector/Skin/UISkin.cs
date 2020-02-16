@@ -211,6 +211,36 @@ namespace RuntimeInspectorNamespace
 		}
 
 		[SerializeField]
+		private Color m_sliderBackgroundColor = Color.white;
+		public Color SliderBackgroundColor
+		{
+			get { return m_sliderBackgroundColor; }
+			set
+			{
+				if( m_sliderBackgroundColor != value )
+				{
+					m_sliderBackgroundColor = value;
+					m_version++;
+				}
+			}
+		}
+
+		[SerializeField]
+		private Color m_sliderThumbColor = Color.black;
+		public Color SliderThumbColor
+		{
+			get { return m_sliderThumbColor; }
+			set
+			{
+				if( m_sliderThumbColor != value )
+				{
+					m_sliderThumbColor = value;
+					m_version++;
+				}
+			}
+		}
+
+		[SerializeField]
 		private Color m_buttonBackgroundColor = Color.white;
 		public Color ButtonBackgroundColor
 		{

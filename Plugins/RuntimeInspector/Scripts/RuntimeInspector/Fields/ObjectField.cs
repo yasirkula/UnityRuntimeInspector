@@ -55,10 +55,10 @@ namespace RuntimeInspectorNamespace
 #endif
 		}
 
-		protected override void OnBound()
+		protected override void OnBound( MemberInfo variable )
 		{
 			elementsInitialized = false;
-			base.OnBound();
+			base.OnBound( variable );
 		}
 
 		protected override void GenerateElements()
@@ -71,8 +71,8 @@ namespace RuntimeInspectorNamespace
 
 			initializeObjectButton.gameObject.SetActive( false );
 
-			foreach( MemberInfo variables in Inspector.GetExposedVariablesForType( Value.GetType() ) )
-				CreateDrawerForVariable( variables );
+			foreach( MemberInfo variable in Inspector.GetExposedVariablesForType( Value.GetType() ) )
+				CreateDrawerForVariable( variable );
 		}
 
 		protected override void OnSkinChanged()

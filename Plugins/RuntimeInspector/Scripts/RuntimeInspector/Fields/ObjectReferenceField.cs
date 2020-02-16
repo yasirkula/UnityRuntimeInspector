@@ -1,7 +1,5 @@
-﻿#if !UNITY_EDITOR && NETFX_CORE
+﻿using System;
 using System.Reflection;
-#endif
-using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -61,9 +59,9 @@ namespace RuntimeInspectorNamespace
 			}
 		}
 
-		protected override void OnBound()
+		protected override void OnBound( MemberInfo variable )
 		{
-			base.OnBound();
+			base.OnBound( variable );
 			OnReferenceChanged( (Object) Value );
 		}
 
@@ -77,6 +75,8 @@ namespace RuntimeInspectorNamespace
 
 			if( inspectReferenceButton != null )
 				inspectReferenceButton.gameObject.SetActive( Value != null && !Value.Equals( null ) );
+
+			Inspector.RefreshDelayed();
 		}
 
 		public void OnDrop( PointerEventData eventData )

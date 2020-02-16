@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -28,9 +29,9 @@ namespace RuntimeInspectorNamespace
 			return type == typeof( Color ) || type == typeof( Color32 );
 		}
 
-		protected override void OnBound()
+		protected override void OnBound( MemberInfo variable )
 		{
-			base.OnBound();
+			base.OnBound( variable );
 			isColor32 = BoundVariableType == typeof( Color32 );
 		}
 

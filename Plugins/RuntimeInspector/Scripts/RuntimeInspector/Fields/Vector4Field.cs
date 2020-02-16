@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -50,6 +51,11 @@ namespace RuntimeInspectorNamespace
 			inputZ.OnValueChanged += OnValueChanged;
 			inputW.OnValueChanged += OnValueChanged;
 
+			inputX.OnValueSubmitted += OnValueSubmitted;
+			inputY.OnValueSubmitted += OnValueSubmitted;
+			inputZ.OnValueSubmitted += OnValueSubmitted;
+			inputW.OnValueSubmitted += OnValueSubmitted;
+
 			inputX.DefaultEmptyValue = "0";
 			inputY.DefaultEmptyValue = "0";
 			inputZ.DefaultEmptyValue = "0";
@@ -61,26 +67,26 @@ namespace RuntimeInspectorNamespace
 			return type == typeof( Vector4 ) || type == typeof( Quaternion );
 		}
 
-		protected override void OnBound()
+		protected override void OnBound( MemberInfo variable )
 		{
-			base.OnBound();
+			base.OnBound( variable );
 
 			isQuaternion = BoundVariableType == typeof( Quaternion );
 			if( isQuaternion )
 			{
 				Quaternion val = (Quaternion) Value;
-				inputX.Text = "" + val.x;
-				inputY.Text = "" + val.y;
-				inputZ.Text = "" + val.z;
-				inputW.Text = "" + val.z;
+				inputX.Text = val.x.ToString();
+				inputY.Text = val.y.ToString();
+				inputZ.Text = val.z.ToString();
+				inputW.Text = val.z.ToString();
 			}
 			else
 			{
 				Vector4 val = (Vector4) Value;
-				inputX.Text = "" + val.x;
-				inputY.Text = "" + val.y;
-				inputZ.Text = "" + val.z;
-				inputW.Text = "" + val.z;
+				inputX.Text = val.x.ToString();
+				inputY.Text = val.y.ToString();
+				inputZ.Text = val.z.ToString();
+				inputW.Text = val.z.ToString();
 			}
 		}
 
@@ -124,6 +130,12 @@ namespace RuntimeInspectorNamespace
 			return false;
 		}
 
+		private bool OnValueSubmitted( BoundInputField source, string input )
+		{
+			Inspector.RefreshDelayed();
+			return OnValueChanged( source, input );
+		}
+
 		protected override void OnSkinChanged()
 		{
 			base.OnSkinChanged();
@@ -148,13 +160,13 @@ namespace RuntimeInspectorNamespace
 				Quaternion val = (Quaternion) Value;
 
 				if( val.x != prevVal.x )
-					inputX.Text = "" + val.x;
+					inputX.Text = val.x.ToString();
 				if( val.y != prevVal.y )
-					inputY.Text = "" + val.y;
+					inputY.Text = val.y.ToString();
 				if( val.z != prevVal.z )
-					inputZ.Text = "" + val.z;
+					inputZ.Text = val.z.ToString();
 				if( val.w != prevVal.w )
-					inputW.Text = "" + val.z;
+					inputW.Text = val.z.ToString();
 			}
 			else
 			{
@@ -163,13 +175,13 @@ namespace RuntimeInspectorNamespace
 				Vector4 val = (Vector4) Value;
 
 				if( val.x != prevVal.x )
-					inputX.Text = "" + val.x;
+					inputX.Text = val.x.ToString();
 				if( val.y != prevVal.y )
-					inputY.Text = "" + val.y;
+					inputY.Text = val.y.ToString();
 				if( val.z != prevVal.z )
-					inputZ.Text = "" + val.z;
+					inputZ.Text = val.z.ToString();
 				if( val.w != prevVal.w )
-					inputW.Text = "" + val.z;
+					inputW.Text = val.z.ToString();
 			}
 		}
 	}

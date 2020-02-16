@@ -16,6 +16,11 @@ namespace RuntimeInspectorNamespace
 		private MemberInfo centerVariable;
 		private MemberInfo extentsVariable;
 
+#if UNITY_2017_2_OR_NEWER
+		private MemberInfo intCenterVariable;
+		private MemberInfo intSizeVariable;
+#endif
+
 		protected override float HeightMultiplier { get { return 3f; } }
 
 		public override void Initialize()
@@ -24,19 +29,37 @@ namespace RuntimeInspectorNamespace
 
 			centerVariable = typeof( Bounds ).GetProperty( "center" );
 			extentsVariable = typeof( Bounds ).GetProperty( "extents" );
+#if UNITY_2017_2_OR_NEWER
+			intCenterVariable = typeof( BoundsInt ).GetProperty( "center" );
+			intSizeVariable = typeof( BoundsInt ).GetProperty( "size" );
+#endif
 		}
 
 		public override bool SupportsType( Type type )
 		{
+#if UNITY_2017_2_OR_NEWER
+			if( type == typeof( BoundsInt ) )
+				return true;
+#endif
 			return type == typeof( Bounds );
 		}
 
-		protected override void OnBound()
+		protected override void OnBound( MemberInfo variable )
 		{
-			base.OnBound();
+			base.OnBound( variable );
 
-			inputCenter.BindTo( this, centerVariable, "Center:" );
-			inputExtents.BindTo( this, extentsVariable, "Extents:" );
+#if UNITY_2017_2_OR_NEWER
+			if( BoundVariableType == typeof( BoundsInt ) )
+			{
+				inputCenter.BindTo( this, intCenterVariable, "Center:" );
+				inputExtents.BindTo( this, intSizeVariable, "Size:" );
+			}
+			else
+#endif
+			{
+				inputCenter.BindTo( this, centerVariable, "Center:" );
+				inputExtents.BindTo( this, extentsVariable, "Extents:" );
+			}
 		}
 
 		protected override void OnInspectorChanged()

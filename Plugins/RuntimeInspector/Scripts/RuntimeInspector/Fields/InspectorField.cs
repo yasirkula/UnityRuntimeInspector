@@ -99,15 +99,20 @@ namespace RuntimeInspectorNamespace
 		private Getter getter;
 		private Setter setter;
 
-		public abstract bool SupportsType( Type type );
-
 		public virtual void Initialize() { }
 
-		public void BindTo( InspectorField parent, MemberInfo member, string variableName = null )
+		public abstract bool SupportsType( Type type );
+
+		public virtual bool CanBindTo( Type type, MemberInfo variable )
 		{
-			if( member is FieldInfo )
+			return true;
+		}
+
+		public void BindTo( InspectorField parent, MemberInfo variable, string variableName = null )
+		{
+			if( variable is FieldInfo )
 			{
-				FieldInfo field = (FieldInfo) member;
+				FieldInfo field = (FieldInfo) variable;
 				if( variableName == null )
 					variableName = field.Name;
 
@@ -116,17 +121,17 @@ namespace RuntimeInspectorNamespace
 #else
 				if( !parent.BoundVariableType.GetTypeInfo().IsValueType )
 #endif
-					BindTo( field.FieldType, variableName, () => field.GetValue( parent.Value ), ( value ) => field.SetValue( parent.Value, value ) );
+					BindTo( field.FieldType, variableName, () => field.GetValue( parent.Value ), ( value ) => field.SetValue( parent.Value, value ), variable );
 				else
 					BindTo( field.FieldType, variableName, () => field.GetValue( parent.Value ), ( value ) =>
 					{
 						field.SetValue( parent.Value, value );
 						parent.Value = parent.Value;
-					} );
+					}, variable );
 			}
-			else if( member is PropertyInfo )
+			else if( variable is PropertyInfo )
 			{
-				PropertyInfo property = (PropertyInfo) member;
+				PropertyInfo property = (PropertyInfo) variable;
 				if( variableName == null )
 					variableName = property.Name;
 
@@ -135,19 +140,19 @@ namespace RuntimeInspectorNamespace
 #else
 				if( !parent.BoundVariableType.GetTypeInfo().IsValueType )
 #endif
-					BindTo( property.PropertyType, variableName, () => property.GetValue( parent.Value, null ), ( value ) => property.SetValue( parent.Value, value, null ) );
+					BindTo( property.PropertyType, variableName, () => property.GetValue( parent.Value, null ), ( value ) => property.SetValue( parent.Value, value, null ), variable );
 				else
 					BindTo( property.PropertyType, variableName, () => property.GetValue( parent.Value, null ), ( value ) =>
 					{
 						property.SetValue( parent.Value, value, null );
 						parent.Value = parent.Value;
-					} );
+					}, variable );
 			}
 			else
-				throw new ArgumentException( "Member can either be a field or a property" );
+				throw new ArgumentException( "Variable can either be a field or a property" );
 		}
 
-		public void BindTo( Type variableType, string variableName, Getter getter, Setter setter )
+		public void BindTo( Type variableType, string variableName, Getter getter, Setter setter, MemberInfo variable = null )
 		{
 			m_boundVariableType = variableType;
 			Name = variableName;
@@ -155,7 +160,7 @@ namespace RuntimeInspectorNamespace
 			this.getter = getter;
 			this.setter = setter;
 
-			OnBound();
+			OnBound( variable );
 		}
 
 		public void Unbind()
@@ -169,7 +174,7 @@ namespace RuntimeInspectorNamespace
 			Inspector.PoolDrawer( this );
 		}
 
-		protected virtual void OnBound()
+		protected virtual void OnBound( MemberInfo variable )
 		{
 			RefreshValue();
 		}
@@ -241,8 +246,8 @@ namespace RuntimeInspectorNamespace
 		private Image expandArrow; // Expand Arrow's sprite should look right at 0 rotation
 #pragma warning restore 0649
 
-		protected List<InspectorField> elements = new List<InspectorField>( 8 );
-		private List<ExposedMethodField> exposedMethods = new List<ExposedMethodField>();
+		protected readonly List<InspectorField> elements = new List<InspectorField>( 8 );
+		private readonly List<ExposedMethodField> exposedMethods = new List<ExposedMethodField>();
 
 		protected virtual int Length { get { return elements.Count; } }
 
@@ -263,12 +268,66 @@ namespace RuntimeInspectorNamespace
 			}
 		}
 
+		private RuntimeInspector.HeaderVisibility m_headerVisibility = RuntimeInspector.HeaderVisibility.Collapsible;
+		public RuntimeInspector.HeaderVisibility HeaderVisibility
+		{
+			get { return m_headerVisibility; }
+			set
+			{
+				if( m_headerVisibility != value )
+				{
+					if( m_headerVisibility == RuntimeInspector.HeaderVisibility.Hidden )
+					{
+						Depth++;
+						layoutGroup.padding.top = Skin.LineHeight;
+						expandToggle.gameObject.SetActive( true );
+					}
+					else if( value == RuntimeInspector.HeaderVisibility.Hidden )
+					{
+						Depth--;
+						layoutGroup.padding.top = 0;
+						expandToggle.gameObject.SetActive( false );
+					}
+
+					m_headerVisibility = value;
+
+					if( m_headerVisibility == RuntimeInspector.HeaderVisibility.Collapsible )
+					{
+						if( expandArrow != null )
+							expandArrow.gameObject.SetActive( true );
+
+						( (RectTransform) variableNameText.transform ).sizeDelta = new Vector2( -35f, 0f );
+					}
+					else if( m_headerVisibility == RuntimeInspector.HeaderVisibility.AlwaysVisible )
+					{
+						if( expandArrow != null )
+							expandArrow.gameObject.SetActive( false );
+
+						( (RectTransform) variableNameText.transform ).sizeDelta = new Vector2( 0f, 0f );
+
+						if( !m_isExpanded )
+							IsExpanded = true;
+					}
+					else
+					{
+						if( !m_isExpanded )
+							IsExpanded = true;
+					}
+				}
+			}
+		}
+
 		public override void Initialize()
 		{
 			base.Initialize();
 
 			expandToggleTransform = (RectTransform) expandToggle.transform;
-			expandToggle.PointerClick += ( eventData ) => IsExpanded = !m_isExpanded;
+			expandToggle.PointerClick += ( eventData ) =>
+			{
+				if( m_headerVisibility == RuntimeInspector.HeaderVisibility.Collapsible )
+					IsExpanded = !m_isExpanded;
+			};
+
 			IsExpanded = m_isExpanded;
 		}
 
@@ -288,8 +347,11 @@ namespace RuntimeInspectorNamespace
 			expandToggleSizeDelta.y = Skin.LineHeight;
 			expandToggleTransform.sizeDelta = expandToggleSizeDelta;
 
-			layoutGroup.padding.top = Skin.LineHeight;
-			expandArrow.color = Skin.ExpandArrowColor;
+			if( m_headerVisibility != RuntimeInspector.HeaderVisibility.Hidden )
+				layoutGroup.padding.top = Skin.LineHeight;
+
+			if( expandArrow != null )
+				expandArrow.color = Skin.ExpandArrowColor;
 
 			for( int i = 0; i < elements.Count; i++ )
 				elements[i].Skin = Skin;
@@ -394,7 +456,7 @@ namespace RuntimeInspectorNamespace
 		protected InspectorField CreateDrawerForVariable( MemberInfo variable, string variableName = null )
 		{
 			Type variableType = variable is FieldInfo ? ( (FieldInfo) variable ).FieldType : ( (PropertyInfo) variable ).PropertyType;
-			InspectorField variableDrawer = Inspector.CreateDrawerForType( variableType, drawArea, Depth + 1 );
+			InspectorField variableDrawer = Inspector.CreateDrawerForType( variableType, drawArea, Depth + 1, true, variable );
 			if( variableDrawer != null )
 			{
 				variableDrawer.BindTo( this, variable, variableName );

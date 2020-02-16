@@ -9,19 +9,19 @@ namespace RuntimeInspectorNamespace
 
 		public event PointerEvent PointerDown, PointerUp, PointerClick;
 
-		public void OnPointerDown( PointerEventData eventData )
+		void IPointerDownHandler.OnPointerDown( PointerEventData eventData )
 		{
 			if( PointerDown != null )
 				PointerDown( eventData );
 		}
 
-		public void OnPointerUp( PointerEventData eventData )
+		void IPointerUpHandler.OnPointerUp( PointerEventData eventData )
 		{
 			if( PointerUp != null )
 				PointerUp( eventData );
 		}
 
-		public void OnPointerClick( PointerEventData eventData )
+		void IPointerClickHandler.OnPointerClick( PointerEventData eventData )
 		{
 			if( PointerClick != null )
 				PointerClick( eventData );

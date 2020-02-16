@@ -69,8 +69,8 @@ namespace RuntimeInspectorNamespace
 		private ObjectReferencePickerItem referenceItemPrefab;
 #pragma warning restore 0649
 
-		private List<Object> references = new List<Object>( 64 );
-		private List<Object> filteredReferences = new List<Object>( 64 );
+		private readonly List<Object> references = new List<Object>( 64 );
+		private readonly List<Object> filteredReferences = new List<Object>( 64 );
 
 		private Object initialValue;
 

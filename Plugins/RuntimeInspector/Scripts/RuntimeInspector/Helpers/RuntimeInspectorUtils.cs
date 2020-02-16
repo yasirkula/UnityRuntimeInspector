@@ -16,14 +16,22 @@ namespace RuntimeInspectorNamespace
 		private static readonly Dictionary<Type, MemberInfo[]> typeToVariables = new Dictionary<Type, MemberInfo[]>( 89 );
 		private static readonly Dictionary<Type, ExposedMethod[]> typeToExposedMethods = new Dictionary<Type, ExposedMethod[]>( 89 );
 
-		private static readonly HashSet<Type> serializableUnityTypes = new HashSet<Type>() { typeof( Vector2 ), typeof( Vector3 ), typeof( Vector4),
-				typeof( Rect ), typeof( Quaternion ), typeof( Matrix4x4 ), typeof( Color ), typeof( Color32 ), typeof( LayerMask ),
-				typeof( Bounds ), typeof( AnimationCurve ), typeof( Gradient ), typeof( RectOffset ), typeof( GUIStyle ) };
+		private static readonly HashSet<Type> serializableUnityTypes = new HashSet<Type>()
+		{
+			typeof( Vector2 ), typeof( Vector3 ), typeof( Vector4), typeof( Rect ), typeof( Quaternion ),
+			typeof( Matrix4x4 ), typeof( Color ), typeof( Color32 ), typeof( LayerMask ), typeof( Bounds ),
+			typeof( AnimationCurve ), typeof( Gradient ), typeof( RectOffset ), typeof( GUIStyle ),
+#if UNITY_2017_2_OR_NEWER
+			typeof( Vector3Int ), typeof( Vector2Int ), typeof( RectInt ), typeof( BoundsInt )
+#endif
+		};
 
 		private static readonly List<ExposedExtensionMethodHolder> exposedExtensionMethods = new List<ExposedExtensionMethodHolder>();
 		public static Type ExposedExtensionMethodsHolder { set { GetExposedExtensionMethods( value ); } }
 
 		public static readonly HashSet<Transform> IgnoredTransformsInHierarchy = new HashSet<Transform>();
+
+		private static readonly StringBuilder titleCaser = new StringBuilder( 64 );
 
 		private static Canvas m_draggedReferenceItemsCanvas = null;
 		public static Canvas DraggedReferenceItemsCanvas
@@ -60,13 +68,13 @@ namespace RuntimeInspectorNamespace
 			if( str == null || str.Length == 0 )
 				return string.Empty;
 
-			StringBuilder titleCaser = new StringBuilder( str.Length + 5 );
 			byte lastCharType = 1; // 0 -> lowercase, 1 -> _ (underscore), 2 -> number, 3 -> uppercase
 			int i = 0;
 			char ch = str[0];
 			if( ( ch == 'm' || ch == 'M' ) && str.Length > 1 && str[1] == '_' )
 				i = 2;
 
+			titleCaser.Length = 0;
 			for( ; i < str.Length; i++ )
 			{
 				ch = str[i];
@@ -288,21 +296,13 @@ namespace RuntimeInspectorNamespace
 
 				for( int i = 0; i < methods.Length; i++ )
 				{
-#if UNITY_EDITOR || !NETFX_CORE
-					if( !Attribute.IsDefined( methods[i], typeof( RuntimeInspectorButtonAttribute ), true ) )
-#else
-					if( !methods[i].IsDefined( typeof( RuntimeInspectorButtonAttribute ), true ) )
-#endif
+					if( !methods[i].HasAttribute<RuntimeInspectorButtonAttribute>() )
 						continue;
 
 					if( methods[i].GetParameters().Length != 0 )
 						continue;
 
-#if UNITY_EDITOR || !NETFX_CORE
-					RuntimeInspectorButtonAttribute attribute = (RuntimeInspectorButtonAttribute) Attribute.GetCustomAttribute( methods[i], typeof( RuntimeInspectorButtonAttribute ), true );
-#else
-					RuntimeInspectorButtonAttribute attribute = (RuntimeInspectorButtonAttribute) methods[i].GetCustomAttribute( typeof( RuntimeInspectorButtonAttribute ), true );
-#endif
+					RuntimeInspectorButtonAttribute attribute = methods[i].GetAttribute<RuntimeInspectorButtonAttribute>();
 					if( !attribute.IsInitializer || type.IsAssignableFrom( methods[i].ReturnType ) )
 						exposedMethods.Add( new ExposedMethod( methods[i], attribute, false ) );
 				}
@@ -327,25 +327,7 @@ namespace RuntimeInspectorNamespace
 
 		public static bool ShouldExposeInInspector( this MemberInfo variable, bool debugMode )
 		{
-#if UNITY_EDITOR || !NETFX_CORE
-			if( Attribute.IsDefined( variable, typeof( ObsoleteAttribute ) ) )
-#else
-			if( variable.IsDefined( typeof( ObsoleteAttribute ) ) )
-#endif
-				return false;
-
-#if UNITY_EDITOR || !NETFX_CORE
-			if( Attribute.IsDefined( variable, typeof( NonSerializedAttribute ) ) )
-#else
-			if( variable.IsDefined( typeof( NonSerializedAttribute ) ) )
-#endif
-				return false;
-
-#if UNITY_EDITOR || !NETFX_CORE
-			if( Attribute.IsDefined( variable, typeof( HideInInspector ) ) )
-#else
-			if( variable.IsDefined( typeof( HideInInspector ) ) )
-#endif
+			if( variable.HasAttribute<ObsoleteAttribute>() || variable.HasAttribute<NonSerializedAttribute>() || variable.HasAttribute<HideInInspector>() )
 				return false;
 
 			if( debugMode )
@@ -355,11 +337,7 @@ namespace RuntimeInspectorNamespace
 			if( variable is FieldInfo )
 			{
 				FieldInfo field = (FieldInfo) variable;
-#if UNITY_EDITOR || !NETFX_CORE
-				if( !field.IsPublic && !Attribute.IsDefined( field, typeof( SerializeField ) ) )
-#else
-				if( !field.IsPublic && !field.IsDefined( typeof( SerializeField ) ) )
-#endif
+				if( !field.IsPublic && !field.HasAttribute<SerializeField>() )
 					return false;
 			}
 
@@ -408,6 +386,33 @@ namespace RuntimeInspectorNamespace
 				return true;
 
 			return false;
+		}
+
+		public static bool HasAttribute<T>( this MemberInfo variable ) where T : Attribute
+		{
+#if UNITY_EDITOR || !NETFX_CORE
+			return Attribute.IsDefined( variable, typeof( T ), true );
+#else
+			return variable.IsDefined( typeof( T ), true );
+#endif
+		}
+
+		public static T GetAttribute<T>( this MemberInfo variable ) where T : Attribute
+		{
+#if UNITY_EDITOR || !NETFX_CORE
+			return (T) Attribute.GetCustomAttribute( variable, typeof( T ), true );
+#else
+			return (T) variable.GetCustomAttribute( typeof( T ), true );
+#endif
+		}
+
+		public static T[] GetAttributes<T>( this MemberInfo variable ) where T : Attribute
+		{
+#if UNITY_EDITOR || !NETFX_CORE
+			return (T[]) Attribute.GetCustomAttributes( variable, typeof( T ), true );
+#else
+			return (T[]) variable.GetCustomAttributes( typeof( T ), true );
+#endif
 		}
 
 		public static object Instantiate( this Type type )
@@ -503,22 +508,14 @@ namespace RuntimeInspectorNamespace
 			MethodInfo[] methods = type.GetMethods( BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic );
 			for( int i = 0; i < methods.Length; i++ )
 			{
-#if UNITY_EDITOR || !NETFX_CORE
-				if( !Attribute.IsDefined( methods[i], typeof( RuntimeInspectorButtonAttribute ), true ) )
-#else
-				if( !methods[i].IsDefined( typeof( RuntimeInspectorButtonAttribute ), true ) )
-#endif
+				if( !methods[i].HasAttribute<RuntimeInspectorButtonAttribute>() )
 					continue;
 
 				ParameterInfo[] parameters = methods[i].GetParameters();
 				if( parameters.Length != 1 )
 					continue;
 
-#if UNITY_EDITOR || !NETFX_CORE
-				RuntimeInspectorButtonAttribute attribute = (RuntimeInspectorButtonAttribute) Attribute.GetCustomAttribute( methods[i], typeof( RuntimeInspectorButtonAttribute ), true );
-#else
-				RuntimeInspectorButtonAttribute attribute = (RuntimeInspectorButtonAttribute) methods[i].GetCustomAttribute( typeof( RuntimeInspectorButtonAttribute ), true );
-#endif
+				RuntimeInspectorButtonAttribute attribute = methods[i].GetAttribute<RuntimeInspectorButtonAttribute>();
 				Type parameterType = parameters[0].ParameterType;
 				if( !attribute.IsInitializer || parameterType.IsAssignableFrom( methods[i].ReturnType ) )
 					exposedExtensionMethods.Add( new ExposedExtensionMethodHolder( parameterType, methods[i], attribute ) );

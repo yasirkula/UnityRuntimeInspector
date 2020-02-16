@@ -1,8 +1,6 @@
-﻿#if !UNITY_EDITOR && NETFX_CORE
-using System.Reflection;
-#endif
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -33,8 +31,8 @@ namespace RuntimeInspectorNamespace
 		private Dropdown input;
 #pragma warning restore 0649
 
-		private static Dictionary<Type, List<string>> enumNames = new Dictionary<Type, List<string>>();
-		private static Dictionary<Type, List<object>> enumValues = new Dictionary<Type, List<object>>();
+		private static readonly Dictionary<Type, List<string>> enumNames = new Dictionary<Type, List<string>>();
+		private static readonly Dictionary<Type, List<object>> enumValues = new Dictionary<Type, List<object>>();
 
 		private List<string> currEnumNames;
 		private List<object> currEnumValues;
@@ -54,9 +52,9 @@ namespace RuntimeInspectorNamespace
 #endif
 		}
 
-		protected override void OnBound()
+		protected override void OnBound( MemberInfo variable )
 		{
-			base.OnBound();
+			base.OnBound( variable );
 
 			if( !enumNames.TryGetValue( BoundVariableType, out currEnumNames ) || !enumValues.TryGetValue( BoundVariableType, out currEnumValues ) )
 			{
@@ -83,6 +81,7 @@ namespace RuntimeInspectorNamespace
 		private void OnValueChanged( int input )
 		{
 			Value = currEnumValues[input];
+			Inspector.RefreshDelayed();
 		}
 
 		protected override void OnSkinChanged()

@@ -26,6 +26,8 @@ MonoBehaviour:
     a: 1}
   m_inputFieldTextColor: {r: 0.88884085, g: 0.88235295, b: 0.88235295, a: 1}
   m_toggleCheckmarkColor: {r: 0.9411765, g: 0.9342561, b: 0.9342561, a: 1}
+  m_sliderBackgroundColor: {r: 0.43529412, g: 0.43529412, b: 0.43529412, a: 1}
+  m_sliderThumbColor: {r: 0.76862746, g: 0.76862746, b: 0.76862746, a: 1}
   m_buttonBackgroundColor: {r: 0.4700476, g: 0.46323532, b: 0.46323532, a: 1}
   m_buttonTextColor: {r: 0.9411765, g: 0.9342561, b: 0.9342561, a: 1}
   m_selectedItemBackgroundColor: {r: 0.12846024, g: 0.3303187, b: 0.5294118, a: 1}

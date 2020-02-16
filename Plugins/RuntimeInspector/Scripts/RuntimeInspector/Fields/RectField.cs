@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -32,6 +33,10 @@ namespace RuntimeInspectorNamespace
 		private Text labelH;
 #pragma warning restore 0649
 
+#if UNITY_2017_2_OR_NEWER
+		private bool isRectInt;
+#endif
+
 		protected override float HeightMultiplier { get { return 2f; } }
 
 		public override void Initialize()
@@ -48,6 +53,11 @@ namespace RuntimeInspectorNamespace
 			inputW.OnValueChanged += OnValueChanged;
 			inputH.OnValueChanged += OnValueChanged;
 
+			inputX.OnValueSubmitted += OnValueSubmitted;
+			inputY.OnValueSubmitted += OnValueSubmitted;
+			inputW.OnValueSubmitted += OnValueSubmitted;
+			inputH.OnValueSubmitted += OnValueSubmitted;
+
 			inputX.DefaultEmptyValue = "0";
 			inputY.DefaultEmptyValue = "0";
 			inputW.DefaultEmptyValue = "0";
@@ -56,40 +66,88 @@ namespace RuntimeInspectorNamespace
 
 		public override bool SupportsType( Type type )
 		{
+#if UNITY_2017_2_OR_NEWER
+			if( type == typeof( RectInt ) )
+				return true;
+#endif
 			return type == typeof( Rect );
 		}
 
-		protected override void OnBound()
+		protected override void OnBound( MemberInfo variable )
 		{
-			base.OnBound();
+			base.OnBound( variable );
 
-			Rect val = (Rect) Value;
-			inputX.Text = "" + val.x;
-			inputY.Text = "" + val.y;
-			inputW.Text = "" + val.width;
-			inputH.Text = "" + val.height;
+#if UNITY_2017_2_OR_NEWER
+			isRectInt = BoundVariableType == typeof( RectInt );
+			if( isRectInt )
+			{
+				RectInt val = (RectInt) Value;
+				inputX.Text = val.x.ToString();
+				inputY.Text = val.y.ToString();
+				inputW.Text = val.width.ToString();
+				inputH.Text = val.height.ToString();
+			}
+			else
+#endif
+			{
+				Rect val = (Rect) Value;
+				inputX.Text = val.x.ToString();
+				inputY.Text = val.y.ToString();
+				inputW.Text = val.width.ToString();
+				inputH.Text = val.height.ToString();
+			}
 		}
 
 		private bool OnValueChanged( BoundInputField source, string input )
 		{
-			float value;
-			if( float.TryParse( input, out value ) )
+#if UNITY_2017_2_OR_NEWER
+			if( isRectInt )
 			{
-				Rect val = (Rect) Value;
-				if( source == inputX )
-					val.x = value;
-				else if( source == inputY )
-					val.y = value;
-				else if( source == inputW )
-					val.width = value;
-				else
-					val.height = value;
+				int value;
+				if( int.TryParse( input, out value ) )
+				{
+					RectInt val = (RectInt) Value;
+					if( source == inputX )
+						val.x = value;
+					else if( source == inputY )
+						val.y = value;
+					else if( source == inputW )
+						val.width = value;
+					else
+						val.height = value;
 
-				Value = val;
-				return true;
+					Value = val;
+					return true;
+				}
+			}
+			else
+#endif
+			{
+				float value;
+				if( float.TryParse( input, out value ) )
+				{
+					Rect val = (Rect) Value;
+					if( source == inputX )
+						val.x = value;
+					else if( source == inputY )
+						val.y = value;
+					else if( source == inputW )
+						val.width = value;
+					else
+						val.height = value;
+
+					Value = val;
+					return true;
+				}
 			}
 
 			return false;
+		}
+
+		private bool OnValueSubmitted( BoundInputField source, string input )
+		{
+			Inspector.RefreshDelayed();
+			return OnValueChanged( source, input );
 		}
 
 		protected override void OnSkinChanged()
@@ -109,18 +167,38 @@ namespace RuntimeInspectorNamespace
 
 		public override void Refresh()
 		{
-			Rect prevVal = (Rect) Value;
-			base.Refresh();
-			Rect val = (Rect) Value;
+#if UNITY_2017_2_OR_NEWER
+			if( isRectInt )
+			{
+				RectInt prevVal = (RectInt) Value;
+				base.Refresh();
+				RectInt val = (RectInt) Value;
 
-			if( val.x != prevVal.x )
-				inputX.Text = "" + val.x;
-			if( val.y != prevVal.y )
-				inputY.Text = "" + val.y;
-			if( val.width != prevVal.width )
-				inputW.Text = "" + val.width;
-			if( val.height != prevVal.height )
-				inputH.Text = "" + val.height;
+				if( val.x != prevVal.x )
+					inputX.Text = val.x.ToString();
+				if( val.y != prevVal.y )
+					inputY.Text = val.y.ToString();
+				if( val.width != prevVal.width )
+					inputW.Text = val.width.ToString();
+				if( val.height != prevVal.height )
+					inputH.Text = val.height.ToString();
+			}
+			else
+#endif
+			{
+				Rect prevVal = (Rect) Value;
+				base.Refresh();
+				Rect val = (Rect) Value;
+
+				if( val.x != prevVal.x )
+					inputX.Text = val.x.ToString();
+				if( val.y != prevVal.y )
+					inputY.Text = val.y.ToString();
+				if( val.width != prevVal.width )
+					inputW.Text = val.width.ToString();
+				if( val.height != prevVal.height )
+					inputH.Text = val.height.ToString();
+			}
 		}
 	}
 }

@@ -39,7 +39,7 @@ namespace RuntimeInspectorNamespace
 
 		public OnValueChangedDelegate OnValueChanged;
 
-		void Awake()
+		private void Awake()
 		{
 			rectTransform = (RectTransform) transform;
 		}

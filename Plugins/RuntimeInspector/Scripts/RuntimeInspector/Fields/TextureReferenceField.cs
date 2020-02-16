@@ -1,7 +1,7 @@
-﻿#if !UNITY_EDITOR && NETFX_CORE
+﻿using System;
+#if !UNITY_EDITOR && NETFX_CORE
 using System.Reflection;
 #endif
-using System;
 using UnityEngine;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
@@ -19,7 +19,7 @@ namespace RuntimeInspectorNamespace
 
 		public override bool SupportsType( Type type )
 		{
-			return typeof( Texture ).IsAssignableFrom( type ) || type == typeof( Sprite );
+			return typeof( Texture ).IsAssignableFrom( type ) || typeof( Sprite ).IsAssignableFrom( type );
 		}
 
 		protected override void OnReferenceChanged( Object reference )
