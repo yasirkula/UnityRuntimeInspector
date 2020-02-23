@@ -11,6 +11,20 @@ namespace RuntimeInspectorNamespace
 		public delegate object Getter();
 		public delegate void Setter( object value );
 
+#pragma warning disable 0649
+		[SerializeField]
+		protected LayoutElement layoutElement;
+
+		[SerializeField]
+		protected Text variableNameText;
+
+		[SerializeField]
+		private Image variableNameMask;
+
+		[SerializeField]
+		private MaskableGraphic visibleArea;
+#pragma warning restore 0649
+
 		private RuntimeInspector m_inspector;
 		public RuntimeInspector Inspector
 		{
@@ -71,6 +85,9 @@ namespace RuntimeInspectorNamespace
 			}
 		}
 
+		private bool m_isVisible = true;
+		public bool IsVisible { get { return m_isVisible; } }
+
 		public string Name
 		{
 			get { if( variableNameText != null ) return variableNameText.text; return string.Empty; }
@@ -83,23 +100,18 @@ namespace RuntimeInspectorNamespace
 			set { if( variableNameText != null ) variableNameText.text = value; }
 		}
 
+		public virtual bool ShouldRefresh { get { return m_isVisible; } }
+
 		protected virtual float HeightMultiplier { get { return 1f; } }
-
-#pragma warning disable 0649
-		[SerializeField]
-		protected LayoutElement layoutElement;
-
-		[SerializeField]
-		protected Text variableNameText;
-
-		[SerializeField]
-		private Image variableNameMask;
-#pragma warning restore 0649
 
 		private Getter getter;
 		private Setter setter;
 
-		public virtual void Initialize() { }
+		public virtual void Initialize()
+		{
+			if( visibleArea )
+				visibleArea.onCullStateChanged.AddListener( ( bool isCulled ) => m_isVisible = !isCulled );
+		}
 
 		public abstract bool SupportsType( Type type );
 
@@ -250,6 +262,8 @@ namespace RuntimeInspectorNamespace
 		private readonly List<ExposedMethodField> exposedMethods = new List<ExposedMethodField>();
 
 		protected virtual int Length { get { return elements.Count; } }
+
+		public override bool ShouldRefresh { get { return true; } }
 
 		private bool m_isExpanded = false;
 		public bool IsExpanded
@@ -432,7 +446,10 @@ namespace RuntimeInspectorNamespace
 					RegenerateElements();
 
 				for( int i = 0; i < elements.Count; i++ )
-					elements[i].Refresh();
+				{
+					if( elements[i].ShouldRefresh )
+						elements[i].Refresh();
+				}
 			}
 		}
 

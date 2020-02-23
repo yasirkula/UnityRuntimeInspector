@@ -6,6 +6,18 @@ namespace RuntimeInspectorNamespace
 {
 	public class ObjectReferencePickerItem : RecycledListItem
 	{
+#pragma warning disable 0649
+		[SerializeField]
+		private Image background;
+
+		[SerializeField]
+		private RawImage texturePreview;
+		private LayoutElement texturePreviewLayoutElement;
+
+		[SerializeField]
+		private Text referenceNameText;
+#pragma warning restore 0649
+
 		public Object Reference { get; private set; }
 
 		private int m_skinVersion = 0;
@@ -31,18 +43,6 @@ namespace RuntimeInspectorNamespace
 				}
 			}
 		}
-
-#pragma warning disable 0649
-		[SerializeField]
-		private Image background;
-
-		[SerializeField]
-		private RawImage texturePreview;
-		private LayoutElement texturePreviewLayoutElement;
-
-		[SerializeField]
-		private Text referenceNameText;
-#pragma warning restore 0649
 
 		private bool m_isSelected = false;
 		public bool IsSelected

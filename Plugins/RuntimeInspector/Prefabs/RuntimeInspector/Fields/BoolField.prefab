@@ -202,9 +202,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 97cab5bdac5ee91408781a0eb58755de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  layoutElement: {fileID: 114063286651786512}
   variableNameText: {fileID: 114392269213132144}
   variableNameMask: {fileID: 114850040097317468}
-  layoutElement: {fileID: 114063286651786512}
+  visibleArea: {fileID: 114850040097317468}
   toggleBackground: {fileID: 114669642334063456}
   input: {fileID: 114536213069398136}
 --- !u!114 &114536213069398136

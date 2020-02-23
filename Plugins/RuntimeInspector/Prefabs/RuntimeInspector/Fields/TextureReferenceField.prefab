@@ -247,7 +247,9 @@ MonoBehaviour:
   layoutElement: {fileID: 114063286651786512}
   variableNameText: {fileID: 114392269213132144}
   variableNameMask: {fileID: 114611434882133494}
+  visibleArea: {fileID: 114611434882133494}
   input: {fileID: 114822539259664032}
+  inspectReferenceButton: {fileID: 0}
   background: {fileID: 114467808597019330}
   referenceNameText: {fileID: 114866404084585718}
   referencePreview: {fileID: 114938622967388140}

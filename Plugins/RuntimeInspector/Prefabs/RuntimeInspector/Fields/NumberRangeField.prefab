@@ -424,6 +424,7 @@ MonoBehaviour:
   layoutElement: {fileID: 114063286651786512}
   variableNameText: {fileID: 114392269213132144}
   variableNameMask: {fileID: 114720628955753072}
+  visibleArea: {fileID: 114720628955753072}
   input: {fileID: 114740546841579720}
   slider: {fileID: 114932249639052388}
 --- !u!114 &114592903483911060

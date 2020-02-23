@@ -538,6 +538,7 @@ MonoBehaviour:
   layoutElement: {fileID: 114063286651786512}
   variableNameText: {fileID: 114392269213132144}
   variableNameMask: {fileID: 114198838805767348}
+  visibleArea: {fileID: 114198838805767348}
   background: {fileID: 114405046876110564}
   dropdownArrow: {fileID: 114098797441886034}
   templateTransform: {fileID: 224281342250994130}

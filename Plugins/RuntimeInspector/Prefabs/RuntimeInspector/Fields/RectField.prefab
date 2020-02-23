@@ -362,9 +362,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1ce38a59b3c65d74da714ee85231e8b7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  layoutElement: {fileID: 114361039051293932}
   variableNameText: {fileID: 114002819142893158}
   variableNameMask: {fileID: 114489441678013468}
-  layoutElement: {fileID: 114361039051293932}
+  visibleArea: {fileID: 114489441678013468}
   inputX: {fileID: 114300207067034548}
   inputY: {fileID: 114764019321195814}
   inputW: {fileID: 114076643282908296}

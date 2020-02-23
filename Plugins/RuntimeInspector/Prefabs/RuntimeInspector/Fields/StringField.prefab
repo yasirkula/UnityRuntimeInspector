@@ -288,9 +288,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aa5229e47c2e2344dbdb0011b4780fd7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  layoutElement: {fileID: 114851670224041606}
   variableNameText: {fileID: 114185952132973214}
   variableNameMask: {fileID: 114857758294968686}
-  layoutElement: {fileID: 114851670224041606}
+  visibleArea: {fileID: 114857758294968686}
   input: {fileID: 114575060057000574}
 --- !u!114 &114935810533729036
 MonoBehaviour:
