@@ -3,45 +3,80 @@
 //Copyright (c) 2015, Felix Kate All rights reserved.
 // Usage of this code is governed by a BSD-style license that can be found in the LICENSE file.
 
-Shader "UI/ColorWheel" {
-	Properties {
+Shader "UI/ColorWheel" 
+{
+	Properties 
+	{
 		_MainTex("Dummy", 2D) = "white" { }
 		_Color ("Color", Color) = (1,1,1,1)
 		//_BorderWhiteness ("Border Whiteness", Range(0.0,1.0)) = 1.0
+		
+		_StencilComp ("Stencil Comparison", Float) = 8
+        _Stencil ("Stencil ID", Float) = 0
+        _StencilOp ("Stencil Operation", Float) = 0
+        _StencilWriteMask ("Stencil Write Mask", Float) = 255
+        _StencilReadMask ("Stencil Read Mask", Float) = 255
+
+        _ColorMask ("Color Mask", Float) = 15
 	}
-	SubShader {
+	SubShader 
+	{
+		Tags
+        {
+            "Queue"="Transparent"
+            "IgnoreProjector"="True"
+            "RenderType"="Transparent"
+            "PreviewType"="Plane"
+            "CanUseSpriteAtlas"="True"
+        }
+		
+		Stencil
+        {
+            Ref [_Stencil]
+            Comp [_StencilComp]
+            Pass [_StencilOp]
+            ReadMask [_StencilReadMask]
+            WriteMask [_StencilWriteMask]
+        }
+		
 		Lighting Off
 		ZWrite Off
-		ZTest Always
-		Blend SrcAlpha OneMinusSrcAlpha
+		ZTest [unity_GUIZTestMode]
+        Blend SrcAlpha OneMinusSrcAlpha
+        ColorMask [_ColorMask]
 	
-		Pass{		
+		Pass
+		{		
 			CGPROGRAM
 			#pragma vertex vert
 	        #pragma fragment frag
-			#pragma target 3.0
+			#pragma target 2.0
 			
 			#include "UnityCG.cginc"
 			
 			//Prepare the inputs
-			struct vertIN{
+			struct vertIN
+			{
 				float4 vertex : POSITION;
 				float4 texcoord0 : TEXCOORD0;
 			};
 			
-			struct fragIN{
+			struct fragIN
+			{
 				float4 pos : SV_POSITION;
 				float2 uv : TEXCOORD0;
 			};
 			
 			//Function for making smooth circles from gradient
-			fixed smoothCircle(fixed size, fixed gradient){
+			fixed smoothCircle(fixed size, fixed gradient)
+			{
 				fixed scaleFactor = size + 1;
 				return smoothstep(0.5 - 0.0025 * scaleFactor, 0.5 + 0.0025 * scaleFactor, 1 - gradient * scaleFactor);
 			}
 			
 			//Function for making box from gradient
-			fixed smoothBox(fixed size, fixed2 gradient){
+			fixed smoothBox(fixed size, fixed2 gradient)
+			{
 				fixed scaleFactor = size * 0.5;
 				fixed alpha = ceil(gradient.x - scaleFactor);
 				alpha *= ceil((1 - gradient.x) - scaleFactor);
@@ -57,7 +92,8 @@ Shader "UI/ColorWheel" {
 			//fixed _BorderWhiteness;
 
 			//Fill the vert struct
-			fragIN vert (vertIN v){
+			fragIN vert (vertIN v)
+			{
 				fragIN o;
 				
 				o.pos = UnityObjectToClipPos(v.vertex);
@@ -67,7 +103,8 @@ Shader "UI/ColorWheel" {
 			}
 			
 			//Draw the circle
-			fixed4 frag(fragIN i) : COLOR{
+			fixed4 frag(fragIN i) : COLOR
+			{
 				fixed4 c = 1;// _BorderWhiteness1;
 				
 				//Make the inner area of the box
@@ -127,7 +164,6 @@ Shader "UI/ColorWheel" {
 			}
 			
 			ENDCG
-			
 		}
 	} 
 }

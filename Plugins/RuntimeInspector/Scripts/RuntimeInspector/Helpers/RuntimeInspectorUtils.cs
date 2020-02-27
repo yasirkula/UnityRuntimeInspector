@@ -212,6 +212,71 @@ namespace RuntimeInspectorNamespace
 			return null;
 		}
 
+		public static void CopyValuesFrom( this Canvas canvas, Canvas referenceCanvas )
+		{
+			if( !canvas || !referenceCanvas )
+				return;
+
+			canvas.pixelPerfect = referenceCanvas.pixelPerfect;
+			canvas.renderMode = referenceCanvas.renderMode;
+			canvas.sortingLayerID = referenceCanvas.sortingLayerID;
+			canvas.sortingOrder = referenceCanvas.sortingOrder;
+			switch( referenceCanvas.renderMode )
+			{
+				case RenderMode.ScreenSpaceCamera:
+					canvas.worldCamera = referenceCanvas.worldCamera;
+					canvas.planeDistance = referenceCanvas.planeDistance * 0.75f;
+					break;
+				case RenderMode.WorldSpace:
+					canvas.worldCamera = referenceCanvas.worldCamera;
+
+					RectTransform referenceCanvasTransform = (RectTransform) referenceCanvas.transform;
+					Vector3 position;
+					if( referenceCanvasTransform.pivot == new Vector2( 0.5f, 0.5f ) )
+						position = referenceCanvasTransform.position;
+					else
+					{
+						Rect referenceCanvasRect = referenceCanvasTransform.rect;
+						Vector3 centerOffset = new Vector3( ( 0.5f - referenceCanvasTransform.pivot.x ) * referenceCanvasRect.width, ( 0.5f - referenceCanvasTransform.pivot.y ) * referenceCanvasRect.height, 0f );
+						position = referenceCanvasTransform.TransformPoint( centerOffset );
+					}
+
+					canvas.transform.SetPositionAndRotation( position, referenceCanvasTransform.rotation );
+					canvas.transform.localScale = referenceCanvasTransform.localScale;
+					break;
+			}
+
+			CanvasScaler canvasScaler = canvas.GetComponent<CanvasScaler>();
+			CanvasScaler referenceCanvasScaler = referenceCanvas.GetComponent<CanvasScaler>();
+			if( !canvasScaler || !referenceCanvasScaler )
+				return;
+
+			canvasScaler.referencePixelsPerUnit = referenceCanvasScaler.referencePixelsPerUnit;
+
+			if( referenceCanvas.renderMode == RenderMode.WorldSpace )
+				canvasScaler.dynamicPixelsPerUnit = referenceCanvasScaler.dynamicPixelsPerUnit;
+			else
+			{
+				canvasScaler.uiScaleMode = referenceCanvasScaler.uiScaleMode;
+				switch( referenceCanvasScaler.uiScaleMode )
+				{
+					case CanvasScaler.ScaleMode.ConstantPixelSize:
+						canvasScaler.scaleFactor = referenceCanvasScaler.scaleFactor;
+						break;
+					case CanvasScaler.ScaleMode.ScaleWithScreenSize:
+						canvasScaler.referenceResolution = referenceCanvasScaler.referenceResolution;
+						canvasScaler.screenMatchMode = referenceCanvasScaler.screenMatchMode;
+						canvasScaler.matchWidthOrHeight = referenceCanvasScaler.matchWidthOrHeight;
+						break;
+					case CanvasScaler.ScaleMode.ConstantPhysicalSize:
+						canvasScaler.physicalUnit = referenceCanvasScaler.physicalUnit;
+						canvasScaler.fallbackScreenDPI = referenceCanvasScaler.fallbackScreenDPI;
+						canvasScaler.defaultSpriteDPI = referenceCanvasScaler.defaultSpriteDPI;
+						break;
+				}
+			}
+		}
+
 		private static void OnSceneLoaded( Scene arg0, LoadSceneMode arg1 )
 		{
 			if( m_draggedReferenceItemsCanvas )

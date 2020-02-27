@@ -15,10 +15,12 @@ namespace RuntimeInspectorNamespace
 		{
 			get
 			{
-				if( m_instance == null )
+				if( !m_instance )
 				{
 					m_instance = Instantiate( Resources.Load<ObjectReferencePicker>( "RuntimeInspector/ObjectReferencePicker" ) );
 					m_instance.gameObject.SetActive( false );
+
+					RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Add( m_instance.transform );
 				}
 
 				return m_instance;
@@ -91,10 +93,17 @@ namespace RuntimeInspectorNamespace
 			okButton.onClick.AddListener( Close );
 		}
 
-		public void Show( OnReferenceChanged onReferenceChanged, Type referenceType, Object[] references, Object initialReference )
+		public void Show( OnReferenceChanged onReferenceChanged, Type referenceType, Object[] references, Object initialReference, Canvas referenceCanvas )
 		{
 			initialValue = initialReference;
 			this.onReferenceChanged = onReferenceChanged;
+
+			if( referenceCanvas )
+			{
+				Canvas canvas = GetComponent<Canvas>();
+				canvas.CopyValuesFrom( referenceCanvas );
+				canvas.sortingOrder = Mathf.Max( 1000, referenceCanvas.sortingOrder + 100 );
+			}
 
 			panel.rectTransform.anchoredPosition = Vector2.zero;
 			gameObject.SetActive( true );
@@ -227,6 +236,17 @@ namespace RuntimeInspectorNamespace
 
 			if( onReferenceChanged != null )
 				onReferenceChanged( currentlySelectedItem.Reference );
+		}
+
+		public static void DestroyInstance()
+		{
+			if( m_instance )
+			{
+				RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Remove( m_instance.transform );
+
+				Destroy( m_instance );
+				m_instance = null;
+			}
 		}
 	}
 }

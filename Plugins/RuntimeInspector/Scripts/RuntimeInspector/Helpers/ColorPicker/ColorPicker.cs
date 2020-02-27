@@ -10,10 +10,12 @@ namespace RuntimeInspectorNamespace
 		{
 			get
 			{
-				if( m_instance == null )
+				if( !m_instance )
 				{
 					m_instance = Instantiate( Resources.Load<ColorPicker>( "RuntimeInspector/ColorPicker" ) );
 					m_instance.gameObject.SetActive( false );
+
+					RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Add( m_instance.transform );
 				}
 
 				return m_instance;
@@ -74,7 +76,7 @@ namespace RuntimeInspectorNamespace
 			okButton.onClick.AddListener( Close );
 		}
 
-		void Start()
+		private void Start()
 		{
 			colorWheel.OnColorChanged += OnSelectedColorChanged;
 			alphaSlider.OnValueChanged += OnAlphaChanged;
@@ -97,7 +99,7 @@ namespace RuntimeInspectorNamespace
 			OnSelectedColorChanged( colorWheel.Color );
 		}
 
-		public void Show( ColorWheelControl.OnColorChangedDelegate onColorChanged, Color initialColor )
+		public void Show( ColorWheelControl.OnColorChangedDelegate onColorChanged, Color initialColor, Canvas referenceCanvas )
 		{
 			initialValue = initialColor;
 
@@ -106,6 +108,13 @@ namespace RuntimeInspectorNamespace
 			alphaSlider.Color = initialColor;
 			alphaSlider.Value = initialColor.a;
 			this.onColorChanged = onColorChanged;
+
+			if( referenceCanvas )
+			{
+				Canvas canvas = GetComponent<Canvas>();
+				canvas.CopyValuesFrom( referenceCanvas );
+				canvas.sortingOrder = Mathf.Max( 1000, referenceCanvas.sortingOrder + 100 );
+			}
 
 			( (RectTransform) panel.transform ).anchoredPosition = Vector2.zero;
 			gameObject.SetActive( true );
@@ -192,6 +201,17 @@ namespace RuntimeInspectorNamespace
 			}
 
 			return false;
+		}
+
+		public static void DestroyInstance()
+		{
+			if( m_instance )
+			{
+				RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Remove( m_instance.transform );
+
+				Destroy( m_instance );
+				m_instance = null;
+			}
 		}
 	}
 }

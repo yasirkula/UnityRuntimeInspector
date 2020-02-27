@@ -253,8 +253,6 @@ namespace RuntimeInspectorNamespace
 
 			RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Add( drawArea );
 			RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Add( poolParent );
-			RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Add( ColorPicker.Instance.transform );
-			RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Add( ObjectReferencePicker.Instance.transform );
 		}
 
 		private void OnDestroy()
@@ -266,6 +264,9 @@ namespace RuntimeInspectorNamespace
 					RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Remove( poolParent );
 					DestroyImmediate( poolParent.gameObject );
 				}
+
+				ColorPicker.DestroyInstance();
+				ObjectReferencePicker.DestroyInstance();
 
 				drawersPool.Clear();
 			}

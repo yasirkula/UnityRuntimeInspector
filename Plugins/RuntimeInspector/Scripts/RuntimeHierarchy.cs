@@ -212,7 +212,7 @@ namespace RuntimeInspectorNamespace
 		public SelectionChangedDelegate OnSelectionChanged;
 		public DoubleClickDelegate OnItemDoubleClicked;
 
-		// Required in ValidateScrollPosition() function
+		// Used to make sure that the scrolled content always remains within the scroll view's boundaries
 		private PointerEventData nullPointerEventData;
 
 		private Transform m_currentSelection = null;
