@@ -45,7 +45,7 @@ namespace RuntimeInspectorNamespace
 		{
 			if( draggingPointer != null )
 			{
-				if( draggedReference.IsNull() )
+				if( !draggedReference )
 					draggingPointer = null;
 				else if( Input.GetMouseButtonUp( 0 ) )
 				{
@@ -78,7 +78,7 @@ namespace RuntimeInspectorNamespace
 						if( Physics.Raycast( _camera.ScreenPointToRay( Input.mousePosition ), out hit, raycastRange, interactableObjectsMask ) )
 						{
 							hitObject = ( ProcessRaycastHit != null ) ? ProcessRaycastHit( hit ) : hit.collider.gameObject;
-							if( !hitObject.IsNull() )
+							if( hitObject )
 							{
 								pointerDown = true;
 								pointerDownTime = Time.realtimeSinceStartup;
@@ -97,7 +97,7 @@ namespace RuntimeInspectorNamespace
 						{
 							pointerDown = false;
 
-							if( !hitObject.IsNull() && EventSystem.current != null )
+							if( hitObject && EventSystem.current != null )
 							{
 								draggingPointer = new PointerEventData( EventSystem.current )
 								{

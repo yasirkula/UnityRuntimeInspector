@@ -1,21 +1,19 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
-	public class RuntimeHierarchy : SkinnedWindow
+	public class RuntimeHierarchy : SkinnedWindow, IListViewAdapter
 	{
-		private const string POOL_OBJECT_NAME = "RuntimeHierarchyPool";
-
 		public delegate void SelectionChangedDelegate( Transform selection );
 		public delegate void DoubleClickDelegate( Transform selection );
 		public delegate bool GameObjectFilterDelegate( Transform transform );
 
 #pragma warning disable 0649
 		[SerializeField]
-		[UnityEngine.Serialization.FormerlySerializedAs( "refreshInterval" )]
 		private float m_refreshInterval = 0f;
 		public float RefreshInterval
 		{
@@ -40,15 +38,8 @@ namespace RuntimeInspectorNamespace
 		}
 
 		private float nextHierarchyRefreshTime = -1f;
+		private float nextObjectNamesRefreshTime = -1f;
 		private float nextSearchRefreshTime = -1f;
-
-		[SerializeField]
-		private int poolCapacity = 64;
-		private Transform poolParent;
-		private static int aliveHierarchies = 0;
-		private static readonly List<HierarchyItem> sceneDrawerPool = new List<HierarchyItem>( 8 );
-		private static List<HierarchyItem> transformDrawerPool;
-		private static List<HierarchyItem> searchEntryDrawerPool;
 
 		[SerializeField]
 		private bool m_exposeUnityScenes = true;
@@ -119,38 +110,11 @@ namespace RuntimeInspectorNamespace
 		}
 
 		[SerializeField]
-		[UnityEngine.Serialization.FormerlySerializedAs( "doubleClickThreshold" )]
 		private float m_doubleClickThreshold = 0.5f;
 		public float DoubleClickThreshold
 		{
 			get { return m_doubleClickThreshold; }
 			set { m_doubleClickThreshold = value; }
-		}
-
-		private float lastClickTime;
-
-		private Transform m_currentSelection = null;
-		public Transform CurrentSelection
-		{
-			get { return m_currentSelection; }
-			private set
-			{
-				if( value != null && value.Equals( null ) )
-					value = null;
-
-				if( m_currentSelection != value )
-				{
-					m_currentSelection = value;
-
-#if UNITY_EDITOR
-					if( syncSelectionWithEditorHierarchy )
-						UnityEditor.Selection.activeTransform = m_currentSelection;
-#endif
-
-					if( OnSelectionChanged != null )
-						OnSelectionChanged( m_currentSelection );
-				}
-			}
 		}
 
 		public string SearchTerm
@@ -177,8 +141,8 @@ namespace RuntimeInspectorNamespace
 				if( m_connectedInspector != value )
 				{
 					m_connectedInspector = value;
-					if( CurrentSelection != null )
-						m_connectedInspector.Inspect( CurrentSelection.gameObject );
+					if( m_currentSelection )
+						m_connectedInspector.Inspect( m_currentSelection.gameObject );
 				}
 			}
 		}
@@ -188,10 +152,10 @@ namespace RuntimeInspectorNamespace
 		private ScrollRect scrollView;
 
 		[SerializeField]
-		private RectTransform drawAreaHierarchy;
+		private RectTransform drawArea;
 
 		[SerializeField]
-		private RectTransform drawAreaSearchResults;
+		private RecycledListView listView;
 
 		[SerializeField]
 		private Image background;
@@ -218,23 +182,62 @@ namespace RuntimeInspectorNamespace
 		private Text selectedPathText;
 
 		[SerializeField]
-		private HierarchyItemRoot sceneDrawerPrefab;
+		private HierarchyField drawerPrefab;
 
 		[SerializeField]
-		private HierarchyItemTransform transformDrawerPrefab;
+		private Sprite m_sceneDrawerBackground;
+		public Sprite SceneDrawerBackground { get { return m_sceneDrawerBackground; } }
 
 		[SerializeField]
-		private HierarchyItemSearchEntry searchEntryDrawerPrefab;
+		private Sprite m_transformDrawerBackground;
+		public Sprite TransformDrawerBackground { get { return m_transformDrawerBackground; } }
 #pragma warning restore 0649
 
-		private HierarchyItem currentlySelectedDrawer = null;
+		private static int aliveHierarchies = 0;
 
-		private readonly List<HierarchyItemRoot> sceneDrawers = new List<HierarchyItemRoot>( 8 );
-		private readonly List<HierarchyItemRoot> searchSceneDrawers = new List<HierarchyItemRoot>( 8 );
-		private readonly Dictionary<string, HierarchyItemRoot> pseudoSceneDrawers = new Dictionary<string, HierarchyItemRoot>();
+		private readonly List<HierarchyField> drawers = new List<HierarchyField>( 32 );
+
+		private readonly List<HierarchyDataRoot> sceneData = new List<HierarchyDataRoot>( 8 );
+		private readonly List<HierarchyDataRoot> searchSceneData = new List<HierarchyDataRoot>( 8 );
+		private readonly Dictionary<string, HierarchyDataRootPseudoScene> pseudoSceneDataLookup = new Dictionary<string, HierarchyDataRootPseudoScene>();
+
+		private bool isListViewDirty = true;
+		private int totalItemCount;
+
+		private float lastClickTime;
+		private HierarchyField currentlyPressedDrawer;
+		private float pressedDrawerDraggedReferenceCreateTime;
+		private PointerEventData pressedDrawerActivePointer;
 
 		public SelectionChangedDelegate OnSelectionChanged;
 		public DoubleClickDelegate OnItemDoubleClicked;
+
+		// Required in ValidateScrollPosition() function
+		private PointerEventData nullPointerEventData;
+
+		private Transform m_currentSelection = null;
+		public Transform CurrentSelection
+		{
+			get { return m_currentSelection; }
+			private set
+			{
+				if( !value )
+					value = null;
+
+				if( m_currentSelection != value )
+				{
+					m_currentSelection = value;
+
+#if UNITY_EDITOR
+					if( syncSelectionWithEditorHierarchy )
+						UnityEditor.Selection.activeTransform = m_currentSelection;
+#endif
+
+					if( OnSelectionChanged != null )
+						OnSelectionChanged( m_currentSelection );
+				}
+			}
+		}
 
 		private GameObjectFilterDelegate m_gameObjectDelegate;
 		public GameObjectFilterDelegate GameObjectFilter
@@ -244,65 +247,53 @@ namespace RuntimeInspectorNamespace
 			{
 				m_gameObjectDelegate = value;
 
-				for( int i = 0; i < sceneDrawers.Count; i++ )
+				for( int i = 0; i < sceneData.Count; i++ )
 				{
-					if( sceneDrawers[i].IsExpanded )
+					if( sceneData[i].IsExpanded )
 					{
-						sceneDrawers[i].IsExpanded = false;
-						sceneDrawers[i].IsExpanded = true;
+						sceneData[i].IsExpanded = false;
+						sceneData[i].IsExpanded = true;
 					}
 				}
 
 				if( m_isInSearchMode )
 				{
-					for( int i = 0; i < searchSceneDrawers.Count; i++ )
+					for( int i = 0; i < searchSceneData.Count; i++ )
 					{
-						HierarchyItemRoot sceneDrawer = searchSceneDrawers[i];
-						if( sceneDrawer.gameObject.activeSelf && sceneDrawer.IsExpanded )
+						if( searchSceneData[i].IsExpanded )
 						{
-							sceneDrawer.IsExpanded = false;
-							sceneDrawer.IsExpanded = true;
+							searchSceneData[i].IsExpanded = false;
+							searchSceneData[i].IsExpanded = true;
 						}
 					}
 				}
 			}
 		}
 
+		int IListViewAdapter.Count { get { return totalItemCount; } }
+		float IListViewAdapter.ItemHeight { get { return Skin.LineHeight; } }
+
 		protected override void Awake()
 		{
 			base.Awake();
+			listView.SetAdapter( this );
 
-			if( transformDrawerPool == null )
-				transformDrawerPool = new List<HierarchyItem>( poolCapacity );
-			if( searchEntryDrawerPool == null )
-				searchEntryDrawerPool = new List<HierarchyItem>( poolCapacity );
-
-			GameObject poolParentGO = GameObject.Find( POOL_OBJECT_NAME );
-			if( poolParentGO == null )
-			{
-				poolParentGO = new GameObject( POOL_OBJECT_NAME );
-				DontDestroyOnLoad( poolParentGO );
-			}
-
-			poolParent = poolParentGO.transform;
 			aliveHierarchies++;
+			nullPointerEventData = new PointerEventData( null );
 
+			searchInputField.onValueChanged.AddListener( OnSearchTermChanged );
 			OnSelectionChanged += ( transform ) =>
 			{
-				if( !ConnectedInspector.IsNull() )
+				if( ConnectedInspector )
 				{
-					if( transform.IsNull() )
+					if( !transform )
 						ConnectedInspector.StopInspect();
 					else
 						ConnectedInspector.Inspect( transform.gameObject );
 				}
 			};
 
-			searchInputField.onValueChanged.AddListener( OnSearchTermChanged );
-
-			RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Add( drawAreaHierarchy );
-			RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Add( drawAreaSearchResults );
-			RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Add( poolParent );
+			RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Add( drawArea );
 		}
 
 		private void Start()
@@ -326,28 +317,15 @@ namespace RuntimeInspectorNamespace
 			SceneManager.sceneUnloaded -= OnSceneUnloaded;
 
 			if( --aliveHierarchies == 0 )
-			{
-				if( !poolParent.IsNull() )
-				{
-					RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Remove( poolParent );
-					DestroyImmediate( poolParent.gameObject );
-				}
+				HierarchyData.ClearPool();
 
-				sceneDrawerPool.Clear();
-
-				if( transformDrawerPool != null )
-					transformDrawerPool.Clear();
-				if( searchEntryDrawerPool != null )
-					searchEntryDrawerPool.Clear();
-			}
-
-			RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Remove( drawAreaHierarchy );
-			RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Remove( drawAreaSearchResults );
+			RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Remove( drawArea );
 		}
 
 #if UNITY_EDITOR
 		private void OnEnable()
 		{
+			UnityEditor.Selection.selectionChanged -= OnEditorSelectionChanged;
 			UnityEditor.Selection.selectionChanged += OnEditorSelectionChanged;
 		}
 
@@ -361,7 +339,7 @@ namespace RuntimeInspectorNamespace
 			if( !syncSelectionWithEditorHierarchy )
 				return;
 
-			if( UnityEditor.Selection.activeTransform != null || UnityEditor.Selection.activeObject == null )
+			if( UnityEditor.Selection.activeTransform || !UnityEditor.Selection.activeObject )
 				Select( UnityEditor.Selection.activeTransform );
 		}
 #endif
@@ -370,23 +348,91 @@ namespace RuntimeInspectorNamespace
 		{
 			base.Update();
 
-			if( Time.realtimeSinceStartup > nextHierarchyRefreshTime )
+			float time = Time.realtimeSinceStartup;
+			if( !m_isInSearchMode )
 			{
-				nextHierarchyRefreshTime = Time.realtimeSinceStartup + m_refreshInterval;
-				Refresh();
+				if( time > nextHierarchyRefreshTime )
+					Refresh();
+			}
+			else if( time > nextSearchRefreshTime )
+				RefreshSearchResults();
+
+			if( isListViewDirty )
+				RefreshListView();
+
+			if( time > nextObjectNamesRefreshTime )
+			{
+				nextObjectNamesRefreshTime = time + m_objectNamesRefreshInterval;
+
+				for( int i = 0; i < sceneData.Count; i++ )
+					sceneData[i].ResetCachedNames();
+
+				for( int i = 0; i < searchSceneData.Count; i++ )
+					searchSceneData[i].ResetCachedNames();
+
+				for( int i = 0; i < drawers.Count; i++ )
+				{
+					if( drawers[i].gameObject.activeSelf )
+						drawers[i].RefreshName();
+				}
 			}
 
-			if( m_isInSearchMode && Time.realtimeSinceStartup > nextSearchRefreshTime )
+			if( m_createDraggedReferenceOnHold && currentlyPressedDrawer && time > pressedDrawerDraggedReferenceCreateTime )
 			{
-				nextSearchRefreshTime = Time.realtimeSinceStartup + m_searchRefreshInterval;
-				RefreshSearchResults();
+				if( currentlyPressedDrawer.gameObject.activeSelf && currentlyPressedDrawer.Data.BoundTransform )
+					RuntimeInspectorUtils.CreateDraggedReferenceItem( currentlyPressedDrawer.Data.BoundTransform, pressedDrawerActivePointer, Skin );
+
+				currentlyPressedDrawer = null;
+				pressedDrawerActivePointer = null;
 			}
 		}
 
 		public void Refresh()
 		{
-			for( int i = 0; i < sceneDrawers.Count; i++ )
-				sceneDrawers[i].Refresh();
+			if( m_isInSearchMode )
+				return;
+
+			nextHierarchyRefreshTime = Time.realtimeSinceStartup + m_refreshInterval;
+
+			bool hasChanged = false;
+			for( int i = 0; i < sceneData.Count; i++ )
+				hasChanged |= sceneData[i].Refresh();
+
+			if( hasChanged )
+				isListViewDirty = true;
+			else
+			{
+				for( int i = drawers.Count - 1; i >= 0; i-- )
+				{
+					if( drawers[i].gameObject.activeSelf )
+						drawers[i].Refresh();
+				}
+			}
+		}
+
+		private void RefreshListView()
+		{
+			isListViewDirty = false;
+
+			totalItemCount = 0;
+			if( !m_isInSearchMode )
+			{
+				for( int i = sceneData.Count - 1; i >= 0; i-- )
+					totalItemCount += sceneData[i].Height;
+			}
+			else
+			{
+				for( int i = searchSceneData.Count - 1; i >= 0; i-- )
+					totalItemCount += searchSceneData[i].Height;
+			}
+
+			listView.UpdateList( false );
+			scrollView.OnScroll( nullPointerEventData );
+		}
+
+		public void SetListViewDirty()
+		{
+			isListViewDirty = true;
 		}
 
 		public void RefreshSearchResults()
@@ -394,42 +440,45 @@ namespace RuntimeInspectorNamespace
 			if( !m_isInSearchMode )
 				return;
 
-			for( int i = 0; i < searchSceneDrawers.Count; i++ )
-			{
-				HierarchyItemRoot sceneDrawer = searchSceneDrawers[i];
-				sceneDrawer.Refresh();
+			nextSearchRefreshTime = Time.realtimeSinceStartup + m_searchRefreshInterval;
 
-				if( sceneDrawer.Content.Children.Count > 0 )
-				{
-					if( !sceneDrawer.gameObject.activeSelf )
-					{
-						sceneDrawer.gameObject.SetActive( true );
-						sceneDrawer.IsExpanded = true;
-					}
-				}
-				else if( sceneDrawer.gameObject.activeSelf )
-					sceneDrawer.gameObject.SetActive( false );
+			for( int i = 0; i < searchSceneData.Count; i++ )
+			{
+				HierarchyDataRootSearch data = (HierarchyDataRootSearch) searchSceneData[i];
+
+				bool wasExpandable = data.CanExpand;
+				data.Refresh();
+				if( data.CanExpand && !wasExpandable )
+					data.IsExpanded = true;
+
+				isListViewDirty = true;
 			}
 		}
 
 		public void RefreshNameOf( Transform target )
 		{
-			if( !target.IsNull() )
+			if( target )
 			{
 				Scene targetScene = target.gameObject.scene;
-				for( int i = 0; i < sceneDrawers.Count; i++ )
+				for( int i = 0; i < sceneData.Count; i++ )
 				{
-					IHierarchyRootContent content = sceneDrawers[i].Content;
-					if( ( content is HierarchyRootPseudoScene ) || ( (HierarchyRootScene) content ).Scene == targetScene )
-						sceneDrawers[i].RefreshNameOf( target );
+					HierarchyDataRoot data = sceneData[i];
+					if( ( data is HierarchyDataRootPseudoScene ) || ( (HierarchyDataRootScene) data ).Scene == targetScene )
+						sceneData[i].RefreshNameOf( target );
 				}
 
 				if( m_isInSearchMode )
 				{
 					RefreshSearchResults();
 
-					for( int i = 0; i < searchSceneDrawers.Count; i++ )
-						searchSceneDrawers[i].RefreshNameOf( target );
+					for( int i = 0; i < searchSceneData.Count; i++ )
+						searchSceneData[i].RefreshNameOf( target );
+				}
+
+				for( int i = 0; i < drawers.Count; i++ )
+				{
+					if( drawers[i].gameObject.activeSelf && drawers[i].Data.BoundTransform == target )
+						drawers[i].RefreshName();
 				}
 			}
 		}
@@ -458,108 +507,153 @@ namespace RuntimeInspectorNamespace
 				placeholder.color = placeholderColor;
 			}
 
-			for( int i = 0; i < sceneDrawers.Count; i++ )
-				sceneDrawers[i].Skin = Skin;
-
-			for( int i = 0; i < searchSceneDrawers.Count; i++ )
-				searchSceneDrawers[i].Skin = Skin;
-
-			LayoutRebuilder.ForceRebuildLayoutImmediate( drawAreaHierarchy );
-			LayoutRebuilder.ForceRebuildLayoutImmediate( drawAreaSearchResults );
+			LayoutRebuilder.ForceRebuildLayoutImmediate( drawArea );
+			listView.ResetList();
 		}
 
-		public void OnClicked( HierarchyItem drawer )
+		void IListViewAdapter.SetItemContent( RecycledListItem item )
 		{
-			if( currentlySelectedDrawer == drawer )
+			if( isListViewDirty )
+				RefreshListView();
+
+			HierarchyField drawer = (HierarchyField) item;
+			int index = drawer.Position;
+			List<HierarchyDataRoot> rootData = !m_isInSearchMode ? sceneData : searchSceneData;
+			for( int i = 0; i < rootData.Count; i++ )
+			{
+				if( rootData[i].Depth < 0 )
+					continue;
+
+				if( index < rootData[i].Height )
+				{
+					drawer.SetContent( index > 0 ? rootData[i].FindDataAtIndex( index - 1 ) : rootData[i] );
+					drawer.IsSelected = m_currentSelection && m_currentSelection == drawer.Data.BoundTransform;
+					drawer.Skin = Skin;
+					drawer.Refresh();
+
+					return;
+				}
+				else
+					index -= rootData[i].Height;
+			}
+		}
+
+		void IListViewAdapter.OnItemClicked( RecycledListItem item )
+		{
+			HierarchyField drawer = (HierarchyField) item;
+			if( !drawer )
+			{
+				if( m_currentSelection )
+				{
+					for( int i = drawers.Count - 1; i >= 0; i-- )
+					{
+						if( drawers[i].gameObject.activeSelf && drawers[i].Data.BoundTransform == m_currentSelection )
+							drawers[i].IsSelected = false;
+					}
+
+					CurrentSelection = null;
+				}
+			}
+			else if( m_currentSelection == drawer.Data.BoundTransform )
 			{
 				if( OnItemDoubleClicked != null )
 				{
-					if( !drawer.IsNull() && Time.realtimeSinceStartup - lastClickTime <= m_doubleClickThreshold )
+					if( Time.realtimeSinceStartup - lastClickTime <= m_doubleClickThreshold )
 					{
 						lastClickTime = 0f;
-						if( drawer is HierarchyItemTransform )
-						{
-							Transform target = ( (HierarchyItemTransform) drawer ).BoundTransform;
-							if( !target.IsNull() )
-								OnItemDoubleClicked( target );
-						}
+
+						if( m_currentSelection )
+							OnItemDoubleClicked( m_currentSelection );
 					}
 					else
 						lastClickTime = Time.realtimeSinceStartup;
 				}
-
-				return;
-			}
-
-			lastClickTime = Time.realtimeSinceStartup;
-
-			if( !currentlySelectedDrawer.IsNull() )
-				currentlySelectedDrawer.IsSelected = false;
-
-			currentlySelectedDrawer = drawer;
-
-			if( !drawer.IsNull() )
-			{
-				drawer.IsSelected = true;
-
-				if( drawer is HierarchyItemTransform )
-				{
-					Transform clickedTransform = ( (HierarchyItemTransform) drawer ).BoundTransform;
-					CurrentSelection = clickedTransform;
-
-					if( drawer is HierarchyItemSearchEntry && !clickedTransform.IsNull() )
-					{
-						// Fetch the object's path and show it in Hierarchy
-						System.Text.StringBuilder sb = new System.Text.StringBuilder( 200 ).AppendLine( "Path:" );
-
-						while( !clickedTransform.IsNull() )
-						{
-							sb.Append( "  " ).AppendLine( clickedTransform.name );
-							clickedTransform = clickedTransform.parent;
-						}
-
-						selectedPathText.text = sb.Append( "  " ).Append( drawer.GetComponentInParent<HierarchyItemRoot>().Content.Name ).ToString();
-						selectedPathBackground.gameObject.SetActive( true );
-					}
-				}
-				else
-					CurrentSelection = null;
 			}
 			else
-				CurrentSelection = null;
+			{
+				Transform clickedTransform = drawer.Data.BoundTransform;
+				for( int i = drawers.Count - 1; i >= 0; i-- )
+				{
+					if( drawers[i].gameObject.activeSelf )
+					{
+						Transform drawerTransform = drawers[i].Data.BoundTransform;
+						if( drawerTransform == m_currentSelection )
+							drawers[i].IsSelected = false;
+						else if( drawerTransform == clickedTransform && clickedTransform )
+							drawers[i].IsSelected = true;
+					}
+				}
+
+				lastClickTime = Time.realtimeSinceStartup;
+				CurrentSelection = clickedTransform;
+
+				if( m_isInSearchMode && clickedTransform )
+				{
+					// Fetch the object's path and show it in Hierarchy
+					System.Text.StringBuilder sb = new System.Text.StringBuilder( 200 ).AppendLine( "Path:" );
+
+					while( clickedTransform )
+					{
+						sb.Append( "  " ).AppendLine( clickedTransform.name );
+						clickedTransform = clickedTransform.parent;
+					}
+
+					selectedPathText.text = sb.Append( "  " ).Append( drawer.Data.Root.Name ).ToString();
+					selectedPathBackground.gameObject.SetActive( true );
+				}
+			}
 		}
 
-		public bool Select( Transform selection )
+		public void OnDrawerPointerEvent( HierarchyField drawer, PointerEventData eventData, bool isPointerDown )
 		{
-			if( selection.IsNull() )
+			if( !isPointerDown )
+			{
+				currentlyPressedDrawer = null;
+				pressedDrawerActivePointer = null;
+			}
+			else if( m_createDraggedReferenceOnHold )
+			{
+				currentlyPressedDrawer = drawer;
+				pressedDrawerActivePointer = eventData;
+				pressedDrawerDraggedReferenceCreateTime = Time.realtimeSinceStartup + m_draggedReferenceHoldTime;
+			}
+		}
+
+		public bool Select( Transform selection, bool forceSelection = false )
+		{
+			if( !selection )
 			{
 				Deselect();
 				return true;
 			}
 			else
 			{
-				if( selection == CurrentSelection )
+				if( !forceSelection && selection == m_currentSelection )
 					return true;
+
+				CurrentSelection = selection;
 
 				// Make sure that the contents of the hierarchy are up-to-date
 				Refresh();
 
 				Scene selectionScene = selection.gameObject.scene;
-				for( int i = 0; i < sceneDrawers.Count; i++ )
+				for( int i = 0; i < sceneData.Count; i++ )
 				{
-					IHierarchyRootContent content = sceneDrawers[i].Content;
-					if( ( content is HierarchyRootPseudoScene ) || ( (HierarchyRootScene) content ).Scene == selectionScene )
+					HierarchyDataRoot data = sceneData[i];
+					if( ( data is HierarchyDataRootPseudoScene ) || ( (HierarchyDataRootScene) data ).Scene == selectionScene )
 					{
-						HierarchyItem selectionItem = sceneDrawers[i].SelectTransform( selection );
+						HierarchyDataTransform selectionItem = sceneData[i].FindTransform( selection );
 						if( selectionItem != null )
 						{
-							if( drawAreaHierarchy.sizeDelta.y > 0f )
-							{
-								// Focus on selected HierarchyItem
-								LayoutRebuilder.ForceRebuildLayoutImmediate( drawAreaHierarchy );
-								Vector3 localPos = drawAreaHierarchy.InverseTransformPoint( selectionItem.transform.position );
-								scrollView.verticalNormalizedPosition = Mathf.Clamp01( 1f + localPos.y / drawAreaHierarchy.sizeDelta.y );
-							}
+							RefreshListView();
+
+							// Focus on selected HierarchyItem
+							int itemIndex = selectionItem.AbsoluteIndex;
+							for( int j = 0; j < i; j++ )
+								itemIndex += sceneData[i].Height;
+
+							LayoutRebuilder.ForceRebuildLayoutImmediate( drawArea );
+							scrollView.verticalNormalizedPosition = Mathf.Clamp01( 1f - (float) itemIndex / totalItemCount );
 
 							return true;
 						}
@@ -572,7 +666,7 @@ namespace RuntimeInspectorNamespace
 
 		public void Deselect()
 		{
-			OnClicked( null );
+			( (IListViewAdapter) this ).OnItemClicked( null );
 		}
 
 		private void OnSearchTermChanged( string search )
@@ -584,9 +678,18 @@ namespace RuntimeInspectorNamespace
 			{
 				if( m_isInSearchMode )
 				{
+					for( int i = 0; i < searchSceneData.Count; i++ )
+						searchSceneData[i].IsExpanded = false;
+
 					scrollView.verticalNormalizedPosition = 1f;
 					selectedPathBackground.gameObject.SetActive( false );
+
+					isListViewDirty = true;
 					m_isInSearchMode = false;
+
+					// Focus on currently selected object after exiting search mode
+					if( m_currentSelection )
+						Select( m_currentSelection, true );
 				}
 			}
 			else
@@ -595,19 +698,18 @@ namespace RuntimeInspectorNamespace
 				{
 					scrollView.verticalNormalizedPosition = 1f;
 					nextSearchRefreshTime = Time.realtimeSinceStartup + m_searchRefreshInterval;
+
+					isListViewDirty = true;
 					m_isInSearchMode = true;
 
 					RefreshSearchResults();
-					for( int i = 0; i < searchSceneDrawers.Count; i++ )
-						searchSceneDrawers[i].IsExpanded = true;
+
+					for( int i = 0; i < searchSceneData.Count; i++ )
+						searchSceneData[i].IsExpanded = true;
 				}
 				else
 					RefreshSearchResults();
 			}
-
-			drawAreaHierarchy.gameObject.SetActive( !m_isInSearchMode );
-			drawAreaSearchResults.gameObject.SetActive( m_isInSearchMode );
-			scrollView.content = m_isInSearchMode ? drawAreaSearchResults : drawAreaHierarchy;
 		}
 
 		private void OnSceneLoaded( Scene arg0, LoadSceneMode arg1 )
@@ -618,32 +720,37 @@ namespace RuntimeInspectorNamespace
 			if( !arg0.IsValid() )
 				return;
 
-			for( int i = 0; i < sceneDrawers.Count; i++ )
+			for( int i = 0; i < sceneData.Count; i++ )
 			{
-				if( ( sceneDrawers[i].Content is HierarchyRootScene ) && ( (HierarchyRootScene) sceneDrawers[i].Content ).Scene == arg0 )
+				if( sceneData[i] is HierarchyDataRootScene && ( (HierarchyDataRootScene) sceneData[i] ).Scene == arg0 )
 					return;
 			}
 
-			HierarchyItemRoot sceneDrawer = InstantiateSceneDrawer( new HierarchyRootScene( arg0 ), drawAreaHierarchy );
-			sceneDrawers.Add( sceneDrawer );
+			HierarchyDataRootScene data = new HierarchyDataRootScene( this, arg0 );
+			data.Refresh();
 
-			HierarchyItemRoot searchResultDrawer = InstantiateSceneDrawer( new HierarchyRootSearch( this, sceneDrawer.Content ), drawAreaSearchResults );
-			searchSceneDrawers.Add( searchResultDrawer );
+			// Unity scenes should come before pseudo-scenes
+			int index = sceneData.Count - pseudoSceneDataLookup.Count;
+			sceneData.Insert( index, data );
+			searchSceneData.Insert( index, new HierarchyDataRootSearch( this, data ) );
 
-			sceneDrawer.IsExpanded = true;
+			isListViewDirty = true;
 		}
 
 		private void OnSceneUnloaded( Scene arg0 )
 		{
-			for( int i = 0; i < sceneDrawers.Count; i++ )
+			for( int i = 0; i < sceneData.Count; i++ )
 			{
-				if( ( sceneDrawers[i].Content is HierarchyRootScene ) && ( (HierarchyRootScene) sceneDrawers[i].Content ).Scene == arg0 )
+				if( sceneData[i] is HierarchyDataRootScene && ( (HierarchyDataRootScene) sceneData[i] ).Scene == arg0 )
 				{
-					sceneDrawers[i].Unbind();
-					sceneDrawers.RemoveAt( i );
+					sceneData[i].IsExpanded = false;
+					sceneData.RemoveAt( i );
 
-					searchSceneDrawers[i].Unbind();
-					searchSceneDrawers.RemoveAt( i );
+					searchSceneData[i].IsExpanded = false;
+					searchSceneData.RemoveAt( i );
+
+					isListViewDirty = true;
+					return;
 				}
 			}
 		}
@@ -680,41 +787,41 @@ namespace RuntimeInspectorNamespace
 
 		public void AddToPseudoScene( string scene, IEnumerable<Transform> transforms )
 		{
-			HierarchyRootPseudoScene pseudoScene = GetPseudoScene( scene, true );
+			HierarchyDataRootPseudoScene pseudoScene = GetPseudoScene( scene, true );
 			foreach( Transform transform in transforms )
 				pseudoScene.AddChild( transform );
 		}
 
 		public void RemoveFromPseudoScene( string scene, Transform transform, bool deleteSceneIfEmpty )
 		{
-			HierarchyRootPseudoScene pseudoScene = GetPseudoScene( scene, false );
+			HierarchyDataRootPseudoScene pseudoScene = GetPseudoScene( scene, false );
 			if( pseudoScene == null )
 				return;
 
 			pseudoScene.RemoveChild( transform );
 
-			if( deleteSceneIfEmpty && pseudoScene.Children.Count == 0 )
+			if( deleteSceneIfEmpty && pseudoScene.ChildCount == 0 )
 				DeletePseudoScene( scene );
 		}
 
 		public void RemoveFromPseudoScene( string scene, IEnumerable<Transform> transforms, bool deleteSceneIfEmpty )
 		{
-			HierarchyRootPseudoScene pseudoScene = GetPseudoScene( scene, false );
+			HierarchyDataRootPseudoScene pseudoScene = GetPseudoScene( scene, false );
 			if( pseudoScene == null )
 				return;
 
 			foreach( Transform transform in transforms )
 				pseudoScene.RemoveChild( transform );
 
-			if( deleteSceneIfEmpty && pseudoScene.Children.Count == 0 )
+			if( deleteSceneIfEmpty && pseudoScene.ChildCount == 0 )
 				DeletePseudoScene( scene );
 		}
 
-		private HierarchyRootPseudoScene GetPseudoScene( string scene, bool createIfNotExists )
+		private HierarchyDataRootPseudoScene GetPseudoScene( string scene, bool createIfNotExists )
 		{
-			HierarchyItemRoot drawer;
-			if( pseudoSceneDrawers.TryGetValue( scene, out drawer ) )
-				return (HierarchyRootPseudoScene) drawer.Content;
+			HierarchyDataRootPseudoScene data;
+			if( pseudoSceneDataLookup.TryGetValue( scene, out data ) )
+				return data;
 
 			if( createIfNotExists )
 				return CreatePseudoSceneInternal( scene );
@@ -724,145 +831,88 @@ namespace RuntimeInspectorNamespace
 
 		public void CreatePseudoScene( string scene )
 		{
-			if( pseudoSceneDrawers.ContainsKey( scene ) )
+			if( pseudoSceneDataLookup.ContainsKey( scene ) )
 				return;
 
 			CreatePseudoSceneInternal( scene );
 		}
 
-		private HierarchyRootPseudoScene CreatePseudoSceneInternal( string scene )
+		private HierarchyDataRootPseudoScene CreatePseudoSceneInternal( string scene )
 		{
 			int index = 0;
-			for( int i = 0; i < pseudoScenesOrder.Length; i++ )
+			if( pseudoScenesOrder.Length > 0 )
 			{
-				if( pseudoScenesOrder[i] == scene )
-					break;
+				for( int i = 0; i < pseudoScenesOrder.Length; i++ )
+				{
+					if( pseudoScenesOrder[i] == scene )
+						break;
 
-				if( pseudoSceneDrawers.ContainsKey( pseudoScenesOrder[i] ) )
-					index++;
+					if( pseudoSceneDataLookup.ContainsKey( pseudoScenesOrder[i] ) )
+						index++;
+				}
 			}
+			else
+				index = pseudoSceneDataLookup.Count;
 
-			HierarchyItemRoot pseudoSceneDrawer = InstantiateSceneDrawer( new HierarchyRootPseudoScene( scene ), drawAreaHierarchy );
-			sceneDrawers.Insert( index, pseudoSceneDrawer );
-			pseudoSceneDrawers[scene] = pseudoSceneDrawer;
+			HierarchyDataRootPseudoScene data = new HierarchyDataRootPseudoScene( this, scene );
 
-			HierarchyItemRoot searchResultDrawer = InstantiateSceneDrawer( new HierarchyRootSearch( this, pseudoSceneDrawer.Content ), drawAreaSearchResults );
-			searchSceneDrawers.Insert( index, searchResultDrawer );
+			// Pseudo-scenes should come after Unity scenes
+			index += sceneData.Count - pseudoSceneDataLookup.Count;
+			sceneData.Insert( index, data );
+			searchSceneData.Insert( index, new HierarchyDataRootSearch( this, data ) );
+			pseudoSceneDataLookup[scene] = data;
 
-			pseudoSceneDrawer.transform.SetSiblingIndex( index );
-			pseudoSceneDrawer.IsExpanded = true;
-
-			searchResultDrawer.transform.SetSiblingIndex( index );
-
-			return (HierarchyRootPseudoScene) pseudoSceneDrawer.Content;
+			isListViewDirty = true;
+			return data;
 		}
 
 		public void DeleteAllPseudoScenes()
 		{
-			for( int i = sceneDrawers.Count - 1; i >= 0; i-- )
+			for( int i = sceneData.Count - 1; i >= 0; i-- )
 			{
-				if( sceneDrawers[i].Content is HierarchyRootPseudoScene )
+				if( sceneData[i] is HierarchyDataRootPseudoScene )
 				{
-					sceneDrawers[i].Unbind();
-					sceneDrawers.RemoveAt( i );
+					sceneData[i].IsExpanded = false;
+					sceneData.RemoveAt( i );
 
-					searchSceneDrawers[i].Unbind();
-					searchSceneDrawers.RemoveAt( i );
+					searchSceneData[i].IsExpanded = false;
+					searchSceneData.RemoveAt( i );
 				}
 			}
 
-			pseudoSceneDrawers.Clear();
+			pseudoSceneDataLookup.Clear();
+			isListViewDirty = true;
 		}
 
 		public void DeletePseudoScene( string scene )
 		{
-			for( int i = 0; i < sceneDrawers.Count; i++ )
+			for( int i = 0; i < sceneData.Count; i++ )
 			{
-				HierarchyRootPseudoScene pseudoScene = sceneDrawers[i].Content as HierarchyRootPseudoScene;
+				HierarchyDataRootPseudoScene pseudoScene = sceneData[i] as HierarchyDataRootPseudoScene;
 				if( pseudoScene != null && pseudoScene.Name == scene )
 				{
-					pseudoSceneDrawers.Remove( pseudoScene.Name );
+					pseudoSceneDataLookup.Remove( pseudoScene.Name );
 
-					sceneDrawers[i].Unbind();
-					sceneDrawers.RemoveAt( i );
+					sceneData[i].IsExpanded = false;
+					sceneData.RemoveAt( i );
 
-					searchSceneDrawers[i].Unbind();
-					searchSceneDrawers.RemoveAt( i );
+					searchSceneData[i].IsExpanded = false;
+					searchSceneData.RemoveAt( i );
 
+					isListViewDirty = true;
 					return;
 				}
 			}
 		}
 
-		public HierarchyItemRoot InstantiateSceneDrawer( IHierarchyRootContent target, Transform drawerParent )
+		RecycledListItem IListViewAdapter.CreateItem( Transform parent )
 		{
-			HierarchyItemRoot sceneDrawer = (HierarchyItemRoot) InstantiateDrawer( sceneDrawerPool, sceneDrawerPrefab, drawerParent );
-			sceneDrawer.BindTo( target );
-
-			return sceneDrawer;
-		}
-
-		public HierarchyItemTransform InstantiateTransformDrawer( Transform drawerParent )
-		{
-			return (HierarchyItemTransform) InstantiateDrawer( transformDrawerPool, transformDrawerPrefab, drawerParent );
-		}
-
-		public HierarchyItemSearchEntry InstantiateSearchEntryDrawer( Transform drawerParent )
-		{
-			return (HierarchyItemSearchEntry) InstantiateDrawer( searchEntryDrawerPool, searchEntryDrawerPrefab, drawerParent );
-		}
-
-		private HierarchyItem InstantiateDrawer( List<HierarchyItem> drawerPool, HierarchyItem drawerPrefab, Transform drawerParent )
-		{
-			for( int i = drawerPool.Count - 1; i >= 0; i-- )
-			{
-				HierarchyItem instance = drawerPool[i];
-				drawerPool.RemoveAt( i );
-
-				if( !instance.IsNull() )
-				{
-					instance.transform.SetParent( drawerParent, false );
-					instance.gameObject.SetActive( true );
-					instance.Hierarchy = this;
-					instance.Skin = Skin;
-
-					return instance;
-				}
-			}
-
-			HierarchyItem result = (HierarchyItem) Instantiate( drawerPrefab, drawerParent, false );
-			result.Hierarchy = this;
+			HierarchyField result = (HierarchyField) Instantiate( drawerPrefab, parent, false );
+			result.Initialize( this );
 			result.Skin = Skin;
 
+			drawers.Add( result );
 			return result;
-		}
-
-		public void PoolDrawer( HierarchyItem drawer )
-		{
-			if( drawer == currentlySelectedDrawer )
-			{
-				currentlySelectedDrawer = null;
-				m_currentSelection = null;
-			}
-
-			if( drawer is HierarchyItemTransform )
-			{
-				List<HierarchyItem> pool = drawer is HierarchyItemSearchEntry ? searchEntryDrawerPool : transformDrawerPool;
-				if( pool.Count < poolCapacity )
-				{
-					drawer.gameObject.SetActive( false );
-					drawer.transform.SetParent( poolParent, false );
-					pool.Add( drawer );
-				}
-				else
-					Destroy( drawer.gameObject );
-			}
-			else
-			{
-				drawer.gameObject.SetActive( false );
-				drawer.transform.SetParent( poolParent, false );
-				sceneDrawerPool.Add( drawer );
-			}
 		}
 	}
 }

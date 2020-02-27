@@ -104,16 +104,16 @@ namespace RuntimeInspectorNamespace
 		public override void Refresh()
 		{
 			base.Refresh();
-
 			components.Clear();
-			if( !Value.IsNull() )
+
+			GameObject go = Value as GameObject;
+			if( go  )
 			{
-				GameObject go = (GameObject) Value;
 				go.GetComponents( components );
 
 				for( int i = components.Count - 1; i >= 0; i-- )
 				{
-					if( components[i].IsNull() )
+					if( !components[i] )
 						components.RemoveAt( i );
 				}
 

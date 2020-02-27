@@ -21,19 +21,19 @@ namespace RuntimeInspectorNamespace
 		private readonly Dictionary<int, RecycledListItem> items = new Dictionary<int, RecycledListItem>();
 		private readonly Stack<RecycledListItem> pooledItems = new Stack<RecycledListItem>();
 
-		IListViewAdapter adapter = null;
+		private IListViewAdapter adapter = null;
 
 		private bool isDirty = false;
 
 		// Current indices of items shown on screen
 		private int currentTopIndex = -1, currentBottomIndex = -1;
 
-		void Start()
+		private void Start()
 		{
 			GetComponent<ScrollRect>().onValueChanged.AddListener( ( pos ) => UpdateItemsInTheList() );
 		}
 
-		void Update()
+		private void Update()
 		{
 			if( isDirty )
 			{
@@ -53,9 +53,10 @@ namespace RuntimeInspectorNamespace
 		}
 
 		// Update the list
-		public void UpdateList()
+		public void UpdateList( bool resetContentPosition = true )
 		{
-			contentTransform.anchoredPosition = Vector2.zero;
+			if( resetContentPosition )
+				contentTransform.anchoredPosition = Vector2.zero;
 
 			float newHeight = Mathf.Max( 1f, adapter.Count * itemHeight );
 			contentTransform.sizeDelta = new Vector2( 0f, newHeight );

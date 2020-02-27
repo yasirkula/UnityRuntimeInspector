@@ -29,7 +29,7 @@ namespace RuntimeInspectorNamespace
 			if( pointerHeldCoroutine != null )
 				return;
 
-			if( m_reference.IsNull() )
+			if( !m_reference )
 				return;
 
 			pointerHeldCoroutine = CreateReferenceItemCoroutine( eventData );
@@ -59,7 +59,7 @@ namespace RuntimeInspectorNamespace
 			float dragThreshold = EventSystem.current.pixelDragThreshold;
 			yield return new WaitForSecondsRealtime( holdTime );
 
-			if( !m_reference.IsNull() && Vector2.Distance( eventData.position, eventData.pressPosition ) < dragThreshold )
+			if( m_reference && ( eventData.position - eventData.pressPosition ).sqrMagnitude < dragThreshold * dragThreshold )
 				RuntimeInspectorUtils.CreateDraggedReferenceItem( m_reference, eventData, draggedReferenceSkin );
 		}
 	}

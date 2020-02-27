@@ -26,6 +26,7 @@ namespace RuntimeInspectorNamespace
 #endif
 		};
 
+		private static readonly List<ExposedMethod> exposedMethodsList = new List<ExposedMethod>( 4 );
 		private static readonly List<ExposedExtensionMethodHolder> exposedExtensionMethods = new List<ExposedExtensionMethodHolder>();
 		public static Type ExposedExtensionMethodsHolder { set { GetExposedExtensionMethods( value ); } }
 
@@ -38,7 +39,7 @@ namespace RuntimeInspectorNamespace
 		{
 			get
 			{
-				if( m_draggedReferenceItemsCanvas.IsNull() )
+				if( !m_draggedReferenceItemsCanvas )
 				{
 					m_draggedReferenceItemsCanvas = new GameObject( "DraggedReferencesCanvas" ).AddComponent<Canvas>();
 					m_draggedReferenceItemsCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -186,7 +187,7 @@ namespace RuntimeInspectorNamespace
 				return null;
 
 			DraggedReferenceItem draggedReference = draggingPointer.pointerDrag.GetComponent<DraggedReferenceItem>();
-			if( !draggedReference.IsNull() && !draggedReference.Reference.IsNull() )
+			if( draggedReference && draggedReference.Reference )
 			{
 				if( assignableType.IsAssignableFrom( draggedReference.Reference.GetType() ) )
 					return draggedReference.Reference;
@@ -198,7 +199,7 @@ namespace RuntimeInspectorNamespace
 					else if( draggedReference.Reference is GameObject )
 						component = ( (GameObject) draggedReference.Reference ).GetComponent( assignableType );
 
-					if( !component.IsNull() )
+					if( component )
 						return component;
 				}
 				else if( typeof( GameObject ).IsAssignableFrom( assignableType ) )
@@ -213,7 +214,7 @@ namespace RuntimeInspectorNamespace
 
 		private static void OnSceneLoaded( Scene arg0, LoadSceneMode arg1 )
 		{
-			if( !m_draggedReferenceItemsCanvas.IsNull() )
+			if( m_draggedReferenceItemsCanvas )
 			{
 				Transform canvasTR = m_draggedReferenceItemsCanvas.transform;
 				for( int i = canvasTR.childCount - 1; i >= 0; i-- )
@@ -292,8 +293,8 @@ namespace RuntimeInspectorNamespace
 			if( !typeToExposedMethods.TryGetValue( type, out result ) )
 			{
 				MethodInfo[] methods = type.GetMethods( BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static );
-				List<ExposedMethod> exposedMethods = new List<ExposedMethod>();
 
+				exposedMethodsList.Clear();
 				for( int i = 0; i < methods.Length; i++ )
 				{
 					if( !methods[i].HasAttribute<RuntimeInspectorButtonAttribute>() )
@@ -304,18 +305,18 @@ namespace RuntimeInspectorNamespace
 
 					RuntimeInspectorButtonAttribute attribute = methods[i].GetAttribute<RuntimeInspectorButtonAttribute>();
 					if( !attribute.IsInitializer || type.IsAssignableFrom( methods[i].ReturnType ) )
-						exposedMethods.Add( new ExposedMethod( methods[i], attribute, false ) );
+						exposedMethodsList.Add( new ExposedMethod( methods[i], attribute, false ) );
 				}
 
 				for( int i = 0; i < exposedExtensionMethods.Count; i++ )
 				{
 					ExposedExtensionMethodHolder exposedExtensionMethod = exposedExtensionMethods[i];
 					if( exposedExtensionMethod.extendedType.IsAssignableFrom( type ) )
-						exposedMethods.Add( new ExposedMethod( exposedExtensionMethod.method, exposedExtensionMethod.properties, true ) );
+						exposedMethodsList.Add( new ExposedMethod( exposedExtensionMethod.method, exposedExtensionMethod.properties, true ) );
 				}
 
-				if( exposedMethods.Count > 0 )
-					result = exposedMethods.ToArray();
+				if( exposedMethodsList.Count > 0 )
+					result = exposedMethodsList.ToArray();
 				else
 					result = null;
 

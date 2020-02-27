@@ -197,7 +197,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_skin: {fileID: 11400000, guid: b38b1cb4db852fe4ea114688dada27d0, type: 2}
-  refreshInterval: 0
+  refreshInterval: 0.25
   m_debugMode: 1
   m_exposePrivateFields: 1
   m_exposePublicFields: 1
@@ -206,6 +206,7 @@ MonoBehaviour:
   m_arrayIndicesStartAtOne: 0
   m_useTitleCaseNaming: 1
   m_nestLimit: 5
+  m_inspectedObjectHeaderVisibility: 0
   poolCapacity: 10
   m_connectedHierarchy: {fileID: 0}
   settings:

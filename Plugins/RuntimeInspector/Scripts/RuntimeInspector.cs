@@ -253,16 +253,15 @@ namespace RuntimeInspectorNamespace
 
 			RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Add( drawArea );
 			RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Add( poolParent );
-
-			ColorPicker.Instance.Close();
-			ObjectReferencePicker.Instance.Close();
+			RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Add( ColorPicker.Instance.transform );
+			RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Add( ObjectReferencePicker.Instance.transform );
 		}
 
 		private void OnDestroy()
 		{
 			if( --aliveInspectors == 0 )
 			{
-				if( !poolParent.IsNull() )
+				if( poolParent )
 				{
 					RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Remove( poolParent );
 					DestroyImmediate( poolParent.gameObject );
@@ -399,10 +398,10 @@ namespace RuntimeInspectorNamespace
 						( (ExpandableInspectorField) currentDrawer ).HeaderVisibility = m_inspectedObjectHeaderVisibility;
 
 					GameObject go = m_inspectedObject as GameObject;
-					if( go == null && m_inspectedObject is Component )
+					if( go && m_inspectedObject is Component )
 						go = ( (Component) m_inspectedObject ).gameObject;
 
-					if( !ConnectedHierarchy.IsNull() && ( go == null || !ConnectedHierarchy.Select( go.transform ) ) )
+					if( ConnectedHierarchy && ( !go || !ConnectedHierarchy.Select( go.transform ) ) )
 						ConnectedHierarchy.Deselect();
 				}
 				else

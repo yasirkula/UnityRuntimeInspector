@@ -26,7 +26,7 @@ namespace RuntimeInspectorNamespace
 		{
 			base.OnReferenceChanged( reference );
 
-			referenceNameText.gameObject.SetActive( reference.IsNull() );
+			referenceNameText.gameObject.SetActive( !reference );
 
 			Texture tex = reference.GetTexture();
 			referencePreview.enabled = tex != null;

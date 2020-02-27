@@ -67,7 +67,7 @@ namespace RuntimeInspectorNamespace
 		private bool isEnabled = true;
 		private bool isQuitting = false;
 
-		private bool ShouldUpdateChildren { get { return ( isEnabled || !m_hideOnDisable ) && !Hierarchy.IsNull() && !string.IsNullOrEmpty( m_sceneName ); } }
+		private bool ShouldUpdateChildren { get { return ( isEnabled || !m_hideOnDisable ) && Hierarchy && !string.IsNullOrEmpty( m_sceneName ); } }
 
 		private void OnEnable()
 		{
@@ -137,12 +137,12 @@ namespace RuntimeInspectorNamespace
 
 		private void RemoveChildrenFromScene()
 		{
-			if( Hierarchy.IsNull() || string.IsNullOrEmpty( m_sceneName ) )
+			if( !Hierarchy || string.IsNullOrEmpty( m_sceneName ) )
 				return;
 
 			foreach( Transform removedChild in childrenCurrent )
 			{
-				if( !removedChild.IsNull() )
+				if( removedChild )
 					Hierarchy.RemoveFromPseudoScene( m_sceneName, removedChild, true );
 			}
 

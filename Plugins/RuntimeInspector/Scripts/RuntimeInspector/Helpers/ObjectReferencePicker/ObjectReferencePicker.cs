@@ -77,8 +77,8 @@ namespace RuntimeInspectorNamespace
 		private Object currentlySelectedObject;
 		private ObjectReferencePickerItem currentlySelectedItem;
 
-		public int Count { get { return filteredReferences.Count; } }
-		public float ItemHeight { get { return Skin.LineHeight; } }
+		int IListViewAdapter.Count { get { return filteredReferences.Count; } }
+		float IListViewAdapter.ItemHeight { get { return Skin.LineHeight; } }
 
 		protected override void Awake()
 		{
@@ -160,7 +160,7 @@ namespace RuntimeInspectorNamespace
 			bool isTexture = referenceType == typeof( Texture ) || referenceType == typeof( Texture ) || referenceType == typeof( Sprite );
 			for( int i = 0; i < references.Length; i++ )
 			{
-				if( references[i].IsNull() )
+				if( !references[i] )
 					continue;
 
 				if( references[i].hideFlags != HideFlags.None && references[i].hideFlags != HideFlags.NotEditable &&
@@ -178,7 +178,7 @@ namespace RuntimeInspectorNamespace
 			listView.UpdateList();
 		}
 
-		public RecycledListItem CreateItem( Transform parent )
+		RecycledListItem IListViewAdapter.CreateItem( Transform parent )
 		{
 			ObjectReferencePickerItem item = (ObjectReferencePickerItem) Instantiate( referenceItemPrefab, parent, false );
 			item.Skin = Skin;
@@ -200,7 +200,7 @@ namespace RuntimeInspectorNamespace
 			listView.UpdateList();
 		}
 
-		public void SetItemContent( RecycledListItem item )
+		void IListViewAdapter.SetItemContent( RecycledListItem item )
 		{
 			ObjectReferencePickerItem it = (ObjectReferencePickerItem) item;
 			it.SetContent( filteredReferences[it.Position] );
@@ -216,7 +216,7 @@ namespace RuntimeInspectorNamespace
 			it.Skin = Skin;
 		}
 
-		public void OnItemClicked( RecycledListItem item )
+		void IListViewAdapter.OnItemClicked( RecycledListItem item )
 		{
 			if( currentlySelectedItem != null )
 				currentlySelectedItem.IsSelected = false;

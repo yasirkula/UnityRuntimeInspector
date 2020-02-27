@@ -1,4 +1,7 @@
-﻿using UnityEngine;
+﻿//#define CAN_ADD_OBJECTS_TO_PSEUDO_SCENES
+//#define CAN_DROP_PARENT_ON_CHILD
+
+using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 
@@ -6,17 +9,17 @@ namespace RuntimeInspectorNamespace
 {
 	public class HierarchyDragDropListener : MonoBehaviour, IDropHandler
 	{
-		private HierarchyItem hierarchyItem;
+		private HierarchyField hierarchyItem;
 
 		private RuntimeHierarchy m_hierarchy;
 		private RuntimeHierarchy Hierarchy
 		{
 			get
 			{
-				if( m_hierarchy != null )
+				if( m_hierarchy )
 					return m_hierarchy;
 
-				if( hierarchyItem != null )
+				if( hierarchyItem )
 					return hierarchyItem.Hierarchy;
 
 				return GetComponentInParent<RuntimeHierarchy>();
@@ -25,53 +28,61 @@ namespace RuntimeInspectorNamespace
 
 		private void Awake()
 		{
-			hierarchyItem = GetComponent<HierarchyItem>();
-			if( hierarchyItem == null )
+			hierarchyItem = GetComponent<HierarchyField>();
+			if( !hierarchyItem )
 				m_hierarchy = GetComponent<RuntimeHierarchy>();
 		}
 
 		public void OnDrop( PointerEventData eventData )
 		{
 			RuntimeHierarchy hierarchy = Hierarchy;
-			if( hierarchy == null || !hierarchy.CanReorganizeItems )
+			if( !hierarchy || !hierarchy.CanReorganizeItems )
 				return;
 
 			Transform droppedTransform = RuntimeInspectorUtils.GetAssignableObjectFromDraggedReferenceItem( eventData, typeof( Transform ) ) as Transform;
-			if( droppedTransform == null )
+			if( !droppedTransform )
 				return;
 
-			if( hierarchyItem == null )
+			if( !hierarchyItem )
 			{
 				if( droppedTransform.parent == null )
 					return;
 
 				droppedTransform.SetParent( null, true );
 			}
-			else if( hierarchyItem is HierarchyItemTransform )
+			else if( hierarchyItem.Data is HierarchyDataTransform )
 			{
-				Transform newParent = ( (HierarchyItemTransform) hierarchyItem ).BoundTransform;
+				Transform newParent = hierarchyItem.Data.BoundTransform;
 				if( droppedTransform.parent == newParent || droppedTransform == newParent )
 					return;
 
 				// Avoid setting child object as parent of the parent object
+#if !CAN_DROP_PARENT_ON_CHILD
+				if( newParent.IsChildOf( droppedTransform ) )
+					return;
+#else
 				Transform curr = newParent;
 				while( curr.parent != null && curr.parent != droppedTransform )
 					curr = curr.parent;
 
 				if( curr.parent == droppedTransform )
 					curr.SetParent( droppedTransform.parent, true );
+#endif
 
 				droppedTransform.SetParent( newParent, true );
 			}
 			else
 			{
-				IHierarchyRootContent rootContent = ( (HierarchyItemRoot) hierarchyItem ).Content;
-				if( rootContent is HierarchyRootPseudoScene )
+				HierarchyDataRoot rootData = (HierarchyDataRoot) hierarchyItem.Data;
+				if( rootData is HierarchyDataRootPseudoScene )
 				{
-					//( (HierarchyRootPseudoScene) rootContent ).AddChild( droppedTransform ); // Add object to pseudo-scene
+#if CAN_ADD_OBJECTS_TO_PSEUDO_SCENES
+					( (HierarchyDataRootPseudoScene) rootData ).AddChild( droppedTransform ); // Add object to pseudo-scene
+#else
 					return;
+#endif
 				}
-				else if( rootContent is HierarchyRootScene )
+				else if( rootData is HierarchyDataRootScene )
 				{
 					bool parentChanged = false;
 					if( droppedTransform.parent != null )
@@ -80,7 +91,7 @@ namespace RuntimeInspectorNamespace
 						parentChanged = true;
 					}
 
-					Scene scene = ( (HierarchyRootScene) rootContent ).Scene;
+					Scene scene = ( (HierarchyDataRootScene) rootData ).Scene;
 					if( droppedTransform.gameObject.scene != scene )
 					{
 						SceneManager.MoveGameObjectToScene( droppedTransform.gameObject, scene );
@@ -92,10 +103,7 @@ namespace RuntimeInspectorNamespace
 				}
 			}
 
-			if( hierarchyItem != null && !hierarchyItem.IsExpanded )
-				hierarchyItem.IsExpanded = true;
-
-			hierarchy.Refresh();
+			hierarchy.Select( droppedTransform, true );
 		}
 	}
 }
