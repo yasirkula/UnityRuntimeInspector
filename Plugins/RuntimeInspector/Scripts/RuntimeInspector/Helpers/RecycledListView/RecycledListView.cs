@@ -16,7 +16,12 @@ namespace RuntimeInspectorNamespace
 #pragma warning restore 0649
 
 		private float itemHeight, _1OverItemHeight;
-		private float viewportHeight;
+
+		private float m_viewportWidth;
+		public float ViewportWidth { get { return m_viewportWidth; } }
+
+		private float m_viewportHeight;
+		public float ViewportHeight { get { return m_viewportHeight; } }
 
 		private readonly Dictionary<int, RecycledListItem> items = new Dictionary<int, RecycledListItem>();
 		private readonly Stack<RecycledListItem> pooledItems = new Stack<RecycledListItem>();
@@ -37,10 +42,12 @@ namespace RuntimeInspectorNamespace
 		{
 			if( isDirty )
 			{
-				viewportHeight = viewportTransform.rect.height;
-				UpdateItemsInTheList();
+				Vector2 viewportSize = viewportTransform.rect.size;
+				m_viewportWidth = viewportSize.x;
+				m_viewportHeight = viewportSize.y;
 
 				isDirty = false;
+				UpdateItemsInTheList();
 			}
 		}
 
@@ -59,8 +66,11 @@ namespace RuntimeInspectorNamespace
 				contentTransform.anchoredPosition = Vector2.zero;
 
 			float newHeight = Mathf.Max( 1f, adapter.Count * itemHeight );
-			contentTransform.sizeDelta = new Vector2( 0f, newHeight );
-			viewportHeight = viewportTransform.rect.height;
+			contentTransform.sizeDelta = new Vector2( contentTransform.sizeDelta.x, newHeight );
+
+			Vector2 viewportSize = viewportTransform.rect.size;
+			m_viewportWidth = viewportSize.x;
+			m_viewportHeight = viewportSize.y;
 
 			UpdateItemsInTheList( true );
 		}
@@ -102,7 +112,7 @@ namespace RuntimeInspectorNamespace
 				float contentPos = contentTransform.anchoredPosition.y - 1f;
 
 				int newTopIndex = (int) ( contentPos * _1OverItemHeight );
-				int newBottomIndex = (int) ( ( contentPos + viewportHeight + 2f ) * _1OverItemHeight );
+				int newBottomIndex = (int) ( ( contentPos + m_viewportHeight + 2f ) * _1OverItemHeight );
 
 				if( newTopIndex < 0 )
 					newTopIndex = 0;

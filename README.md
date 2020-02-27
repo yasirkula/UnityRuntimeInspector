@@ -89,6 +89,7 @@ RuntimeHierarchy simply exposes the objects in your scenes to the user interface
 - **Dragged Reference Hold Time**: this value defines the hold time in seconds before a dragged reference item is created
 - **Can Reorganize Items**: when enabled, dropping a dragged reference item that holds a Transform onto an object in the hierarchy will change the dragged Transform's parent (similar to parenting in Unity's Hierarchy)
 - **Double Click Threshold**: when an object in the hierarchy is double clicked, **OnItemDoubleClicked** event is raised (see *SCRIPTING API*). This value determines the maximum allowed delay between two clicks to register a double click
+- **Show Horizontal Scrollbar**: when enabled, a horizontal scrollbar will be displayed if the names displayed in the hierarchy don't fit the available space. Note that only the visible items' width values are used to determine the size of the scrollable area
 - **Sync Selection With Editor Hierarchy**: simply synchronizes the selected object between the Unity Hierarchy and this RuntimeHierarchy
 
 ## E. SCRIPTING API

@@ -38,6 +38,8 @@ namespace RuntimeInspectorNamespace
 		private void ShowColorPicker( PointerEventData eventData )
 		{
 			Color value = isColor32 ? (Color) (Color32) Value : (Color) Value;
+
+			ColorPicker.Instance.Skin = Inspector.Skin;
 			ColorPicker.Instance.Show( OnColorChanged, value, Inspector.GetComponentInParent<Canvas>() );
 		}
 

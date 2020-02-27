@@ -117,6 +117,38 @@ namespace RuntimeInspectorNamespace
 			set { m_doubleClickThreshold = value; }
 		}
 
+		[SerializeField]
+		private bool m_showHorizontalScrollbar;
+		public bool ShowHorizontalScrollbar
+		{
+			get { return m_showHorizontalScrollbar; }
+			set
+			{
+				if( m_showHorizontalScrollbar != value )
+				{
+					m_showHorizontalScrollbar = value;
+
+					if( !value )
+					{
+						scrollView.content.sizeDelta = new Vector2( 0f, scrollView.content.sizeDelta.y );
+						scrollView.horizontalNormalizedPosition = 0f;
+					}
+					else
+					{
+						for( int i = drawers.Count - 1; i >= 0; i-- )
+						{
+							if( drawers[i].gameObject.activeSelf )
+								drawers[i].RefreshName();
+						}
+
+						shouldRecalculateContentWidth = true;
+					}
+
+					scrollView.horizontal = value;
+				}
+			}
+		}
+
 		public string SearchTerm
 		{
 			get { return searchInputField.text; }
@@ -161,7 +193,10 @@ namespace RuntimeInspectorNamespace
 		private Image background;
 
 		[SerializeField]
-		private Image scrollbar;
+		private Image verticalScrollbar;
+
+		[SerializeField]
+		private Image horizontalScrollbar;
 
 		[SerializeField]
 		private InputField searchInputField;
@@ -211,6 +246,8 @@ namespace RuntimeInspectorNamespace
 
 		public SelectionChangedDelegate OnSelectionChanged;
 		public DoubleClickDelegate OnItemDoubleClicked;
+
+		private bool shouldRecalculateContentWidth;
 
 		// Used to make sure that the scrolled content always remains within the scroll view's boundaries
 		private PointerEventData nullPointerEventData;
@@ -293,6 +330,9 @@ namespace RuntimeInspectorNamespace
 				}
 			};
 
+			m_showHorizontalScrollbar = !m_showHorizontalScrollbar;
+			ShowHorizontalScrollbar = !m_showHorizontalScrollbar;
+
 			RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Add( drawArea );
 		}
 
@@ -364,17 +404,39 @@ namespace RuntimeInspectorNamespace
 			{
 				nextObjectNamesRefreshTime = time + m_objectNamesRefreshInterval;
 
-				for( int i = 0; i < sceneData.Count; i++ )
+				for( int i = sceneData.Count - 1; i >= 0; i-- )
 					sceneData[i].ResetCachedNames();
 
-				for( int i = 0; i < searchSceneData.Count; i++ )
+				for( int i = searchSceneData.Count - 1; i >= 0; i-- )
 					searchSceneData[i].ResetCachedNames();
 
-				for( int i = 0; i < drawers.Count; i++ )
+				for( int i = drawers.Count - 1; i >= 0; i-- )
 				{
 					if( drawers[i].gameObject.activeSelf )
 						drawers[i].RefreshName();
 				}
+
+				shouldRecalculateContentWidth = true;
+			}
+
+			if( m_showHorizontalScrollbar && shouldRecalculateContentWidth )
+			{
+				float preferredWidth = 0f;
+				for( int i = drawers.Count - 1; i >= 0; i-- )
+				{
+					if( drawers[i].gameObject.activeSelf )
+					{
+						float drawerWidth = drawers[i].PreferredWidth;
+						if( drawerWidth > preferredWidth )
+							preferredWidth = drawerWidth;
+					}
+				}
+
+				float contentMinWidth = listView.ViewportWidth + scrollView.verticalScrollbarSpacing;
+				if( preferredWidth > contentMinWidth )
+					scrollView.content.sizeDelta = new Vector2( preferredWidth - contentMinWidth, scrollView.content.sizeDelta.y );
+				else
+					scrollView.content.sizeDelta = new Vector2( 0f, scrollView.content.sizeDelta.y );
 			}
 
 			if( m_createDraggedReferenceOnHold && currentlyPressedDrawer && time > pressedDrawerDraggedReferenceCreateTime )
@@ -460,7 +522,7 @@ namespace RuntimeInspectorNamespace
 			if( target )
 			{
 				Scene targetScene = target.gameObject.scene;
-				for( int i = 0; i < sceneData.Count; i++ )
+				for( int i = sceneData.Count - 1; i >= 0; i-- )
 				{
 					HierarchyDataRoot data = sceneData[i];
 					if( ( data is HierarchyDataRootPseudoScene ) || ( (HierarchyDataRootScene) data ).Scene == targetScene )
@@ -471,22 +533,25 @@ namespace RuntimeInspectorNamespace
 				{
 					RefreshSearchResults();
 
-					for( int i = 0; i < searchSceneData.Count; i++ )
+					for( int i = searchSceneData.Count - 1; i >= 0; i-- )
 						searchSceneData[i].RefreshNameOf( target );
 				}
 
-				for( int i = 0; i < drawers.Count; i++ )
+				for( int i = drawers.Count - 1; i >= 0; i-- )
 				{
 					if( drawers[i].gameObject.activeSelf && drawers[i].Data.BoundTransform == target )
 						drawers[i].RefreshName();
 				}
+
+				shouldRecalculateContentWidth = true;
 			}
 		}
 
 		protected override void RefreshSkin()
 		{
 			background.color = Skin.BackgroundColor;
-			scrollbar.color = Skin.ScrollbarColor;
+			verticalScrollbar.color = Skin.ScrollbarColor;
+			horizontalScrollbar.color = Skin.ScrollbarColor;
 
 			searchInputField.textComponent.SetSkinInputFieldText( Skin );
 			searchInputFieldBackground.color = Skin.InputFieldNormalBackgroundColor.Tint( 0.08f );
@@ -526,11 +591,12 @@ namespace RuntimeInspectorNamespace
 
 				if( index < rootData[i].Height )
 				{
+					drawer.Skin = Skin;
 					drawer.SetContent( index > 0 ? rootData[i].FindDataAtIndex( index - 1 ) : rootData[i] );
 					drawer.IsSelected = m_currentSelection && m_currentSelection == drawer.Data.BoundTransform;
-					drawer.Skin = Skin;
 					drawer.Refresh();
 
+					shouldRecalculateContentWidth = true;
 					return;
 				}
 				else

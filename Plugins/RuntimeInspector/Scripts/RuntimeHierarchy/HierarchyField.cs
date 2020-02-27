@@ -7,7 +7,9 @@ namespace RuntimeInspectorNamespace
 	public class HierarchyField : RecycledListItem
 	{
 		private enum ExpandedState { Collapsed = 0, Expanded = 1, ArrowHidden = 2 };
+
 		private const float INACTIVE_ITEM_TEXT_ALPHA = 0.57f;
+		private const float TEXT_X_OFFSET = 35f;
 
 #pragma warning disable 0649
 		[SerializeField]
@@ -112,6 +114,8 @@ namespace RuntimeInspectorNamespace
 			}
 		}
 
+		public float PreferredWidth { get; private set; }
+
 		public RuntimeHierarchy Hierarchy { get; private set; }
 		public HierarchyData Data { get; private set; }
 
@@ -132,9 +136,10 @@ namespace RuntimeInspectorNamespace
 		{
 			Data = data;
 
-			nameText.text = data.Name;
 			contentTransform.anchoredPosition = new Vector2( Skin.IndentAmount * data.Depth, 0f );
 			background.sprite = data.Depth == 0 ? Hierarchy.SceneDrawerBackground : Hierarchy.TransformDrawerBackground;
+
+			RefreshName();
 		}
 
 		private void ToggleExpandedState()
@@ -151,6 +156,12 @@ namespace RuntimeInspectorNamespace
 		public void RefreshName()
 		{
 			nameText.text = Data.Name;
+
+			if( Hierarchy.ShowHorizontalScrollbar )
+			{
+				LayoutRebuilder.ForceRebuildLayoutImmediate( nameText.rectTransform );
+				PreferredWidth = Data.Depth * m_skin.IndentAmount + TEXT_X_OFFSET + nameText.rectTransform.sizeDelta.x;
+			}
 		}
 
 		private void OnPointerDown( PointerEventData eventData )
