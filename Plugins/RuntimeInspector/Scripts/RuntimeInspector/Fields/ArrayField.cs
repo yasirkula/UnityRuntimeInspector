@@ -93,6 +93,10 @@ namespace RuntimeInspectorNamespace
 
 			sizeLayoutElement.SetHeight( Skin.LineHeight );
 			sizeText.SetSkinText( Skin );
+
+			Vector2 rightSideAnchorMin = new Vector2( Skin.LabelWidthPercentage, 0f );
+			variableNameMask.rectTransform.anchorMin = rightSideAnchorMin;
+			( (RectTransform) sizeInput.transform ).anchorMin = rightSideAnchorMin;
 		}
 
 		protected override void OnDepthChanged()

@@ -149,6 +149,18 @@ namespace RuntimeInspectorNamespace
 			inputY.Skin = Skin;
 			inputZ.Skin = Skin;
 			inputW.Skin = Skin;
+
+			float inputFieldWidth = ( 1f - Skin.LabelWidthPercentage ) / 3f;
+			Vector2 rightSideAnchorMin = new Vector2( Skin.LabelWidthPercentage + inputFieldWidth, 0f );
+			Vector2 rightSideAnchorMax = new Vector2( Skin.LabelWidthPercentage + 2f * inputFieldWidth, 1f );
+			variableNameMask.rectTransform.anchorMin = rightSideAnchorMin;
+			( (RectTransform) inputX.transform ).SetAnchorMinMaxInputField( labelX.rectTransform, new Vector2( rightSideAnchorMin.x, 0.5f ), rightSideAnchorMax );
+			( (RectTransform) inputZ.transform ).SetAnchorMinMaxInputField( labelZ.rectTransform, rightSideAnchorMin, new Vector2( rightSideAnchorMax.x, 0.5f ) );
+
+			rightSideAnchorMin.x += inputFieldWidth;
+			rightSideAnchorMax.x = 1f;
+			( (RectTransform) inputY.transform ).SetAnchorMinMaxInputField( labelY.rectTransform, new Vector2( rightSideAnchorMin.x, 0.5f ), rightSideAnchorMax );
+			( (RectTransform) inputW.transform ).SetAnchorMinMaxInputField( labelW.rectTransform, rightSideAnchorMin, new Vector2( rightSideAnchorMax.x, 0.5f ) );
 		}
 
 		public override void Refresh()

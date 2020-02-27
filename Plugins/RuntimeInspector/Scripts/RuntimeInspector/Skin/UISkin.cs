@@ -76,6 +76,21 @@ namespace RuntimeInspectorNamespace
 		}
 
 		[SerializeField]
+		private float m_labelWidthPercentage = 0.4f;
+		public float LabelWidthPercentage
+		{
+			get { return m_labelWidthPercentage; }
+			set
+			{
+				if( m_labelWidthPercentage != value )
+				{
+					m_labelWidthPercentage = value;
+					m_version++;
+				}
+			}
+		}
+
+		[SerializeField]
 		private Color m_windowColor = Color.grey;
 		public Color WindowColor
 		{

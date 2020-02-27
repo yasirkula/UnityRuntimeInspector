@@ -62,6 +62,13 @@ namespace RuntimeInspectorNamespace
 		{
 			base.OnSkinChanged();
 			slider.Skin = Skin;
+
+			float inputFieldWidth = ( 1f - Skin.LabelWidthPercentage ) / 3f;
+			Vector2 rightSideAnchorMin = new Vector2( Skin.LabelWidthPercentage, 0f );
+			variableNameMask.rectTransform.anchorMin = rightSideAnchorMin;
+			( (RectTransform) slider.transform ).anchorMin = rightSideAnchorMin;
+			( (RectTransform) slider.transform ).anchorMax = new Vector2( 1f - inputFieldWidth, 1f );
+			( (RectTransform) input.transform ).anchorMin = new Vector2( 1f - inputFieldWidth, 0f );
 		}
 
 		public override void Refresh()

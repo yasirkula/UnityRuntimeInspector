@@ -37,6 +37,10 @@ namespace RuntimeInspectorNamespace
 
 			toggleBackground.color = Skin.InputFieldNormalBackgroundColor;
 			input.graphic.color = Skin.ToggleCheckmarkColor;
+
+			Vector2 rightSideAnchorMin = new Vector2( Skin.LabelWidthPercentage, 0f );
+			variableNameMask.rectTransform.anchorMin = rightSideAnchorMin;
+			( (RectTransform) input.transform ).anchorMin = rightSideAnchorMin;
 		}
 
 		public override void Refresh()

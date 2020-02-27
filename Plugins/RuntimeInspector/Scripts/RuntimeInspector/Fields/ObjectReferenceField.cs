@@ -11,6 +11,9 @@ namespace RuntimeInspectorNamespace
 	{
 #pragma warning disable 0649
 		[SerializeField]
+		private RectTransform referencePickerArea;
+
+		[SerializeField]
 		private PointerEventListener input;
 
 		[SerializeField]
@@ -99,10 +102,17 @@ namespace RuntimeInspectorNamespace
 			referenceNameText.resizeTextMinSize = Mathf.Max( 2, Skin.FontSize - 2 );
 			referenceNameText.resizeTextMaxSize = Skin.FontSize;
 
-			if( inspectReferenceImage != null )
+			if( inspectReferenceImage )
 			{
 				inspectReferenceImage.color = Skin.TextColor.Tint( 0.1f );
 				inspectReferenceImage.GetComponent<LayoutElement>().SetWidth( Mathf.Max( Skin.LineHeight - 8, 6 ) );
+			}
+
+			if( referencePickerArea )
+			{
+				Vector2 rightSideAnchorMin = new Vector2( Skin.LabelWidthPercentage, 0f );
+				variableNameMask.rectTransform.anchorMin = rightSideAnchorMin;
+				referencePickerArea.anchorMin = rightSideAnchorMin;
 			}
 		}
 

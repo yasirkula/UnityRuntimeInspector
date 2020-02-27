@@ -73,7 +73,7 @@ GameObject:
   - component: {fileID: 222368132452878100}
   - component: {fileID: 114369617737340946}
   m_Layer: 5
-  m_Name: VariableNameObscurer
+  m_Name: VariableNameMask
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -356,6 +356,7 @@ MonoBehaviour:
   layoutElement: {fileID: 0}
   variableNameText: {fileID: 114392269213132144}
   variableNameMask: {fileID: 114369617737340946}
+  visibleArea: {fileID: 0}
   drawArea: {fileID: 224757590293967824}
   expandToggle: {fileID: 114464978896080020}
   layoutGroup: {fileID: 114810597662585366}

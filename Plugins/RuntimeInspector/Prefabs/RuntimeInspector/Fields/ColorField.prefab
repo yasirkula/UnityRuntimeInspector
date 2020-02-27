@@ -311,6 +311,7 @@ MonoBehaviour:
   variableNameText: {fileID: 114636082004617424}
   variableNameMask: {fileID: 114671372104132192}
   visibleArea: {fileID: 114671372104132192}
+  colorPickerArea: {fileID: 224554945129696172}
   inputColor: {fileID: 114715017607215960}
 --- !u!222 &222051398513448336
 CanvasRenderer:

@@ -10,6 +10,9 @@ namespace RuntimeInspectorNamespace
 	{
 #pragma warning disable 0649
 		[SerializeField]
+		private RectTransform colorPickerArea;
+
+		[SerializeField]
 		private PointerEventListener inputColor;
 		private Image colorImg;
 #pragma warning restore 0649
@@ -51,6 +54,15 @@ namespace RuntimeInspectorNamespace
 				Value = color;
 			else
 				Value = (Color) color;
+		}
+
+		protected override void OnSkinChanged()
+		{
+			base.OnSkinChanged();
+
+			Vector2 rightSideAnchorMin = new Vector2( Skin.LabelWidthPercentage, 0f );
+			variableNameMask.rectTransform.anchorMin = rightSideAnchorMin;
+			colorPickerArea.anchorMin = rightSideAnchorMin;
 		}
 
 		public override void Refresh()

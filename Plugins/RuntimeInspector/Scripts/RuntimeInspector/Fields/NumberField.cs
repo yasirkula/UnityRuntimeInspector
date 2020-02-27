@@ -72,6 +72,10 @@ namespace RuntimeInspectorNamespace
 		{
 			base.OnSkinChanged();
 			input.Skin = Skin;
+
+			Vector2 rightSideAnchorMin = new Vector2( Skin.LabelWidthPercentage, 0f );
+			variableNameMask.rectTransform.anchorMin = rightSideAnchorMin;
+			( (RectTransform) input.transform ).anchorMin = rightSideAnchorMin;
 		}
 
 		public override void Refresh()

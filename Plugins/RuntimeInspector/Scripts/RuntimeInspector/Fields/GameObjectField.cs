@@ -107,7 +107,7 @@ namespace RuntimeInspectorNamespace
 			components.Clear();
 
 			GameObject go = Value as GameObject;
-			if( go  )
+			if( go )
 			{
 				go.GetComponents( components );
 

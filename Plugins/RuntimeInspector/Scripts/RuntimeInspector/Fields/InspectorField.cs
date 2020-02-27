@@ -19,7 +19,7 @@ namespace RuntimeInspectorNamespace
 		protected Text variableNameText;
 
 		[SerializeField]
-		private Image variableNameMask;
+		protected Image variableNameMask;
 
 		[SerializeField]
 		private MaskableGraphic visibleArea;
@@ -200,13 +200,13 @@ namespace RuntimeInspectorNamespace
 
 		protected virtual void OnSkinChanged()
 		{
-			if( layoutElement != null )
+			if( layoutElement )
 				layoutElement.SetHeight( Skin.LineHeight * HeightMultiplier );
 
-			if( variableNameText != null )
+			if( variableNameText )
 				variableNameText.SetSkinText( Skin );
 
-			if( variableNameMask != null )
+			if( variableNameMask )
 				variableNameMask.color = Skin.BackgroundColor;
 		}
 

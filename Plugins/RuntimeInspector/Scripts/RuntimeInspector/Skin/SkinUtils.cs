@@ -1,4 +1,5 @@
-﻿using UnityEngine.UI;
+﻿using UnityEngine;
+using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
@@ -41,6 +42,14 @@ namespace RuntimeInspectorNamespace
 		{
 			layoutElement.minHeight = height;
 			layoutElement.preferredHeight = height;
+		}
+
+		public static void SetAnchorMinMaxInputField( this RectTransform inputField, RectTransform label, Vector2 anchorMin, Vector2 anchorMax )
+		{
+			inputField.anchorMin = anchorMin;
+			inputField.anchorMax = anchorMax;
+			label.anchorMin = anchorMin;
+			label.anchorMax = new Vector2( anchorMin.x, anchorMax.y );
 		}
 	}
 }

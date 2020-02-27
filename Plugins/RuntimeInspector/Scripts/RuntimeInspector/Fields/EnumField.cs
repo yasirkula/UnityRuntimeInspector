@@ -100,6 +100,10 @@ namespace RuntimeInspectorNamespace
 
 			templateBackground.color = Skin.InputFieldNormalBackgroundColor.Tint( 0.075f );
 			templateCheckmark.color = Skin.ToggleCheckmarkColor;
+
+			Vector2 rightSideAnchorMin = new Vector2( Skin.LabelWidthPercentage, 0f );
+			variableNameMask.rectTransform.anchorMin = rightSideAnchorMin;
+			( (RectTransform) input.transform ).anchorMin = rightSideAnchorMin;
 		}
 
 		public override void Refresh()
