@@ -220,17 +220,17 @@ namespace RuntimeInspectorNamespace
 				( (HierarchyDataRoot) this ).RefreshContent();
 			}
 
-			int childIndex = FindChild( nextInPath );
+			int childIndex = IndexOf( nextInPath );
 			if( childIndex < 0 )
 			{
 				if( isInitSearch && this is HierarchyDataRootPseudoScene )
 				{
 					nextInPath = target;
-					childIndex = FindChild( nextInPath );
+					childIndex = IndexOf( nextInPath );
 					while( childIndex < 0 && nextInPath != null )
 					{
 						nextInPath = nextInPath.parent;
-						childIndex = FindChild( nextInPath );
+						childIndex = IndexOf( nextInPath );
 					}
 
 					if( childIndex < 0 )
@@ -277,7 +277,7 @@ namespace RuntimeInspectorNamespace
 
 		public abstract Transform GetChild( int index );
 
-		private int FindChild( Transform transform )
+		public int IndexOf( Transform transform )
 		{
 			for( int i = ChildCount - 1; i >= 0; i-- )
 			{

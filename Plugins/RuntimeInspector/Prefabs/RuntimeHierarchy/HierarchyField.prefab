@@ -35,7 +35,6 @@ GameObject:
   m_Component:
   - component: {fileID: 224526477923251334}
   - component: {fileID: 114163117979347852}
-  - component: {fileID: 114235291683116016}
   m_Layer: 5
   m_Name: HierarchyField
   m_TagString: Untagged
@@ -131,17 +130,6 @@ MonoBehaviour:
   clickListener: {fileID: 114697885115888806}
   expandToggle: {fileID: 114481830803369218}
   expandArrow: {fileID: 114337546039104162}
---- !u!114 &114235291683116016
-MonoBehaviour:
-  m_ObjectHideFlags: 1
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 100100000}
-  m_GameObject: {fileID: 1165314373957364}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: be531524081657c479afb27aaa9501ac, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &114337546039104162
 MonoBehaviour:
   m_ObjectHideFlags: 1

@@ -45,14 +45,7 @@ MonoBehaviour:
     - mesh
   - m_type: Transform
     m_variables:
-    - right
-    - up
-    - forward
-    - rotationOrder
-    - parentInternal
-    - hierarchyCapacity
-    - drivenByObject
-    - drivenProperties
+    - '*'
   - m_type: Component
     m_variables:
     - name
@@ -63,4 +56,9 @@ MonoBehaviour:
   - m_type: CanvasRenderer
     m_variables:
     - '*'
-  m_exposedVariables: []
+  m_exposedVariables:
+  - m_type: Transform
+    m_variables:
+    - localPosition
+    - localEulerAngles
+    - localScale

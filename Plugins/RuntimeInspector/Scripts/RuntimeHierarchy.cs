@@ -217,15 +217,18 @@ namespace RuntimeInspectorNamespace
 		private Text selectedPathText;
 
 		[SerializeField]
+		private HierarchyDragDropListener dragDropListener;
+
+		[SerializeField]
 		private HierarchyField drawerPrefab;
 
 		[SerializeField]
 		private Sprite m_sceneDrawerBackground;
-		public Sprite SceneDrawerBackground { get { return m_sceneDrawerBackground; } }
+		internal Sprite SceneDrawerBackground { get { return m_sceneDrawerBackground; } }
 
 		[SerializeField]
 		private Sprite m_transformDrawerBackground;
-		public Sprite TransformDrawerBackground { get { return m_transformDrawerBackground; } }
+		internal Sprite TransformDrawerBackground { get { return m_transformDrawerBackground; } }
 #pragma warning restore 0649
 
 		private static int aliveHierarchies = 0;
@@ -236,21 +239,25 @@ namespace RuntimeInspectorNamespace
 		private readonly List<HierarchyDataRoot> searchSceneData = new List<HierarchyDataRoot>( 8 );
 		private readonly Dictionary<string, HierarchyDataRootPseudoScene> pseudoSceneDataLookup = new Dictionary<string, HierarchyDataRootPseudoScene>();
 
-		private bool isListViewDirty = true;
 		private int totalItemCount;
+		internal int ItemCount { get { return totalItemCount; } }
+
+		private bool isListViewDirty = true;
+		private bool shouldRecalculateContentWidth;
 
 		private float lastClickTime;
 		private HierarchyField currentlyPressedDrawer;
 		private float pressedDrawerDraggedReferenceCreateTime;
 		private PointerEventData pressedDrawerActivePointer;
 
-		public SelectionChangedDelegate OnSelectionChanged;
-		public DoubleClickDelegate OnItemDoubleClicked;
-
-		private bool shouldRecalculateContentWidth;
+		private float m_autoScrollSpeed;
+		internal float AutoScrollSpeed { set { m_autoScrollSpeed = value; } }
 
 		// Used to make sure that the scrolled content always remains within the scroll view's boundaries
 		private PointerEventData nullPointerEventData;
+
+		public SelectionChangedDelegate OnSelectionChanged;
+		public DoubleClickDelegate OnItemDoubleClicked;
 
 		private Transform m_currentSelection = null;
 		public Transform CurrentSelection
@@ -374,6 +381,11 @@ namespace RuntimeInspectorNamespace
 			UnityEditor.Selection.selectionChanged -= OnEditorSelectionChanged;
 		}
 
+		private void OnRectTransformDimensionsChange()
+		{
+			shouldRecalculateContentWidth = true;
+		}
+
 		private void OnEditorSelectionChanged()
 		{
 			if( !syncSelectionWithEditorHierarchy )
@@ -421,6 +433,8 @@ namespace RuntimeInspectorNamespace
 
 			if( m_showHorizontalScrollbar && shouldRecalculateContentWidth )
 			{
+				shouldRecalculateContentWidth = false;
+
 				float preferredWidth = 0f;
 				for( int i = drawers.Count - 1; i >= 0; i-- )
 				{
@@ -442,11 +456,17 @@ namespace RuntimeInspectorNamespace
 			if( m_createDraggedReferenceOnHold && currentlyPressedDrawer && time > pressedDrawerDraggedReferenceCreateTime )
 			{
 				if( currentlyPressedDrawer.gameObject.activeSelf && currentlyPressedDrawer.Data.BoundTransform )
+				{
 					RuntimeInspectorUtils.CreateDraggedReferenceItem( currentlyPressedDrawer.Data.BoundTransform, pressedDrawerActivePointer, Skin );
+					( (IPointerEnterHandler) dragDropListener ).OnPointerEnter( pressedDrawerActivePointer );
+				}
 
 				currentlyPressedDrawer = null;
 				pressedDrawerActivePointer = null;
 			}
+
+			if( m_autoScrollSpeed != 0f )
+				scrollView.verticalNormalizedPosition = Mathf.Clamp01( scrollView.verticalNormalizedPosition + m_autoScrollSpeed * Time.unscaledDeltaTime / totalItemCount );
 		}
 
 		public void Refresh()
@@ -582,25 +602,15 @@ namespace RuntimeInspectorNamespace
 				RefreshListView();
 
 			HierarchyField drawer = (HierarchyField) item;
-			int index = drawer.Position;
-			List<HierarchyDataRoot> rootData = !m_isInSearchMode ? sceneData : searchSceneData;
-			for( int i = 0; i < rootData.Count; i++ )
+			HierarchyData data = GetDataAt( drawer.Position );
+			if( data != null )
 			{
-				if( rootData[i].Depth < 0 )
-					continue;
+				drawer.Skin = Skin;
+				drawer.SetContent( data );
+				drawer.IsSelected = m_currentSelection && m_currentSelection == data.BoundTransform;
+				drawer.Refresh();
 
-				if( index < rootData[i].Height )
-				{
-					drawer.Skin = Skin;
-					drawer.SetContent( index > 0 ? rootData[i].FindDataAtIndex( index - 1 ) : rootData[i] );
-					drawer.IsSelected = m_currentSelection && m_currentSelection == drawer.Data.BoundTransform;
-					drawer.Refresh();
-
-					shouldRecalculateContentWidth = true;
-					return;
-				}
-				else
-					index -= rootData[i].Height;
+				shouldRecalculateContentWidth = true;
 			}
 		}
 
@@ -656,8 +666,10 @@ namespace RuntimeInspectorNamespace
 				if( m_isInSearchMode && clickedTransform )
 				{
 					// Fetch the object's path and show it in Hierarchy
-					System.Text.StringBuilder sb = new System.Text.StringBuilder( 200 ).AppendLine( "Path:" );
+					System.Text.StringBuilder sb = RuntimeInspectorUtils.stringBuilder;
+					sb.Length = 0;
 
+					sb.AppendLine( "Path:" );
 					while( clickedTransform )
 					{
 						sb.Append( "  " ).AppendLine( clickedTransform.name );
@@ -668,6 +680,23 @@ namespace RuntimeInspectorNamespace
 					selectedPathBackground.gameObject.SetActive( true );
 				}
 			}
+		}
+
+		internal HierarchyData GetDataAt( int index )
+		{
+			List<HierarchyDataRoot> rootData = !m_isInSearchMode ? sceneData : searchSceneData;
+			for( int i = 0; i < rootData.Count; i++ )
+			{
+				if( rootData[i].Depth < 0 )
+					continue;
+
+				if( index < rootData[i].Height )
+					return index > 0 ? rootData[i].FindDataAtIndex( index - 1 ) : rootData[i];
+				else
+					index -= rootData[i].Height;
+			}
+
+			return null;
 		}
 
 		public void OnDrawerPointerEvent( HierarchyField drawer, PointerEventData eventData, bool isPointerDown )

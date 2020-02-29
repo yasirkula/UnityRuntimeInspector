@@ -32,7 +32,7 @@ namespace RuntimeInspectorNamespace
 
 		public static readonly HashSet<Transform> IgnoredTransformsInHierarchy = new HashSet<Transform>();
 
-		private static readonly StringBuilder titleCaser = new StringBuilder( 64 );
+		internal static readonly StringBuilder stringBuilder = new StringBuilder( 200 );
 
 		private static Canvas m_draggedReferenceItemsCanvas = null;
 		public static Canvas DraggedReferenceItemsCanvas
@@ -50,6 +50,7 @@ namespace RuntimeInspectorNamespace
 					SceneManager.sceneLoaded += OnSceneLoaded;
 
 					Object.DontDestroyOnLoad( m_draggedReferenceItemsCanvas.gameObject );
+					IgnoredTransformsInHierarchy.Add( m_draggedReferenceItemsCanvas.transform );
 				}
 
 				return m_draggedReferenceItemsCanvas;
@@ -75,16 +76,16 @@ namespace RuntimeInspectorNamespace
 			if( ( ch == 'm' || ch == 'M' ) && str.Length > 1 && str[1] == '_' )
 				i = 2;
 
-			titleCaser.Length = 0;
+			stringBuilder.Length = 0;
 			for( ; i < str.Length; i++ )
 			{
 				ch = str[i];
 				if( char.IsUpper( ch ) )
 				{
-					if( ( lastCharType < 2 || ( str.Length > i + 1 && char.IsLower( str[i + 1] ) ) ) && titleCaser.Length > 0 )
-						titleCaser.Append( ' ' );
+					if( ( lastCharType < 2 || ( str.Length > i + 1 && char.IsLower( str[i + 1] ) ) ) && stringBuilder.Length > 0 )
+						stringBuilder.Append( ' ' );
 
-					titleCaser.Append( ch );
+					stringBuilder.Append( ch );
 					lastCharType = 3;
 				}
 				else if( ch == '_' )
@@ -93,32 +94,32 @@ namespace RuntimeInspectorNamespace
 				}
 				else if( char.IsNumber( ch ) )
 				{
-					if( lastCharType != 2 && titleCaser.Length > 0 )
-						titleCaser.Append( ' ' );
+					if( lastCharType != 2 && stringBuilder.Length > 0 )
+						stringBuilder.Append( ' ' );
 
-					titleCaser.Append( ch );
+					stringBuilder.Append( ch );
 					lastCharType = 2;
 				}
 				else
 				{
 					if( lastCharType == 1 || lastCharType == 2 )
 					{
-						if( titleCaser.Length > 0 )
-							titleCaser.Append( ' ' );
+						if( stringBuilder.Length > 0 )
+							stringBuilder.Append( ' ' );
 
-						titleCaser.Append( char.ToUpper( ch ) );
+						stringBuilder.Append( char.ToUpper( ch ) );
 					}
 					else
-						titleCaser.Append( ch );
+						stringBuilder.Append( ch );
 
 					lastCharType = 0;
 				}
 			}
 
-			if( titleCaser.Length == 0 )
+			if( stringBuilder.Length == 0 )
 				return str;
 
-			return titleCaser.ToString();
+			return stringBuilder.ToString();
 		}
 
 		public static string GetName( this Object obj )
@@ -136,10 +137,10 @@ namespace RuntimeInspectorNamespace
 				if( defaultType == null )
 					return "None";
 
-				return "None (" + defaultType.Name + ")";
+				return string.Concat( "None (", defaultType.Name, ")" );
 			}
 
-			return ( obj is Object ) ? ( (Object) obj ).name + " (" + obj.GetType().Name + ")" : obj.GetType().Name;
+			return ( obj is Object ) ? string.Concat( ( (Object) obj ).name, " (", obj.GetType().Name, ")" ) : obj.GetType().Name;
 		}
 
 		public static Texture GetTexture( this Object obj )
@@ -178,12 +179,15 @@ namespace RuntimeInspectorNamespace
 			DraggedReferenceItem referenceItem = (DraggedReferenceItem) Object.Instantiate( Resources.Load<DraggedReferenceItem>( "RuntimeInspector/DraggedReferenceItem" ), DraggedReferenceItemsCanvas.transform, false );
 			referenceItem.Initialize( DraggedReferenceItemsCanvas, reference, draggingPointer, skin );
 
+			draggingPointer.dragging = true;
+			draggingPointer.eligibleForClick = false;
+
 			return referenceItem;
 		}
 
 		public static Object GetAssignableObjectFromDraggedReferenceItem( PointerEventData draggingPointer, Type assignableType )
 		{
-			if( draggingPointer.pointerDrag == null )
+			if( !draggingPointer.pointerDrag )
 				return null;
 
 			DraggedReferenceItem draggedReference = draggingPointer.pointerDrag.GetComponent<DraggedReferenceItem>();
