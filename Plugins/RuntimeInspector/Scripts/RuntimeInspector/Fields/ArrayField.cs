@@ -172,7 +172,7 @@ namespace RuntimeInspectorNamespace
 			elementsExpandedStates.Clear();
 		}
 
-		public void OnDrop( PointerEventData eventData )
+		void IDropHandler.OnDrop( PointerEventData eventData )
 		{
 			Object assignableObject = RuntimeInspectorUtils.GetAssignableObjectFromDraggedReferenceItem( eventData, elementType );
 			if( assignableObject != null )

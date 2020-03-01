@@ -28,7 +28,7 @@ namespace RuntimeInspectorNamespace
 		private RuntimeInspector m_inspector;
 		public RuntimeInspector Inspector
 		{
-			protected get { return m_inspector; }
+			get { return m_inspector; }
 			set
 			{
 				if( m_inspector != value )
@@ -43,7 +43,7 @@ namespace RuntimeInspectorNamespace
 		private UISkin m_skin;
 		public UISkin Skin
 		{
-			protected get { return m_skin; }
+			get { return m_skin; }
 			set
 			{
 				if( m_skin != value || m_skinVersion != m_skin.Version )
@@ -90,14 +90,14 @@ namespace RuntimeInspectorNamespace
 
 		public string Name
 		{
-			get { if( variableNameText != null ) return variableNameText.text; return string.Empty; }
-			set { if( variableNameText != null ) variableNameText.text = Inspector.UseTitleCaseNaming ? value.ToTitleCase() : value; }
+			get { if( variableNameText ) return variableNameText.text; return string.Empty; }
+			set { if( variableNameText ) variableNameText.text = Inspector.UseTitleCaseNaming ? value.ToTitleCase() : value; }
 		}
 
 		public string NameRaw
 		{
-			get { if( variableNameText != null ) return variableNameText.text; return string.Empty; }
-			set { if( variableNameText != null ) variableNameText.text = value; }
+			get { if( variableNameText ) return variableNameText.text; return string.Empty; }
+			set { if( variableNameText ) variableNameText.text = value; }
 		}
 
 		public virtual bool ShouldRefresh { get { return m_isVisible; } }
@@ -196,7 +196,31 @@ namespace RuntimeInspectorNamespace
 			m_value = null;
 		}
 
-		protected virtual void OnInspectorChanged() { }
+		protected virtual void OnInspectorChanged()
+		{
+			if( !variableNameText )
+				return;
+
+			if( m_inspector.ShowTooltips )
+			{
+				if( !variableNameText.GetComponent<TooltipArea>() )
+				{
+					TooltipArea tooltipArea = variableNameText.gameObject.AddComponent<TooltipArea>();
+					tooltipArea.Initialize( this );
+
+					variableNameText.raycastTarget = true;
+				}
+			}
+			else
+			{
+				TooltipArea tooltipArea = variableNameText.GetComponent<TooltipArea>();
+				if( tooltipArea )
+				{
+					Destroy( tooltipArea );
+					variableNameText.raycastTarget = false;
+				}
+			}
+		}
 
 		protected virtual void OnSkinChanged()
 		{

@@ -40,8 +40,6 @@ Note that these connections are *one-directional*, meaning that assigning the in
 
 Be aware that the changes made to a skin via the Unity Inspector might not be reflected to the UI immediately. To reflect these changes to the UI, you may have to click the *cog icon* while the skin is selected and select **Refresh UI**.
 
-- The hierarchy can be synced with Unity Hierarchy by simply enabling **Sync Selection With Editor Hierarchy**
-
 ### D.1. INSPECTOR
 
 ![screenshot](images/img4.png)
@@ -56,6 +54,8 @@ RuntimeInspector works similar to the editor Inspector. It can expose commonly u
 - **Expose Public Properties**: when enabled, public properties can be exposed
 - **Array Indices Start At One**: when enabled, exposed arrays and lists start their indices at 1 instead of 0 (just a visual change)
 - **Use Title Case Naming**: when enabled, variable names are displayed in title case format (e.g. *m_myVariable* becomes *My Variable*)
+- **Show Tooltips**: when enabled, hovering over a variable's name for a while will show a tooltip displaying the variable's name. Can be useful for variables whose names are partially obscured
+- **Tooltip Delay**: determines how long the cursor should remain static over a variable's name before the tooltip appears. Has no effect if *Show Tooltips* is disabled
 - **Nest Limit**: imagine exposing a linked list. This variable defines how many nodes you can expose in the inspector starting from the initial node until the inspector stops exposing any further nodes
 - **Inspected Object Header Visibility**: if the inspected object has a collapsible header, determines that header's visibility
 - **Pool Capacity**: the UI elements are pooled to avoid unnecessary *Instantiate* and *Destroy* calls. This value defines the pool capacity for each of the UI elements individually. On standalone platforms, you can increase this value for better performance
@@ -91,6 +91,16 @@ RuntimeHierarchy simply exposes the objects in your scenes to the user interface
 - **Double Click Threshold**: when an object in the hierarchy is double clicked, **OnItemDoubleClicked** event is raised (see *SCRIPTING API*). This value determines the maximum allowed delay between two clicks to register a double click
 - **Show Horizontal Scrollbar**: when enabled, a horizontal scrollbar will be displayed if the names displayed in the hierarchy don't fit the available space. Note that only the visible items' width values are used to determine the size of the scrollable area
 - **Sync Selection With Editor Hierarchy**: simply synchronizes the selected object between the Unity Hierarchy and this RuntimeHierarchy
+
+Additional settings for *Can Reorganize Items* can be found at the *RuntimeHierarchy/ScrollView/Viewport* object:
+
+![screenshot](images/img6.png)
+
+- **Sibling Index Modification Area**: when a dragged reference item is dropped near the top or bottom edges of a Transform in hierarchy, it will be inserted above or belove the target Transform. This value determines the size of the area near the top and bottom edges
+- **Scrollable Area**: while hovering the cursor near the top or bottom edges of the scroll view with a dragged reference item, scroll view will automatically be scrolled to show contents in that direction. This value determines the size of the area near the top and bottom edges of the scroll view
+- **Scroll Speed**: determines how fast the scroll view will be scrolled while hovering the cursor over *Scrollable Area*
+- **Can Drop Parent On Child**: when enabled, a dragged reference item can be dropped onto one of its child objects. In this case, the child object will be unparented and then the dragged reference item will become a child of it
+- **Can Add Objects To Pseudo Scenes**: when enabled, dropping a dragged reference item onto a pseudo-scene or above/below a root object in the pseudo-scene will automatically add it to that pseudo-scene
 
 ## E. SCRIPTING API
 
@@ -192,8 +202,6 @@ You can also use your own scripts to create dragged reference items by calling t
 ```csharp
 public static DraggedReferenceItem CreateDraggedReferenceItem( Object reference, PointerEventData draggingPointer, UISkin skin = null );
 ```
-
-Note that dragged reference items are created on a separate **Screen Space - Overlay** canvas so that they can be drawn on top of everything. You may want to change this canvas's properties for UI consistency (like its *CanvasScaler*'s properties). In that case, simply use the **RuntimeInspectorUtils.DraggedReferenceItemsCanvas** property to access this canvas.
 
 ### E.3. CUSTOM PROPERTY DRAWERS
 

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
 
@@ -11,15 +12,10 @@ namespace RuntimeInspectorNamespace
 	{
 		public enum HeaderVisibility { Collapsible = 0, AlwaysVisible = 1, Hidden = 2 };
 
-		public delegate object InspectedObjectChangingDelegate( object previousInspectedObject, object newInspectedObject );
-		public delegate void ComponentFilterDelegate( GameObject gameObject, List<Component> components );
-
 		private const string POOL_OBJECT_NAME = "RuntimeInspectorPool";
 
-		private object m_inspectedObject;
-		public object InspectedObject { get { return m_inspectedObject; } }
-
-		public bool IsBound { get { return !m_inspectedObject.IsNull(); } }
+		public delegate object InspectedObjectChangingDelegate( object previousInspectedObject, object newInspectedObject );
+		public delegate void ComponentFilterDelegate( GameObject gameObject, List<Component> components );
 
 #pragma warning disable 0649
 		[SerializeField]
@@ -132,6 +128,18 @@ namespace RuntimeInspectorNamespace
 		}
 
 		[SerializeField]
+		private bool m_showTooltips;
+		public bool ShowTooltips { get { return m_showTooltips; } }
+
+		[SerializeField]
+		private float m_tooltipDelay = 1f;
+		public float TooltipDelay
+		{
+			get { return m_tooltipDelay; }
+			set { m_tooltipDelay = value; }
+		}
+
+		[SerializeField]
 		private int m_nestLimit = 5;
 		public int NestLimit
 		{
@@ -166,8 +174,6 @@ namespace RuntimeInspectorNamespace
 		[SerializeField]
 		private int poolCapacity = 10;
 		private Transform poolParent;
-		private static int aliveInspectors = 0;
-		private static readonly Dictionary<Type, List<InspectorField>> drawersPool = new Dictionary<Type, List<InspectorField>>();
 
 		[SerializeField]
 		private RuntimeHierarchy m_connectedHierarchy;
@@ -192,9 +198,32 @@ namespace RuntimeInspectorNamespace
 		private Image scrollbar;
 #pragma warning restore 0649
 
+		private static int aliveInspectors = 0;
+
+		private readonly Dictionary<Type, InspectorField[]> typeToDrawers = new Dictionary<Type, InspectorField[]>( 89 );
+		private readonly Dictionary<Type, InspectorField[]> typeToReferenceDrawers = new Dictionary<Type, InspectorField[]>( 89 );
+		private readonly List<InspectorField> eligibleDrawers = new List<InspectorField>( 4 );
+
+		private static readonly Dictionary<Type, List<InspectorField>> drawersPool = new Dictionary<Type, List<InspectorField>>();
+
+		private readonly List<VariableSet> hiddenVariables = new List<VariableSet>( 32 );
+		private readonly List<VariableSet> exposedVariables = new List<VariableSet>( 32 );
+
 		private InspectorField currentDrawer = null;
 		private bool inspectLock = false;
 		private bool isDirty = false;
+
+		private InspectorField hoveredDrawer;
+		private PointerEventData hoveringPointer;
+		private float hoveredDrawerTooltipShowTime;
+
+		private object m_inspectedObject;
+		public object InspectedObject { get { return m_inspectedObject; } }
+
+		public bool IsBound { get { return !m_inspectedObject.IsNull(); } }
+
+		private Canvas m_canvas;
+		public Canvas Canvas { get { return m_canvas; } }
 
 		public InspectedObjectChangingDelegate OnInspectedObjectChanging;
 
@@ -209,18 +238,12 @@ namespace RuntimeInspectorNamespace
 			}
 		}
 
-		private readonly Dictionary<Type, InspectorField[]> typeToDrawers = new Dictionary<Type, InspectorField[]>( 89 );
-		private readonly Dictionary<Type, InspectorField[]> typeToReferenceDrawers = new Dictionary<Type, InspectorField[]>( 89 );
-		private readonly List<InspectorField> eligibleDrawers = new List<InspectorField>( 4 );
-
-		private readonly List<VariableSet> hiddenVariables = new List<VariableSet>( 32 );
-		private readonly List<VariableSet> exposedVariables = new List<VariableSet>( 32 );
-
 		protected override void Awake()
 		{
 			base.Awake();
 
 			drawArea = scrollView.content;
+			m_canvas = GetComponentInParent<Canvas>();
 
 			GameObject poolParentGO = GameObject.Find( POOL_OBJECT_NAME );
 			if( poolParentGO == null )
@@ -274,12 +297,18 @@ namespace RuntimeInspectorNamespace
 			RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Remove( drawArea );
 		}
 
+		private void OnTransformParentChanged()
+		{
+			m_canvas = GetComponentInParent<Canvas>();
+		}
+
 		protected override void Update()
 		{
 			base.Update();
 
 			if( IsBound )
 			{
+				float time = Time.realtimeSinceStartup;
 				if( isDirty )
 				{
 					// Rebind to refresh the exposed variables in Inspector
@@ -288,14 +317,38 @@ namespace RuntimeInspectorNamespace
 					Inspect( inspectedObject );
 
 					isDirty = false;
-					nextRefreshTime = Time.realtimeSinceStartup + refreshInterval;
+					nextRefreshTime = time + refreshInterval;
 				}
 				else
 				{
-					if( Time.realtimeSinceStartup > nextRefreshTime )
+					if( time > nextRefreshTime )
 					{
-						nextRefreshTime = Time.realtimeSinceStartup + refreshInterval;
+						nextRefreshTime = time + refreshInterval;
 						Refresh();
+					}
+				}
+
+				// Check if a pointer has remained static over a drawer for a while; if so, show a tooltip
+				if( hoveringPointer != null )
+				{
+					Vector2 pointerDelta = hoveringPointer.delta;
+					if( pointerDelta.x != 0f || pointerDelta.y != 0f )
+						hoveredDrawerTooltipShowTime = time + m_tooltipDelay;
+					else if( time > hoveredDrawerTooltipShowTime )
+					{
+						// Make sure that everything is OK
+						if( !hoveredDrawer || !hoveredDrawer.gameObject.activeSelf )
+						{
+							hoveredDrawer = null;
+							hoveringPointer = null;
+						}
+						else
+						{
+							RuntimeInspectorUtils.ShowTooltip( hoveredDrawer.NameRaw, hoveringPointer, Skin, m_canvas );
+
+							// Don't show the tooltip again until the pointer moves
+							hoveredDrawerTooltipShowTime = float.PositiveInfinity;
+						}
 					}
 				}
 			}
@@ -510,7 +563,7 @@ namespace RuntimeInspectorNamespace
 			return cachedResult;
 		}
 
-		public void PoolDrawer( InspectorField drawer )
+		internal void PoolDrawer( InspectorField drawer )
 		{
 			List<InspectorField> drawerPool;
 			if( !drawersPool.TryGetValue( drawer.GetType(), out drawerPool ) )
@@ -529,7 +582,25 @@ namespace RuntimeInspectorNamespace
 				Destroy( drawer.gameObject );
 		}
 
-		public ExposedVariablesEnumerator GetExposedVariablesForType( Type type )
+		internal void OnDrawerHovered( InspectorField drawer, PointerEventData pointer, bool isHovering )
+		{
+			// Hide tooltip if it is currently visible
+			RuntimeInspectorUtils.HideTooltip();
+
+			if( isHovering )
+			{
+				hoveredDrawer = drawer;
+				hoveringPointer = pointer;
+				hoveredDrawerTooltipShowTime = Time.realtimeSinceStartup + m_tooltipDelay;
+			}
+			else if( hoveredDrawer == drawer )
+			{
+				hoveredDrawer = null;
+				hoveringPointer = null;
+			}
+		}
+
+		internal ExposedVariablesEnumerator GetExposedVariablesForType( Type type )
 		{
 			MemberInfo[] allVariables = type.GetAllVariables();
 			if( allVariables == null )

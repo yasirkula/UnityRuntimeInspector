@@ -32,30 +32,12 @@ namespace RuntimeInspectorNamespace
 
 		public static readonly HashSet<Transform> IgnoredTransformsInHierarchy = new HashSet<Transform>();
 
+		private static Canvas popupCanvas = null;
+		private static Canvas popupReferenceCanvas = null;
+		private static Tooltip tooltipPopup;
+		private static readonly Stack<DraggedReferenceItem> draggedReferenceItemsPool = new Stack<DraggedReferenceItem>();
+
 		internal static readonly StringBuilder stringBuilder = new StringBuilder( 200 );
-
-		private static Canvas m_draggedReferenceItemsCanvas = null;
-		public static Canvas DraggedReferenceItemsCanvas
-		{
-			get
-			{
-				if( !m_draggedReferenceItemsCanvas )
-				{
-					m_draggedReferenceItemsCanvas = new GameObject( "DraggedReferencesCanvas" ).AddComponent<Canvas>();
-					m_draggedReferenceItemsCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-					m_draggedReferenceItemsCanvas.sortingOrder = 987654;
-					m_draggedReferenceItemsCanvas.gameObject.AddComponent<CanvasScaler>();
-
-					SceneManager.sceneLoaded -= OnSceneLoaded;
-					SceneManager.sceneLoaded += OnSceneLoaded;
-
-					Object.DontDestroyOnLoad( m_draggedReferenceItemsCanvas.gameObject );
-					IgnoredTransformsInHierarchy.Add( m_draggedReferenceItemsCanvas.transform );
-				}
-
-				return m_draggedReferenceItemsCanvas;
-			}
-		}
 
 		public static bool IsNull( this object obj )
 		{
@@ -174,15 +156,67 @@ namespace RuntimeInspectorNamespace
 			return color;
 		}
 
-		public static DraggedReferenceItem CreateDraggedReferenceItem( Object reference, PointerEventData draggingPointer, UISkin skin = null )
+		public static void ShowTooltip( string tooltip, PointerEventData pointer, UISkin skin = null, Canvas referenceCanvas = null )
 		{
-			DraggedReferenceItem referenceItem = (DraggedReferenceItem) Object.Instantiate( Resources.Load<DraggedReferenceItem>( "RuntimeInspector/DraggedReferenceItem" ), DraggedReferenceItemsCanvas.transform, false );
-			referenceItem.Initialize( DraggedReferenceItemsCanvas, reference, draggingPointer, skin );
+			bool hasCanvasChanged = CreatePopupCanvas( referenceCanvas );
+
+			if( !tooltipPopup )
+			{
+				tooltipPopup = (Tooltip) Object.Instantiate( Resources.Load<Tooltip>( "RuntimeInspector/Tooltip" ), popupCanvas.transform, false );
+				hasCanvasChanged = true;
+			}
+			else
+				tooltipPopup.gameObject.SetActive( true );
+
+			if( hasCanvasChanged )
+				tooltipPopup.Initialize( popupCanvas );
+
+			if( skin )
+				tooltipPopup.Skin = skin;
+
+			tooltipPopup.SetContent( tooltip, pointer );
+		}
+
+		public static void HideTooltip()
+		{
+			if( tooltipPopup && tooltipPopup.gameObject.activeSelf )
+				tooltipPopup.gameObject.SetActive( false );
+		}
+
+		public static DraggedReferenceItem CreateDraggedReferenceItem( Object reference, PointerEventData draggingPointer, UISkin skin = null, Canvas referenceCanvas = null )
+		{
+			bool hasCanvasChanged = CreatePopupCanvas( referenceCanvas );
+
+			DraggedReferenceItem referenceItem;
+			if( draggedReferenceItemsPool.Count > 0 )
+			{
+				referenceItem = draggedReferenceItemsPool.Pop();
+				referenceItem.gameObject.SetActive( true );
+			}
+			else
+			{
+				referenceItem = (DraggedReferenceItem) Object.Instantiate( Resources.Load<DraggedReferenceItem>( "RuntimeInspector/DraggedReferenceItem" ), popupCanvas.transform, false );
+				hasCanvasChanged = true;
+			}
+
+			if( hasCanvasChanged )
+				referenceItem.Initialize( popupCanvas );
+
+			if( skin )
+				referenceItem.Skin = skin;
+
+			referenceItem.SetContent( reference, draggingPointer );
 
 			draggingPointer.dragging = true;
 			draggingPointer.eligibleForClick = false;
 
 			return referenceItem;
+		}
+
+		public static void PoolDraggedReferenceItem( DraggedReferenceItem item )
+		{
+			item.gameObject.SetActive( false );
+			draggedReferenceItemsPool.Push( item );
 		}
 
 		public static Object GetAssignableObjectFromDraggedReferenceItem( PointerEventData draggingPointer, Type assignableType )
@@ -281,11 +315,52 @@ namespace RuntimeInspectorNamespace
 			}
 		}
 
+		private static bool CreatePopupCanvas( Canvas referenceCanvas )
+		{
+			bool hasCanvasChanged = !popupCanvas;
+			if( !popupCanvas )
+			{
+				popupCanvas = new GameObject( "PopupCanvas" ).AddComponent<Canvas>();
+				popupCanvas.gameObject.AddComponent<CanvasScaler>();
+
+				if( !referenceCanvas )
+				{
+					popupCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+					popupCanvas.sortingOrder = 987654;
+				}
+
+				SceneManager.sceneLoaded -= OnSceneLoaded;
+				SceneManager.sceneLoaded += OnSceneLoaded;
+
+				Object.DontDestroyOnLoad( popupCanvas.gameObject );
+				IgnoredTransformsInHierarchy.Add( popupCanvas.transform );
+			}
+
+			if( referenceCanvas && referenceCanvas != popupReferenceCanvas )
+			{
+				popupReferenceCanvas = referenceCanvas;
+
+				popupCanvas.CopyValuesFrom( referenceCanvas );
+				popupCanvas.sortingOrder = Mathf.Max( 987654, referenceCanvas.sortingOrder + 100 );
+
+				hasCanvasChanged = true;
+			}
+
+			if( hasCanvasChanged )
+			{
+				// This makes sure that the popupCanvas is rebuilt immediately, somehow LayoutRebuilder.ForceRebuildLayoutImmediate doesn't work here
+				popupCanvas.gameObject.SetActive( false );
+				popupCanvas.gameObject.SetActive( true );
+			}
+
+			return hasCanvasChanged;
+		}
+
 		private static void OnSceneLoaded( Scene arg0, LoadSceneMode arg1 )
 		{
-			if( m_draggedReferenceItemsCanvas )
+			if( popupCanvas )
 			{
-				Transform canvasTR = m_draggedReferenceItemsCanvas.transform;
+				Transform canvasTR = popupCanvas.transform;
 				for( int i = canvasTR.childCount - 1; i >= 0; i-- )
 					Object.Destroy( canvasTR.GetChild( i ).gameObject );
 			}

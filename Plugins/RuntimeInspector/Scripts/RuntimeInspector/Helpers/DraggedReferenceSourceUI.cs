@@ -60,7 +60,7 @@ namespace RuntimeInspectorNamespace
 			yield return new WaitForSecondsRealtime( holdTime );
 
 			if( m_reference && ( eventData.position - eventData.pressPosition ).sqrMagnitude < dragThreshold * dragThreshold )
-				RuntimeInspectorUtils.CreateDraggedReferenceItem( m_reference, eventData, draggedReferenceSkin );
+				RuntimeInspectorUtils.CreateDraggedReferenceItem( m_reference, eventData, draggedReferenceSkin, GetComponentInParent<Canvas>() );
 		}
 	}
 }

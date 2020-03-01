@@ -250,6 +250,9 @@ namespace RuntimeInspectorNamespace
 		private float pressedDrawerDraggedReferenceCreateTime;
 		private PointerEventData pressedDrawerActivePointer;
 
+		private Canvas m_canvas;
+		public Canvas Canvas { get { return m_canvas; } }
+
 		private float m_autoScrollSpeed;
 		internal float AutoScrollSpeed { set { m_autoScrollSpeed = value; } }
 
@@ -323,6 +326,8 @@ namespace RuntimeInspectorNamespace
 			listView.SetAdapter( this );
 
 			aliveHierarchies++;
+
+			m_canvas = GetComponentInParent<Canvas>();
 			nullPointerEventData = new PointerEventData( null );
 
 			searchInputField.onValueChanged.AddListener( OnSearchTermChanged );
@@ -369,6 +374,16 @@ namespace RuntimeInspectorNamespace
 			RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Remove( drawArea );
 		}
 
+		private void OnRectTransformDimensionsChange()
+		{
+			shouldRecalculateContentWidth = true;
+		}
+
+		private void OnTransformParentChanged()
+		{
+			m_canvas = GetComponentInParent<Canvas>();
+		}
+
 #if UNITY_EDITOR
 		private void OnEnable()
 		{
@@ -379,11 +394,6 @@ namespace RuntimeInspectorNamespace
 		private void OnDisable()
 		{
 			UnityEditor.Selection.selectionChanged -= OnEditorSelectionChanged;
-		}
-
-		private void OnRectTransformDimensionsChange()
-		{
-			shouldRecalculateContentWidth = true;
 		}
 
 		private void OnEditorSelectionChanged()
@@ -457,8 +467,8 @@ namespace RuntimeInspectorNamespace
 			{
 				if( currentlyPressedDrawer.gameObject.activeSelf && currentlyPressedDrawer.Data.BoundTransform )
 				{
-					RuntimeInspectorUtils.CreateDraggedReferenceItem( currentlyPressedDrawer.Data.BoundTransform, pressedDrawerActivePointer, Skin );
-					( (IPointerEnterHandler) dragDropListener ).OnPointerEnter( pressedDrawerActivePointer );
+					if( RuntimeInspectorUtils.CreateDraggedReferenceItem( currentlyPressedDrawer.Data.BoundTransform, pressedDrawerActivePointer, Skin, m_canvas ) )
+						( (IPointerEnterHandler) dragDropListener ).OnPointerEnter( pressedDrawerActivePointer );
 				}
 
 				currentlyPressedDrawer = null;

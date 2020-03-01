@@ -60,6 +60,8 @@ namespace RuntimeInspectorNamespace
 		private Button okButton;
 #pragma warning restore 0649
 
+		private Canvas referenceCanvas;
+
 		private Color initialValue;
 		private ColorWheelControl.OnColorChangedDelegate onColorChanged;
 
@@ -109,8 +111,10 @@ namespace RuntimeInspectorNamespace
 			alphaSlider.Value = initialColor.a;
 			this.onColorChanged = onColorChanged;
 
-			if( referenceCanvas )
+			if( referenceCanvas && this.referenceCanvas != referenceCanvas )
 			{
+				this.referenceCanvas = referenceCanvas;
+
 				Canvas canvas = GetComponent<Canvas>();
 				canvas.CopyValuesFrom( referenceCanvas );
 				canvas.sortingOrder = Mathf.Max( 1000, referenceCanvas.sortingOrder + 100 );

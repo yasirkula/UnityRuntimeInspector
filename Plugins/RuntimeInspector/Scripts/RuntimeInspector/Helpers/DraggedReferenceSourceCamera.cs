@@ -16,6 +16,9 @@ namespace RuntimeInspectorNamespace
 		private UISkin draggedReferenceSkin;
 
 		[SerializeField]
+		private Canvas draggedReferenceCanvas;
+
+		[SerializeField]
 		private float holdTime = 0.4f;
 
 		[SerializeField]
@@ -45,7 +48,7 @@ namespace RuntimeInspectorNamespace
 		{
 			if( draggingPointer != null )
 			{
-				if( !draggedReference )
+				if( !draggedReference || !draggedReference.gameObject.activeSelf )
 					draggingPointer = null;
 				else if( Input.GetMouseButtonUp( 0 ) )
 				{
@@ -72,7 +75,7 @@ namespace RuntimeInspectorNamespace
 			{
 				if( !pointerDown )
 				{
-					if( Input.GetMouseButtonDown( 0 ) && EventSystem.current != null && !EventSystem.current.IsPointerOverGameObject() )
+					if( Input.GetMouseButtonDown( 0 ) && EventSystem.current && !EventSystem.current.IsPointerOverGameObject() )
 					{
 						RaycastHit hit;
 						if( Physics.Raycast( _camera.ScreenPointToRay( Input.mousePosition ), out hit, raycastRange, interactableObjectsMask ) )
@@ -101,13 +104,13 @@ namespace RuntimeInspectorNamespace
 							{
 								draggingPointer = new PointerEventData( EventSystem.current )
 								{
-									pointerId = -111,
+									pointerId = Input.touchCount > 0 ? Input.GetTouch( 0 ).fingerId : -1,
 									pressPosition = Input.mousePosition,
 									position = Input.mousePosition,
 									button = PointerEventData.InputButton.Left
 								};
 
-								draggedReference = RuntimeInspectorUtils.CreateDraggedReferenceItem( hitObject, draggingPointer, draggedReferenceSkin );
+								draggedReference = RuntimeInspectorUtils.CreateDraggedReferenceItem( hitObject, draggingPointer, draggedReferenceSkin, draggedReferenceCanvas );
 								if( draggedReference == null )
 								{
 									pointerDown = false;

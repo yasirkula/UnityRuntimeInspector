@@ -205,6 +205,8 @@ MonoBehaviour:
   m_exposePublicProperties: 1
   m_arrayIndicesStartAtOne: 0
   m_useTitleCaseNaming: 1
+  m_showTooltips: 0
+  m_tooltipDelay: 0.5
   m_nestLimit: 5
   m_inspectedObjectHeaderVisibility: 0
   poolCapacity: 10

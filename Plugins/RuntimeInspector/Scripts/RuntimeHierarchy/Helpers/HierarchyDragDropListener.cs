@@ -7,16 +7,9 @@ namespace RuntimeInspectorNamespace
 {
 	public class HierarchyDragDropListener : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPointerExitHandler
 	{
+		private const float POINTER_VALIDATE_INTERVAL = 5f;
+
 #pragma warning disable 0649
-		[SerializeField]
-		private RuntimeHierarchy hierarchy;
-
-		[SerializeField]
-		private RectTransform content;
-
-		[SerializeField]
-		private Image dragDropTargetVisualization;
-
 		[SerializeField]
 		private float siblingIndexModificationArea = 5f;
 
@@ -32,6 +25,16 @@ namespace RuntimeInspectorNamespace
 
 		[SerializeField]
 		private bool canAddObjectsToPseudoScenes = false;
+
+		[Header( "Internal Variables" )]
+		[SerializeField]
+		private RuntimeHierarchy hierarchy;
+
+		[SerializeField]
+		private RectTransform content;
+
+		[SerializeField]
+		private Image dragDropTargetVisualization;
 #pragma warning restore 0649
 
 		private Canvas canvas;
@@ -43,6 +46,7 @@ namespace RuntimeInspectorNamespace
 		private Camera worldCamera;
 
 		private float pointerLastYPos;
+		private float nextPointerValidation;
 
 		private void Start()
 		{
@@ -60,6 +64,18 @@ namespace RuntimeInspectorNamespace
 		{
 			if( pointer == null )
 				return;
+
+			nextPointerValidation -= Time.unscaledDeltaTime;
+			if( nextPointerValidation <= 0f )
+			{
+				nextPointerValidation = POINTER_VALIDATE_INTERVAL;
+
+				if( !pointer.IsPointerValid() )
+				{
+					pointer = null;
+					return;
+				}
+			}
 
 			Vector2 position;
 			if( RectTransformUtility.ScreenPointToLocalPointInRectangle( rectTransform, pointer.position, worldCamera, out position ) && position.y != pointerLastYPos )
@@ -343,6 +359,7 @@ namespace RuntimeInspectorNamespace
 
 			pointer = eventData;
 			pointerLastYPos = -1f;
+			nextPointerValidation = POINTER_VALIDATE_INTERVAL;
 
 			if( canvas.renderMode == RenderMode.ScreenSpaceOverlay || ( canvas.renderMode == RenderMode.ScreenSpaceCamera && canvas.worldCamera == null ) )
 				worldCamera = null;

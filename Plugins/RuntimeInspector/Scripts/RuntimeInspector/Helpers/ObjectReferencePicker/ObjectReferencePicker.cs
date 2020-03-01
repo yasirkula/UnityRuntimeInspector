@@ -71,6 +71,8 @@ namespace RuntimeInspectorNamespace
 		private ObjectReferencePickerItem referenceItemPrefab;
 #pragma warning restore 0649
 
+		private Canvas referenceCanvas;
+
 		private readonly List<Object> references = new List<Object>( 64 );
 		private readonly List<Object> filteredReferences = new List<Object>( 64 );
 
@@ -98,8 +100,10 @@ namespace RuntimeInspectorNamespace
 			initialValue = initialReference;
 			this.onReferenceChanged = onReferenceChanged;
 
-			if( referenceCanvas )
+			if( referenceCanvas && this.referenceCanvas != referenceCanvas )
 			{
+				this.referenceCanvas = referenceCanvas;
+
 				Canvas canvas = GetComponent<Canvas>();
 				canvas.CopyValuesFrom( referenceCanvas );
 				canvas.sortingOrder = Mathf.Max( 1000, referenceCanvas.sortingOrder + 100 );

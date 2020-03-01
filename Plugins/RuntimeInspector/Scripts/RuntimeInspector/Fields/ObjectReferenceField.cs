@@ -50,7 +50,7 @@ namespace RuntimeInspectorNamespace
 			Object[] allReferences = Resources.FindObjectsOfTypeAll( BoundVariableType );
 
 			ObjectReferencePicker.Instance.Skin = Inspector.Skin;
-			ObjectReferencePicker.Instance.Show( OnReferenceChanged, BoundVariableType, allReferences, (Object) Value, Inspector.GetComponentInParent<Canvas>() );
+			ObjectReferencePicker.Instance.Show( OnReferenceChanged, BoundVariableType, allReferences, (Object) Value, Inspector.Canvas );
 		}
 
 		private void InspectReference( PointerEventData eventData )
