@@ -1,26 +1,24 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using UnityEngine;
+using Visibility = RuntimeInspectorNamespace.RuntimeInspector.VariableVisibility;
 
 namespace RuntimeInspectorNamespace
 {
 	public class ExposedVariablesEnumerator : IEnumerator<MemberInfo>, IEnumerable<MemberInfo>
 	{
 		public MemberInfo Current { get { return variables[index]; } }
-		object IEnumerator.Current { get { return Current; } }
+		object IEnumerator.Current { get { return variables[index]; } }
 
 		private int index;
-		private readonly MemberInfo[] variables;
 
+		private readonly MemberInfo[] variables;
 		private readonly List<VariableSet> hiddenVariables, exposedVariables;
 
-		private readonly bool debugMode;
+		private readonly Visibility fieldVisibility, propertyVisibility;
 
-		private readonly bool exposePrivateFields, exposePublicFields;
-		private readonly bool exposePrivateProperties, exposePublicProperties;
-
-		public ExposedVariablesEnumerator( MemberInfo[] variables, List<VariableSet> hiddenVariables, List<VariableSet> exposedVariables, bool debugMode,
-			bool exposePrivateFields, bool exposePublicFields, bool exposePrivateProperties, bool exposePublicProperties )
+		public ExposedVariablesEnumerator( MemberInfo[] variables, List<VariableSet> hiddenVariables, List<VariableSet> exposedVariables, Visibility fieldVisibility, Visibility propertyVisibility )
 		{
 			index = -1;
 
@@ -29,12 +27,8 @@ namespace RuntimeInspectorNamespace
 			this.hiddenVariables = hiddenVariables;
 			this.exposedVariables = exposedVariables;
 
-			this.debugMode = debugMode;
-
-			this.exposePrivateFields = exposePrivateFields;
-			this.exposePublicFields = exposePublicFields;
-			this.exposePrivateProperties = exposePrivateProperties;
-			this.exposePublicProperties = exposePublicProperties;
+			this.fieldVisibility = fieldVisibility;
+			this.propertyVisibility = propertyVisibility;
 		}
 
 		public void Dispose() { }
@@ -56,28 +50,8 @@ namespace RuntimeInspectorNamespace
 
 			while( ++index < variables.Length )
 			{
-				if( variables[index] is FieldInfo )
-				{
-					FieldInfo field = (FieldInfo) variables[index];
-					if( IsVariableInExposedVariablesList( field.Name ) )
-						return true;
-
-					bool isPublic = field.IsPublic;
-					if( ( ( isPublic && exposePublicFields ) || ( !isPublic && exposePrivateFields ) ) &&
-						ShouldExposeVariable( field ) )
-						return true;
-				}
-				else
-				{
-					PropertyInfo property = (PropertyInfo) variables[index];
-					if( IsVariableInExposedVariablesList( property.Name ) )
-						return true;
-
-					bool isPublic = property.GetSetMethod( true ).IsPublic && property.GetGetMethod( true ).IsPublic;
-					if( ( ( isPublic && exposePublicProperties ) || ( !isPublic && exposePrivateProperties ) ) &&
-						ShouldExposeVariable( property ) )
-						return true;
-				}
+				if( ShouldExposeVariable( variables[index] ) )
+					return true;
 			}
 
 			return false;
@@ -88,8 +62,9 @@ namespace RuntimeInspectorNamespace
 			index = -1;
 		}
 
-		private bool IsVariableInExposedVariablesList( string variableName )
+		private bool ShouldExposeVariable( MemberInfo variable )
 		{
+			string variableName = variable.Name;
 			if( exposedVariables != null )
 			{
 				for( int i = 0; i < exposedVariables.Count; i++ )
@@ -99,12 +74,6 @@ namespace RuntimeInspectorNamespace
 				}
 			}
 
-			return false;
-		}
-
-		private bool ShouldExposeVariable( MemberInfo variable )
-		{
-			string variableName = variable.Name;
 			if( hiddenVariables != null )
 			{
 				for( int i = 0; i < hiddenVariables.Count; i++ )
@@ -114,7 +83,30 @@ namespace RuntimeInspectorNamespace
 				}
 			}
 
-			return variable.ShouldExposeInInspector( debugMode );
+			if( variable is FieldInfo )
+			{
+				switch( fieldVisibility )
+				{
+					case Visibility.None: return false;
+					case Visibility.All: return true;
+					case Visibility.SerializableOnly:
+						FieldInfo field = (FieldInfo) variable;
+						return field.IsPublic || field.HasAttribute<SerializeField>();
+				}
+			}
+			else
+			{
+				switch( propertyVisibility )
+				{
+					case Visibility.None: return false;
+					case Visibility.All: return true;
+					case Visibility.SerializableOnly:
+						PropertyInfo property = (PropertyInfo) variable;
+						return property.GetGetMethod( true ).IsPublic || property.HasAttribute<SerializeField>();
+				}
+			}
+
+			return true;
 		}
 	}
 }

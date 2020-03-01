@@ -12,8 +12,43 @@ namespace RuntimeInspectorNamespace
 		private string currentTag = null;
 		private StringField nameField, tagField;
 
+		private Getter isActiveGetter, nameGetter, tagGetter;
+		private Setter isActiveSetter, nameSetter, tagSetter;
+		private PropertyInfo layerProp;
+
 		private readonly List<Component> components = new List<Component>( 8 );
 		private readonly List<bool> componentsExpandedStates = new List<bool>();
+
+		public override void Initialize()
+		{
+			base.Initialize();
+
+			isActiveGetter = () => ( (GameObject) Value ).activeSelf;
+			isActiveSetter = ( value ) => ( (GameObject) Value ).SetActive( (bool) value );
+
+			nameGetter = () => ( (GameObject) Value ).name;
+			nameSetter = ( value ) =>
+			{
+				( (GameObject) Value ).name = (string) value;
+				NameRaw = Value.GetNameWithType();
+
+				RuntimeHierarchy hierarchy = Inspector.ConnectedHierarchy;
+				if( hierarchy )
+					hierarchy.RefreshNameOf( ( (GameObject) Value ).transform );
+			};
+
+			tagGetter = () =>
+			{
+				GameObject go = (GameObject) Value;
+				if( !go.CompareTag( currentTag ) )
+					currentTag = go.tag;
+
+				return currentTag;
+			};
+			tagSetter = ( value ) => ( (GameObject) Value ).tag = (string) value;
+
+			layerProp = typeof( GameObject ).GetProperty( "layer" );
+		}
 
 		public override bool SupportsType( Type type )
 		{
@@ -60,25 +95,10 @@ namespace RuntimeInspectorNamespace
 			if( components.Count == 0 )
 				return;
 
-			CreateDrawer( typeof( bool ), "Is Active", () => ( (GameObject) Value ).activeSelf, ( value ) => ( (GameObject) Value ).SetActive( (bool) value ) );
-			nameField = CreateDrawer( typeof( string ), "Name", () => ( (GameObject) Value ).name, ( value ) =>
-			{
-				( (GameObject) Value ).name = (string) value;
-				NameRaw = Value.GetNameWithType();
-
-				RuntimeHierarchy hierarchy = Inspector.ConnectedHierarchy;
-				if( hierarchy != null )
-					hierarchy.RefreshNameOf( ( (GameObject) Value ).transform );
-			} ) as StringField;
-			tagField = CreateDrawer( typeof( string ), "Tag", () =>
-			{
-				GameObject go = (GameObject) Value;
-				if( !go.CompareTag( currentTag ) )
-					currentTag = go.tag;
-
-				return currentTag;
-			}, ( value ) => ( (GameObject) Value ).tag = (string) value ) as StringField;
-			CreateDrawerForVariable( typeof( GameObject ).GetProperty( "layer" ), "Layer" );
+			CreateDrawer( typeof( bool ), "Is Active", isActiveGetter, isActiveSetter );
+			nameField = CreateDrawer( typeof( string ), "Name", nameGetter, nameSetter ) as StringField;
+			tagField = CreateDrawer( typeof( string ), "Tag", tagGetter, tagSetter ) as StringField;
+			CreateDrawerForVariable( layerProp, "Layer" );
 
 			for( int i = 0, j = elements.Count; i < components.Count; i++ )
 			{

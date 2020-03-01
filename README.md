@@ -47,11 +47,8 @@ Be aware that the changes made to a skin via the Unity Inspector might not be re
 RuntimeInspector works similar to the editor Inspector. It can expose commonly used Unity types out-of-the-box, as well as custom classes and structs that are marked with **System.Serializable** attribute. 1-dimensional arrays and generic Lists are also supported. 
 
 - **Refresh Interval**: as the name suggests, this is the refresh interval of the inspector. At each refresh, values of all the exposed fields and properties are refreshed. This generates some garbage for boxed value types (unavoidable) and thus, increasing this value even slightly should help with GC a lot
-- **Debug Mode**: when enabled, non-public variables that don't have a **SerializeField** attribute can be exposed
-- **Expose Private Fields**: when enabled, private fields can be exposed
-- **Expose Public Fields**: when enabled, public fields can be exposed
-- **Expose Private Properties**: when enabled, private properties can be exposed
-- **Expose Public Properties**: when enabled, public properties can be exposed
+- **Expose Fields**: determines which fields of the inspected object should be exposed: *None*, *Serializable Only* or *All*
+- **Expose Properties**: determines which properties of the inspected object should be exposed
 - **Array Indices Start At One**: when enabled, exposed arrays and lists start their indices at 1 instead of 0 (just a visual change)
 - **Use Title Case Naming**: when enabled, variable names are displayed in title case format (e.g. *m_myVariable* becomes *My Variable*)
 - **Show Tooltips**: when enabled, hovering over a variable's name for a while will show a tooltip displaying the variable's name. Can be useful for variables whose names are partially obscured
@@ -64,11 +61,11 @@ RuntimeInspector works similar to the editor Inspector. It can expose commonly u
     - While searching for a suitable drawer for a variable, the corresponding drawers list is traversed from bottom to top until a drawer that supports that variable type is found. If such a drawer is not found, that variable is not exposed
   - **Hidden Variables**: allows you to hide some variables from the inspector for a given type and all the types that extend/implement it. You can enter asterisk character (\*) to hide all the variables for that type
   - **Exposed Variables**: allows you to expose (counter) some hidden variables. A variable goes through a number of filters before it is exposed:
-  1. If it is in *Exposed Variables*, it is exposed
-  2. Otherwise, it must pass the *Expose Private Fields*, *Expose Public Fields*, *Expose Private Properties* and *Expose Public Properties* filters
-  3. It must not be in *Hidden Variables*
-  4. It must not have a *System.Obsolete*, *System.NonSerialized* or *HideInInspector* attribute
-  5. It must be serializable or *Debug Mode* must be enabled
+  1. Its Type must be serializable
+  2. It must not have a *System.Obsolete*, *System.NonSerialized* or *HideInInspector* attribute
+  3. If it is in *Exposed Variables*, it is exposed
+  4. It must not be in *Hidden Variables*
+  5. it must pass the *Expose Fields* and *Expose Properties* filters
   - So, to expose only a specific set of variables for a given type, you can hide all of its variables by entering an asterisk to its *Hidden Variables* and then entering the set of exposed variables to its *Exposed Variables*
 
 While changing the inspector's settings, you are advised not to touch **InternalSettings**; instead create a separate Settings asset and add it to the **Settings** array of the inspector. Otherwise, when *InternalSettings* is changed in an update, your settings might get overridden.
@@ -205,7 +202,7 @@ public static DraggedReferenceItem CreateDraggedReferenceItem( Object reference,
 
 ### E.3. CUSTOM PROPERTY DRAWERS
 
-**NOTE**: this section is about giving you a brief idea on how to create your own drawers. As the amount of information presented here might be overwhelming or boring, you are also recommended to examine some of the built-in drawers to have a better idea about the architecture. For starters, you can examine **BoolField** and continue with **BoundsField** and **GameObjectField**.
+**NOTE**: this section talks about the architecture of the Inspector drawers. However, the amount of information presented here might be overwhelming or boring; thus, you are also recommended to examine some of the built-in drawers. For starters, you can examine **BoolField** and **TransformField**. Then, you can progress to **BoundsField**, **GameObjectField** and **ArrayField**.
 
 You can introduce your own property drawers to the inspector to extend its functionality using a **Settings** asset mentioned in section **D.1**. Each property drawer extends from **InspectorField** base class. There is also an **ExpandableInspectorField** abstract class that allows you to create an expandable/collapsable property drawer like arrays. Lastly, extending **ObjectReferenceField** class allows you to create drawers that can be assigned values via the reference picker or via drag&drop.
 

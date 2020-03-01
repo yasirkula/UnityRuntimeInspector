@@ -48,11 +48,7 @@ namespace RuntimeInspectorNamespace
 
 		public override bool SupportsType( Type type )
 		{
-#if UNITY_EDITOR || !NETFX_CORE
-			return typeof( UnityEngine.Object ).IsAssignableFrom( type ) || Attribute.IsDefined( type, typeof( SerializableAttribute ), false );
-#else
-			return typeof( UnityEngine.Object ).IsAssignableFrom( type ) || type.GetTypeInfo().IsDefined( typeof( SerializableAttribute ), false );
-#endif
+			return true;
 		}
 
 		protected override void OnBound( MemberInfo variable )

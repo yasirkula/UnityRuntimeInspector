@@ -10,6 +10,7 @@ namespace RuntimeInspectorNamespace
 {
 	public class RuntimeInspector : SkinnedWindow
 	{
+		public enum VariableVisibility { None = 0, SerializableOnly = 1, All = 2 }
 		public enum HeaderVisibility { Collapsible = 0, AlwaysVisible = 1, Hidden = 2 };
 
 		private const string POOL_OBJECT_NAME = "RuntimeInspectorPool";
@@ -23,75 +24,30 @@ namespace RuntimeInspectorNamespace
 		private float nextRefreshTime = -1f;
 
 		[SerializeField]
-		private bool m_debugMode = true;
-		public bool DebugMode
+		private VariableVisibility m_exposeFields = VariableVisibility.SerializableOnly;
+		public VariableVisibility ExposeFields
 		{
-			get { return m_debugMode; }
+			get { return m_exposeFields; }
 			set
 			{
-				if( m_debugMode != value )
+				if( m_exposeFields != value )
 				{
-					m_debugMode = value;
+					m_exposeFields = value;
 					isDirty = true;
 				}
 			}
 		}
 
 		[SerializeField]
-		private bool m_exposePrivateFields = true;
-		public bool ExposePrivateFields
+		private VariableVisibility m_exposeProperties = VariableVisibility.SerializableOnly;
+		public VariableVisibility ExposeProperties
 		{
-			get { return m_exposePrivateFields; }
+			get { return m_exposeProperties; }
 			set
 			{
-				if( m_exposePrivateFields != value )
+				if( m_exposeProperties != value )
 				{
-					m_exposePrivateFields = value;
-					isDirty = true;
-				}
-			}
-		}
-
-		[SerializeField]
-		private bool m_exposePublicFields = true;
-		public bool ExposePublicFields
-		{
-			get { return m_exposePublicFields; }
-			set
-			{
-				if( m_exposePublicFields != value )
-				{
-					m_exposePublicFields = value;
-					isDirty = true;
-				}
-			}
-		}
-
-		[SerializeField]
-		private bool m_exposePrivateProperties = true;
-		public bool ExposePrivateProperties
-		{
-			get { return m_exposePrivateProperties; }
-			set
-			{
-				if( m_exposePrivateProperties != value )
-				{
-					m_exposePrivateProperties = value;
-					isDirty = true;
-				}
-			}
-		}
-
-		[SerializeField]
-		private bool m_exposePublicProperties = true;
-		public bool ExposePublicProperties
-		{
-			get { return m_exposePublicProperties; }
-			set
-			{
-				if( m_exposePublicProperties != value )
-				{
-					m_exposePublicProperties = value;
+					m_exposeProperties = value;
 					isDirty = true;
 				}
 			}
@@ -604,7 +560,7 @@ namespace RuntimeInspectorNamespace
 		{
 			MemberInfo[] allVariables = type.GetAllVariables();
 			if( allVariables == null )
-				return new ExposedVariablesEnumerator( null, null, null, false, false, false, false, false );
+				return new ExposedVariablesEnumerator( null, null, null, VariableVisibility.None, VariableVisibility.None );
 
 			List<VariableSet> hiddenVariablesForType = null;
 			List<VariableSet> exposedVariablesForType = null;
@@ -630,8 +586,7 @@ namespace RuntimeInspectorNamespace
 				}
 			}
 
-			return new ExposedVariablesEnumerator( allVariables, hiddenVariablesForType, exposedVariablesForType, m_debugMode,
-				m_exposePrivateFields, m_exposePublicFields, m_exposePrivateProperties, m_exposePublicProperties );
+			return new ExposedVariablesEnumerator( allVariables, hiddenVariablesForType, exposedVariablesForType, m_exposeFields, m_exposeProperties );
 		}
 	}
 }

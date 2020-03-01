@@ -1,4 +1,6 @@
-﻿using System;
+﻿#define EXCLUDE_BACKING_FIELDS_FROM_VARIABLES
+
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.Serialization;
@@ -13,18 +15,38 @@ namespace RuntimeInspectorNamespace
 {
 	public static class RuntimeInspectorUtils
 	{
-		private static readonly Dictionary<Type, MemberInfo[]> typeToVariables = new Dictionary<Type, MemberInfo[]>( 89 );
+		private static readonly Dictionary<Type, MemberInfo[]> typeToVariables = new Dictionary<Type, MemberInfo[]>( 89 ) { { typeof( object ), null } };
 		private static readonly Dictionary<Type, ExposedMethod[]> typeToExposedMethods = new Dictionary<Type, ExposedMethod[]>( 89 );
 
-		private static readonly HashSet<Type> serializableUnityTypes = new HashSet<Type>()
+		private static readonly HashSet<Type> commonSerializableTypes = new HashSet<Type>()
 		{
-			typeof( Vector2 ), typeof( Vector3 ), typeof( Vector4), typeof( Rect ), typeof( Quaternion ),
-			typeof( Matrix4x4 ), typeof( Color ), typeof( Color32 ), typeof( LayerMask ), typeof( Bounds ),
-			typeof( AnimationCurve ), typeof( Gradient ), typeof( RectOffset ), typeof( GUIStyle ),
+			typeof( string ), typeof( Vector4 ), typeof( Vector3 ), typeof( Vector2 ), typeof( Rect ),
+			typeof( Quaternion ), typeof( Color ), typeof( Color32 ), typeof( LayerMask ), typeof( Bounds ),
+			typeof( Matrix4x4 ), typeof( AnimationCurve ), typeof( Gradient ), typeof( RectOffset ), typeof( GUIStyle ),
+			typeof( bool[] ), typeof( byte[] ), typeof( sbyte[] ), typeof( char[] ), typeof( decimal[] ),
+			typeof( double[] ), typeof( float[] ), typeof( int[] ), typeof( uint[] ), typeof( long[] ),
+			typeof( ulong[] ), typeof( short[] ), typeof( ushort[] ), typeof( string[] ),
+			typeof( Vector4[] ), typeof( Vector3[] ), typeof( Vector2[] ), typeof( Rect[] ),
+			typeof( Quaternion[] ), typeof( Color[] ), typeof( Color32[] ), typeof( LayerMask[] ), typeof( Bounds[] ),
+			typeof( Matrix4x4[] ), typeof( AnimationCurve[] ), typeof( Gradient[] ), typeof( RectOffset[] ), typeof( GUIStyle[] ),
+			typeof( List<bool> ), typeof( List<byte> ), typeof( List<sbyte> ), typeof( List<char> ), typeof( List<decimal> ),
+			typeof( List<double> ), typeof( List<float> ), typeof( List<int> ), typeof( List<uint> ), typeof( List<long> ),
+			typeof( List<ulong> ), typeof( List<short> ), typeof( List<ushort> ), typeof( List<string> ),
+			typeof( List<Vector4> ), typeof( List<Vector3> ), typeof( List<Vector2> ), typeof( List<Rect> ),
+			typeof( List<Quaternion> ), typeof( List<Color> ), typeof( List<Color32> ), typeof( List<LayerMask> ), typeof( List<Bounds> ),
+			typeof( List<Matrix4x4> ), typeof( List<AnimationCurve> ), typeof( List<Gradient> ), typeof( List<RectOffset> ), typeof( List<GUIStyle> ),
 #if UNITY_2017_2_OR_NEWER
-			typeof( Vector3Int ), typeof( Vector2Int ), typeof( RectInt ), typeof( BoundsInt )
+			typeof( Vector3Int ), typeof( Vector2Int ), typeof( RectInt ), typeof( BoundsInt ),
+			typeof( Vector3Int[] ), typeof( Vector2Int[] ), typeof( RectInt[] ), typeof( BoundsInt[] ),
+			typeof( List<Vector3Int> ), typeof( List<Vector2Int> ), typeof( List<RectInt> ), typeof( List<BoundsInt> )
 #endif
 		};
+
+		private static readonly List<MemberInfo> validVariablesList = new List<MemberInfo>( 32 );
+		private static readonly List<Type> typesToSearchForVariablesList = new List<Type>( 8 );
+#if EXCLUDE_BACKING_FIELDS_FROM_VARIABLES
+		private static readonly List<string> propertyNamesInVariablesList = new List<string>( 32 );
+#endif
 
 		private static readonly List<ExposedMethod> exposedMethodsList = new List<ExposedMethod>( 4 );
 		private static readonly List<ExposedExtensionMethodHolder> exposedExtensionMethods = new List<ExposedExtensionMethodHolder>();
@@ -53,18 +75,17 @@ namespace RuntimeInspectorNamespace
 				return string.Empty;
 
 			byte lastCharType = 1; // 0 -> lowercase, 1 -> _ (underscore), 2 -> number, 3 -> uppercase
-			int i = 0;
-			char ch = str[0];
-			if( ( ch == 'm' || ch == 'M' ) && str.Length > 1 && str[1] == '_' )
-				i = 2;
+			int index = 0;
+			if( str.Length > 1 && str[1] == '_' )
+				index = 2;
 
 			stringBuilder.Length = 0;
-			for( ; i < str.Length; i++ )
+			for( ; index < str.Length; index++ )
 			{
-				ch = str[i];
+				char ch = str[index];
 				if( char.IsUpper( ch ) )
 				{
-					if( ( lastCharType < 2 || ( str.Length > i + 1 && char.IsLower( str[i + 1] ) ) ) && stringBuilder.Length > 0 )
+					if( ( lastCharType < 2 || ( str.Length > index + 1 && char.IsLower( str[index + 1] ) ) ) && stringBuilder.Length > 0 )
 						stringBuilder.Append( ' ' );
 
 					stringBuilder.Append( ch );
@@ -380,52 +401,143 @@ namespace RuntimeInspectorNamespace
 		public static MemberInfo[] GetAllVariables( this Type type )
 		{
 			MemberInfo[] result;
-			if( !typeToVariables.TryGetValue( type, out result ) )
+			if( typeToVariables.TryGetValue( type, out result ) )
+				return result;
+
+			validVariablesList.Clear();
+			typesToSearchForVariablesList.Clear();
+
+			// Follow the class hiearchy for this Type up to System.Object until some cached variables are found
+			Type currType = type;
+			while( currType != typeof( object ) )
 			{
-				FieldInfo[] fields = type.GetFields( BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance );
-				PropertyInfo[] properties = type.GetProperties( BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance );
-
-				int validFieldCount = 0;
-				int validPropertyCount = 0;
-
-				for( int i = 0; i < fields.Length; i++ )
+				// Variables for currType were already cached, no need to search currType or its base classes
+				if( typeToVariables.TryGetValue( currType, out result ) )
 				{
-					FieldInfo field = fields[i];
-					if( !field.IsLiteral && !field.IsInitOnly && field.FieldType.IsSerializable() )
-						validFieldCount++;
+					if( result != null )
+						validVariablesList.AddRange( result );
+
+					break;
 				}
 
-				for( int i = 0; i < properties.Length; i++ )
+				typesToSearchForVariablesList.Add( currType );
+				currType = currType.BaseType;
+			}
+
+			// Fetch variables in reverse order, i.e. start from base classes
+			for( int i = typesToSearchForVariablesList.Count - 1; i >= 0; i-- )
+			{
+				currType = typesToSearchForVariablesList[i];
+
+#if EXCLUDE_BACKING_FIELDS_FROM_VARIABLES
+				propertyNamesInVariablesList.Clear();
+#endif
+
+				PropertyInfo[] properties = currType.GetProperties( BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly );
+				for( int j = 0; j < properties.Length; j++ )
 				{
-					PropertyInfo property = properties[i];
-					if( property.GetIndexParameters().Length == 0 && property.CanRead && property.CanWrite && property.PropertyType.IsSerializable() )
-						validPropertyCount++;
+					PropertyInfo property = properties[j];
+
+					// Skip properties without a getter or setter function
+					MethodInfo propertyGetter = property.GetGetMethod( true );
+					if( propertyGetter == null || property.GetSetMethod( true ) == null )
+						continue;
+
+					// Skip indexer properties
+					if( property.GetIndexParameters().Length > 0 )
+						continue;
+
+					// Skip non-serializable types
+					if( !property.PropertyType.IsSerializable() )
+						continue;
+
+					// Skip obsolete or hidden properties
+					if( property.HasAttribute<ObsoleteAttribute>() || property.HasAttribute<NonSerializedAttribute>() || property.HasAttribute<HideInInspector>() )
+						continue;
+
+					// Skip properties with 'override' keyword (they will appear in parent currTypes)
+					if( propertyGetter.GetBaseDefinition().DeclaringType != propertyGetter.DeclaringType )
+						continue;
+
+#if EXCLUDE_BACKING_FIELDS_FROM_VARIABLES
+					propertyNamesInVariablesList.Add( property.Name );
+#endif
+					validVariablesList.Add( property );
 				}
 
-				int validVariableCount = validFieldCount + validPropertyCount;
-				if( validVariableCount == 0 )
-					result = null;
-				else
+				FieldInfo[] fields = currType.GetFields( BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly );
+				for( int j = 0; j < fields.Length; j++ )
 				{
-					result = new MemberInfo[validVariableCount];
+					FieldInfo field = fields[j];
 
-					int j = 0;
-					for( int i = 0; i < fields.Length; i++ )
+					// Skip readonly or constant fields
+					if( field.IsLiteral || field.IsInitOnly )
+						continue;
+
+					// Skip non-serializable types
+					if( !field.FieldType.IsSerializable() )
+						continue;
+
+					// Skip obsolete or hidden fields
+					if( field.HasAttribute<ObsoleteAttribute>() || field.HasAttribute<NonSerializedAttribute>() || field.HasAttribute<HideInInspector>() )
+						continue;
+
+#if EXCLUDE_BACKING_FIELDS_FROM_VARIABLES
+					// Ignore auto-generated backing fields
+					string _field = field.Name;
+					if( _field.Contains( "_BackingField" ) )
+						continue;
+
+					// Skip user-written prefixes in backing fields like '_' or 'm_'
+					int nameStartIndex = 0;
+					if( _field.Length > 1 )
 					{
-						FieldInfo field = fields[i];
-						if( !field.IsLiteral && !field.IsInitOnly && field.FieldType.IsSerializable() )
-							result[j++] = field;
+						if( _field.Length > 2 && _field[1] == '_' )
+							nameStartIndex = 2;
+						else if( _field[0] == '_' )
+							nameStartIndex = 1;
 					}
 
-					for( int i = 0; i < properties.Length; i++ )
+					// Check if a property has the same name with this field; if so, we assume that the field is a backing field
+					bool isBackingField = false;
+					for( int k = propertyNamesInVariablesList.Count - 1; k >= 0; k-- )
 					{
-						PropertyInfo property = properties[i];
-						if( property.GetIndexParameters().Length == 0 && property.CanRead && property.CanWrite && property.PropertyType.IsSerializable() )
-							result[j++] = property;
+						string property = propertyNamesInVariablesList[k];
+						if( _field.Length - nameStartIndex != property.Length )
+							continue;
+
+						// Perform a case-insensitive comparison of the first letters
+						int firstCh = _field[nameStartIndex];
+						int firstCh2 = property[0];
+						if( firstCh != firstCh2 )
+						{
+							// Try converting upper-case first letter to lower-case and vice versa
+							if( firstCh + 32 != firstCh2 && firstCh - 32 != firstCh2 )
+								continue;
+						}
+
+						// Check if the remaining letters are the same
+						int nameIndex = 1;
+						while( nameIndex < property.Length && _field[nameStartIndex + nameIndex] == property[nameIndex] )
+							nameIndex++;
+
+						if( nameIndex == property.Length )
+						{
+							isBackingField = true;
+							break;
+						}
 					}
+
+					if( isBackingField )
+						continue;
+#endif
+
+					validVariablesList.Add( field );
 				}
 
-				typeToVariables[type] = result;
+				// Cache found variables along the way
+				result = validVariablesList.Count > 0 ? validVariablesList.ToArray() : null;
+				typeToVariables[currType] = result;
 			}
 
 			return result;
@@ -470,38 +582,16 @@ namespace RuntimeInspectorNamespace
 			return result;
 		}
 
-		public static bool ShouldExposeInInspector( this MemberInfo variable, bool debugMode )
-		{
-			if( variable.HasAttribute<ObsoleteAttribute>() || variable.HasAttribute<NonSerializedAttribute>() || variable.HasAttribute<HideInInspector>() )
-				return false;
-
-			if( debugMode )
-				return true;
-
-			// see Serialization Rules: https://docs.unity3d.com/Manual/script-Serialization.html
-			if( variable is FieldInfo )
-			{
-				FieldInfo field = (FieldInfo) variable;
-				if( !field.IsPublic && !field.HasAttribute<SerializeField>() )
-					return false;
-			}
-
-			return true;
-		}
-
 		private static bool IsSerializable( this Type type )
 		{
 #if UNITY_EDITOR || !NETFX_CORE
-			if( type.IsPrimitive || type == typeof( string ) || type.IsEnum )
+			if( type.IsPrimitive || commonSerializableTypes.Contains( type ) || type.IsEnum )
 #else
-			if( type.GetTypeInfo().IsPrimitive || type == typeof( string ) || type.GetTypeInfo().IsEnum )
+			if( type.GetTypeInfo().IsPrimitive || commonSerializableTypes.Contains( type ) || type.GetTypeInfo().IsEnum )
 #endif
 				return true;
 
 			if( typeof( Object ).IsAssignableFrom( type ) )
-				return true;
-
-			if( serializableUnityTypes.Contains( type ) )
 				return true;
 
 			if( type.IsArray )

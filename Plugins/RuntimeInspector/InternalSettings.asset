@@ -13,6 +13,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_standardDrawers:
   - {fileID: 114453255388587516, guid: b292c517aa17d35498474513ea51053b, type: 2}
+  - {fileID: 114003958484321768, guid: 97d2e6ff56f4e8148a2c0c88e8455e15, type: 2}
   - {fileID: 114836596486658644, guid: dc6c99ef010462949be7c6a4420501b2, type: 2}
   - {fileID: 114833464836618182, guid: 58feae853e7be46429c9eb218ce89d38, type: 2}
   - {fileID: 114583257696006140, guid: 300fe0c02ada2ff45ad008ce1485e476, type: 2}
@@ -36,6 +37,9 @@ MonoBehaviour:
     - hideFlags
     - useGUILayout
     - runInEditMode
+    - m_CachedPtr
+    - m_InstanceID
+    - m_UnityRuntimeErrorString
   - m_type: Renderer
     m_variables:
     - material
@@ -53,9 +57,17 @@ MonoBehaviour:
   - m_type: Collider
     m_variables:
     - material
+  - m_type: Collider2D
+    m_variables:
+    - material
   - m_type: CanvasRenderer
     m_variables:
     - '*'
+  - m_type: Animator
+    m_variables:
+    - bodyPosition
+    - bodyRotation
+    - playbackTime
   m_exposedVariables:
   - m_type: Transform
     m_variables:
