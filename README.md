@@ -2,7 +2,7 @@
 
 ![screenshot](images/img1.png) 
 
-**Available on Asset Store:** https://www.assetstore.unity3d.com/en/#!/content/111349
+**Available on Asset Store:** https://assetstore.unity.com/packages/tools/gui/runtime-inspector-hierarchy-111349
 
 **Forum Thread:** https://forum.unity.com/threads/runtime-inspector-and-hierarchy-open-source.501220/
 
