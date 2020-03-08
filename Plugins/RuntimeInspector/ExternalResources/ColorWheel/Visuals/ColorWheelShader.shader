@@ -50,7 +50,7 @@ Shader "UI/ColorWheel"
 			CGPROGRAM
 			#pragma vertex vert
 	        #pragma fragment frag
-			#pragma target 2.0
+			#pragma target 2.5
 			
 			#include "UnityCG.cginc"
 			
