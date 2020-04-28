@@ -10,13 +10,23 @@
 
 ## A. ABOUT
 
-This is a simple yet powerful runtime **Inspector** and **Hierarchy** solution for Unity 3D that should work on pretty much any platform that Unity supports, including mobile platforms. Simply import [RuntimeInspector.unitypackage](https://github.com/yasirkula/UnityRuntimeInspector/releases) to your project to get started!
+This is a simple yet powerful runtime **Inspector** and **Hierarchy** solution for Unity 3D that should work on pretty much any platform that Unity supports, including mobile platforms.
 
 ## B. LICENSE
 
 Runtime Inspector & Hierarchy is licensed under the [MIT License](LICENSE) ([Asset Store version](https://www.assetstore.unity3d.com/en/#!/content/111349) is governed by the [Asset Store EULA](https://unity3d.com/legal/as_terms)). Please note that this asset uses an external asset which is licensed under the [BSD 3-Clause License](https://github.com/fkate/Unity_ColorWheel/blob/master/LICENSE).
 
-## C. HOW TO USE
+## C. INSTALLATION
+
+There are 4 ways to install this plugin:
+
+- import [RuntimeInspector.unitypackage](https://github.com/yasirkula/UnityRuntimeInspector/releases) via *Assets-Import Package*
+- clone/[download](https://github.com/yasirkula/UnityRuntimeInspector/archive/master.zip) this repository and move the *Plugins* folder to your Unity project's *Assets* folder
+- import it from [Asset Store](https://assetstore.unity.com/packages/tools/gui/runtime-inspector-hierarchy-111349)
+- *(via Package Manager)* add the following line to *Packages/manifest.json*:
+  - `"com.yasirkula.runtimeinspector": "https://github.com/yasirkula/UnityRuntimeInspector.git",`
+
+## D. HOW TO
 
 - To use the hierarchy in your scene, drag&drop the **RuntimeHierarchy** prefab to your canvas
 - To use the inspector in your scene, drag&drop the **RuntimeInspector** prefab to your canvas
@@ -27,7 +37,7 @@ You can also connect the hierarchy to the inspector so that whenever an object r
 
 Note that these connections are *one-directional*, meaning that assigning the inspector to the hierarchy will not automatically assign the hierarchy to the inspector or vice versa. Also note that the inspector and the hierarchy are **not** singletons and therefore, you can have several instances of them in your scene at a time with different configurations.
 
-## D. FEATURES
+## E. FEATURES
 
 - The hierarchy costs **1 SetPass call** and **~5 batches** (assuming that **Sprite Packing** is enabled in *Editor Settings*)
 - The inspector costs **1 SetPass call** and **~10 batches** (assuming that **Sprite Packing** is enabled in *Editor Settings*)
@@ -42,7 +52,7 @@ Note that these connections are *one-directional*, meaning that assigning the in
 
 Be aware that the changes made to a skin via the Unity Inspector might not be reflected to the UI immediately. To reflect these changes to the UI, you may have to click the *cog icon* while the skin is selected and select **Refresh UI**.
 
-### D.1. INSPECTOR
+### E.1. INSPECTOR
 
 ![screenshot](images/img4.png)
 
@@ -72,7 +82,7 @@ RuntimeInspector works similar to the editor Inspector. It can expose commonly u
 
 While changing the inspector's settings, you are advised not to touch **InternalSettings**; instead create a separate Settings asset and add it to the **Settings** array of the inspector. Otherwise, when *InternalSettings* is changed in an update, your settings might get overridden.
 
-### D.2. HIERARCHY
+### E.2. HIERARCHY
 
 ![screenshot](images/img5.png)
 
@@ -101,9 +111,9 @@ Additional settings for *Can Reorganize Items* can be found at the *RuntimeHiera
 - **Can Drop Parent On Child**: when enabled, a dragged reference item can be dropped onto one of its child objects. In this case, the child object will be unparented and then the dragged reference item will become a child of it
 - **Can Add Objects To Pseudo Scenes**: when enabled, dropping a dragged reference item onto a pseudo-scene or above/below a root object in the pseudo-scene will automatically add it to that pseudo-scene
 
-## E. SCRIPTING API
+## F. SCRIPTING API
 
-Values of the variables that are mentioned in **D.1** and **D.2** sections can be tweaked at runtime via their corresponding properties. Any changes to these properties will be reflected to UI immediately. Here, you will find some interesting things that you can do with the inspector and the hierarchy via scripting:
+Values of the variables that are mentioned in **E.1** and **E.2** sections can be tweaked at runtime via their corresponding properties. Any changes to these properties will be reflected to UI immediately. Here, you will find some interesting things that you can do with the inspector and the hierarchy via scripting:
 
 - You can change the inspected object in the inspector using the following functions:
 
@@ -147,7 +157,7 @@ private object OnlyInspectObjectsWithRenderer( object previousInspectedObject, o
 
 - Although you can't add *RuntimeInspectorButton* attribute to Unity's built-in functions, you can show buttons under built-in Unity types via **extension methods**. You must write all such extension methods in a single static class, mark the methods with *RuntimeInspectorButton* attribute and then introduce these functions to the RuntimeInspector as following: `RuntimeInspectorUtils.ExposedExtensionMethodsHolder = typeof( TheScriptThatContainsTheExtensionsMethods );`
 
-### E.1. PSEUDO-SCENES
+### F.1. PSEUDO-SCENES
 
 You can use the following functions to add object(s) to pseudo-scenes in the hierarchy:
 
@@ -173,13 +183,13 @@ public void DeletePseudoScene( string scene );
 public void DeleteAllPseudoScenes();
 ```
 
-#### E.1.1. PseudoSceneSourceTransform
+#### F.1.1. PseudoSceneSourceTransform
 
 This helper component allows you to add an object's children to a pseudo-scene in the hierarchy. When a child is added to or removed from the object, this component refreshes the pseudo-scene automatically. If **HideOnDisable** is enabled, the object's children are removed from the pseudo-scene when the object is disabled.
 
-### E.2. DRAGGED REFERENCE ITEMS
+### F.2. DRAGGED REFERENCE ITEMS
 
-In section **D.2**, it is mentioned that you can drag&drop objects from the hierarchy to the variables in the inspector to assign these objects to those variables. However, you are not limited with just hierarchy. There are two helper components that you can use to create dragged reference items for other objects:
+In section **E.2**, it is mentioned that you can drag&drop objects from the hierarchy to the variables in the inspector to assign these objects to those variables. However, you are not limited with just hierarchy. There are two helper components that you can use to create dragged reference items for other objects:
 
 - **DraggedReferenceSourceCamera**: when attached to a camera, casts a ray to your scene at each mouse click and creates a dragged reference item if you hold on an object for a while. You can register to the **ProcessRaycastHit** delegate of this component to filter the objects than can create a dragged reference item. For example, if you want only objects with tag *NPC* to be able to create a dragged reference item, you can use the following function:
 
@@ -202,13 +212,13 @@ You can also use your own scripts to create dragged reference items by calling t
 public static DraggedReferenceItem CreateDraggedReferenceItem( Object reference, PointerEventData draggingPointer, UISkin skin = null );
 ```
 
-### E.3. CUSTOM PROPERTY DRAWERS
+### F.3. CUSTOM PROPERTY DRAWERS
 
 **NOTE**: this section talks about the architecture of the Inspector drawers. However, the amount of information presented here might be overwhelming or boring; thus, you are also recommended to examine some of the built-in drawers. For starters, you can examine **BoolField** and **TransformField**. Then, you can progress to **BoundsField**, **GameObjectField** and **ArrayField**.
 
-You can introduce your own property drawers to the inspector to extend its functionality using a **Settings** asset mentioned in section **D.1**. Each property drawer extends from **InspectorField** base class. There is also an **ExpandableInspectorField** abstract class that allows you to create an expandable/collapsable property drawer like arrays. Lastly, extending **ObjectReferenceField** class allows you to create drawers that can be assigned values via the reference picker or via drag&drop.
+You can introduce your own property drawers to the inspector to extend its functionality using a **Settings** asset mentioned in section **E.1**. Each property drawer extends from **InspectorField** base class. There is also an **ExpandableInspectorField** abstract class that allows you to create an expandable/collapsable property drawer like arrays. Lastly, extending **ObjectReferenceField** class allows you to create drawers that can be assigned values via the reference picker or via drag&drop.
 
-#### E.3.1. InspectorField
+#### F.3.1. InspectorField
 
 To have a standardized visual appearance across all the property drawers, there are some common variables for each drawer:
 - **Layout Element**: is used to set the height of the property drawer. A standard height is set by the currently active Inspector skin's **Line Height** property. This value is multiplied by the virtual **HeightMultiplier** property of the drawer. For ExpandableInspectorField's of unknown height, this variable should be left unassigned
@@ -236,7 +246,7 @@ There are some special functions on drawers that are invoked on certain circumst
 - **void OnDepthChanged()**: called when the *Depth* property of the drawer is changed. Here, your custom drawers must add a padding to their content from left to comply with the nesting standard. This function is also called when the *Skin* changes
 - **void Refresh()**: called when the value of the bound object is refreshed. Drawers must refresh the values of their UI elements here
 
-#### E.3.2. ExpandableInspectorField
+#### F.3.2. ExpandableInspectorField
 
 Custom drawers that extend **ExpandableInspectorField** have access to the following properties:
 - **bool IsExpanded**: returns whether the drawer is expanded or collapsed. When set to *true*, the drawer is expanded and its content is drawn under it
@@ -261,11 +271,11 @@ There are actually some helper functions in ExpandableInspectorField to easily c
 
 If you don't want the name of the variable to be title case formatted, you can enter an empty string as the **variableName** parameter and then set the *NameRaw* property of the returned *InspectorField* object.
 
-#### E.3.3. ObjectReferenceField
+#### F.3.3. ObjectReferenceField
 
 Property drawers that extend **ObjectReferenceField** class have access to the `void OnReferenceChanged( Object reference )` function that is called when the reference assigned to that drawer is changed.
 
-#### E.3.4. Helper Classes
+#### F.3.4. Helper Classes
 
 **PointerEventListener**: this is a simple helper component that invokes **PointerDown** event pressed, **PointerUp** event when released and **PointerClick** event when clicked
 
