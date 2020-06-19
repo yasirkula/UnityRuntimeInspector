@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
@@ -70,17 +71,17 @@ namespace RuntimeInspectorNamespace
 			if( isVector3Int )
 			{
 				Vector3Int val = (Vector3Int) Value;
-				inputX.Text = val.x.ToString();
-				inputY.Text = val.y.ToString();
-				inputZ.Text = val.z.ToString();
+				inputX.Text = val.x.ToString( RuntimeInspectorUtils.numberFormat );
+				inputY.Text = val.y.ToString( RuntimeInspectorUtils.numberFormat );
+				inputZ.Text = val.z.ToString( RuntimeInspectorUtils.numberFormat );
 			}
 			else
 #endif
 			{
 				Vector3 val = (Vector3) Value;
-				inputX.Text = val.x.ToString();
-				inputY.Text = val.y.ToString();
-				inputZ.Text = val.z.ToString();
+				inputX.Text = val.x.ToString( RuntimeInspectorUtils.numberFormat );
+				inputY.Text = val.y.ToString( RuntimeInspectorUtils.numberFormat );
+				inputZ.Text = val.z.ToString( RuntimeInspectorUtils.numberFormat );
 			}
 		}
 
@@ -90,7 +91,7 @@ namespace RuntimeInspectorNamespace
 			if( isVector3Int )
 			{
 				int value;
-				if( int.TryParse( input, out value ) )
+				if( int.TryParse( input, NumberStyles.Integer, RuntimeInspectorUtils.numberFormat, out value ) )
 				{
 					Vector3Int val = (Vector3Int) Value;
 					if( source == inputX )
@@ -108,7 +109,7 @@ namespace RuntimeInspectorNamespace
 #endif
 			{
 				float value;
-				if( float.TryParse( input, out value ) )
+				if( float.TryParse( input, NumberStyles.Float, RuntimeInspectorUtils.numberFormat, out value ) )
 				{
 					Vector3 val = (Vector3) Value;
 					if( source == inputX )
@@ -169,11 +170,11 @@ namespace RuntimeInspectorNamespace
 				Vector3Int val = (Vector3Int) Value;
 
 				if( val.x != prevVal.x )
-					inputX.Text = val.x.ToString();
+					inputX.Text = val.x.ToString( RuntimeInspectorUtils.numberFormat );
 				if( val.y != prevVal.y )
-					inputY.Text = val.y.ToString();
+					inputY.Text = val.y.ToString( RuntimeInspectorUtils.numberFormat );
 				if( val.z != prevVal.z )
-					inputZ.Text = val.z.ToString();
+					inputZ.Text = val.z.ToString( RuntimeInspectorUtils.numberFormat );
 			}
 			else
 #endif
@@ -183,11 +184,11 @@ namespace RuntimeInspectorNamespace
 				Vector3 val = (Vector3) Value;
 
 				if( val.x != prevVal.x )
-					inputX.Text = val.x.ToString();
+					inputX.Text = val.x.ToString( RuntimeInspectorUtils.numberFormat );
 				if( val.y != prevVal.y )
-					inputY.Text = val.y.ToString();
+					inputY.Text = val.y.ToString( RuntimeInspectorUtils.numberFormat );
 				if( val.z != prevVal.z )
-					inputZ.Text = val.z.ToString();
+					inputZ.Text = val.z.ToString( RuntimeInspectorUtils.numberFormat );
 			}
 		}
 	}

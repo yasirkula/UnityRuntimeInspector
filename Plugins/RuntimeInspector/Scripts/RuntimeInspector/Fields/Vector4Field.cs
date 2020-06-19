@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
@@ -75,25 +76,25 @@ namespace RuntimeInspectorNamespace
 			if( isQuaternion )
 			{
 				Quaternion val = (Quaternion) Value;
-				inputX.Text = val.x.ToString();
-				inputY.Text = val.y.ToString();
-				inputZ.Text = val.z.ToString();
-				inputW.Text = val.z.ToString();
+				inputX.Text = val.x.ToString( RuntimeInspectorUtils.numberFormat );
+				inputY.Text = val.y.ToString( RuntimeInspectorUtils.numberFormat );
+				inputZ.Text = val.z.ToString( RuntimeInspectorUtils.numberFormat );
+				inputW.Text = val.z.ToString( RuntimeInspectorUtils.numberFormat );
 			}
 			else
 			{
 				Vector4 val = (Vector4) Value;
-				inputX.Text = val.x.ToString();
-				inputY.Text = val.y.ToString();
-				inputZ.Text = val.z.ToString();
-				inputW.Text = val.z.ToString();
+				inputX.Text = val.x.ToString( RuntimeInspectorUtils.numberFormat );
+				inputY.Text = val.y.ToString( RuntimeInspectorUtils.numberFormat );
+				inputZ.Text = val.z.ToString( RuntimeInspectorUtils.numberFormat );
+				inputW.Text = val.z.ToString( RuntimeInspectorUtils.numberFormat );
 			}
 		}
 
 		private bool OnValueChanged( BoundInputField source, string input )
 		{
 			float value;
-			if( float.TryParse( input, out value ) )
+			if( float.TryParse( input, NumberStyles.Float, RuntimeInspectorUtils.numberFormat, out value ) )
 			{
 				if( isQuaternion )
 				{
@@ -172,13 +173,13 @@ namespace RuntimeInspectorNamespace
 				Quaternion val = (Quaternion) Value;
 
 				if( val.x != prevVal.x )
-					inputX.Text = val.x.ToString();
+					inputX.Text = val.x.ToString( RuntimeInspectorUtils.numberFormat );
 				if( val.y != prevVal.y )
-					inputY.Text = val.y.ToString();
+					inputY.Text = val.y.ToString( RuntimeInspectorUtils.numberFormat );
 				if( val.z != prevVal.z )
-					inputZ.Text = val.z.ToString();
+					inputZ.Text = val.z.ToString( RuntimeInspectorUtils.numberFormat );
 				if( val.w != prevVal.w )
-					inputW.Text = val.z.ToString();
+					inputW.Text = val.z.ToString( RuntimeInspectorUtils.numberFormat );
 			}
 			else
 			{
@@ -187,13 +188,13 @@ namespace RuntimeInspectorNamespace
 				Vector4 val = (Vector4) Value;
 
 				if( val.x != prevVal.x )
-					inputX.Text = val.x.ToString();
+					inputX.Text = val.x.ToString( RuntimeInspectorUtils.numberFormat );
 				if( val.y != prevVal.y )
-					inputY.Text = val.y.ToString();
+					inputY.Text = val.y.ToString( RuntimeInspectorUtils.numberFormat );
 				if( val.z != prevVal.z )
-					inputZ.Text = val.z.ToString();
+					inputZ.Text = val.z.ToString( RuntimeInspectorUtils.numberFormat );
 				if( val.w != prevVal.w )
-					inputW.Text = val.z.ToString();
+					inputW.Text = val.z.ToString( RuntimeInspectorUtils.numberFormat );
 			}
 		}
 	}

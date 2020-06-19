@@ -54,7 +54,7 @@ namespace RuntimeInspectorNamespace
 				return;
 
 			Value = numberHandler.ConvertFromFloat( value );
-			input.Text = Value.ToString();
+			input.Text = numberHandler.ToString( Value );
 			Inspector.RefreshDelayed();
 		}
 

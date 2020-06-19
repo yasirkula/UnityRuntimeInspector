@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Globalization;
+using UnityEngine;
 using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
@@ -158,10 +159,10 @@ namespace RuntimeInspectorNamespace
 
 		private void OnSelectedColorChanged( Color32 color )
 		{
-			rInput.Text = color.r.ToString();
-			gInput.Text = color.g.ToString();
-			bInput.Text = color.b.ToString();
-			aInput.Text = color.a.ToString();
+			rInput.Text = color.r.ToString( RuntimeInspectorUtils.numberFormat );
+			gInput.Text = color.g.ToString( RuntimeInspectorUtils.numberFormat );
+			bInput.Text = color.b.ToString( RuntimeInspectorUtils.numberFormat );
+			aInput.Text = color.a.ToString( RuntimeInspectorUtils.numberFormat );
 
 			alphaSlider.Color = color;
 
@@ -171,7 +172,7 @@ namespace RuntimeInspectorNamespace
 
 		private void OnAlphaChanged( float alpha )
 		{
-			aInput.Text = ( (int) ( alpha * 255 ) ).ToString();
+			aInput.Text = ( (int) ( alpha * 255 ) ).ToString( RuntimeInspectorUtils.numberFormat );
 			colorWheel.Alpha = alpha;
 
 			Color color = colorWheel.Color;
@@ -184,7 +185,7 @@ namespace RuntimeInspectorNamespace
 		private bool OnRGBAChanged( BoundInputField source, string input )
 		{
 			byte value;
-			if( byte.TryParse( input, out value ) )
+			if( byte.TryParse( input, NumberStyles.Integer, RuntimeInspectorUtils.numberFormat, out value ) )
 			{
 				Color32 color = colorWheel.Color;
 				if( source == rInput )

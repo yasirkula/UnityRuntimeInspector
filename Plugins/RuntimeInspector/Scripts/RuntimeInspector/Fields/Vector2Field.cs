@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
@@ -60,15 +61,15 @@ namespace RuntimeInspectorNamespace
 			if( isVector2Int )
 			{
 				Vector2Int val = (Vector2Int) Value;
-				inputX.Text = val.x.ToString();
-				inputY.Text = val.y.ToString();
+				inputX.Text = val.x.ToString( RuntimeInspectorUtils.numberFormat );
+				inputY.Text = val.y.ToString( RuntimeInspectorUtils.numberFormat );
 			}
 			else
 #endif
 			{
 				Vector2 val = (Vector2) Value;
-				inputX.Text = val.x.ToString();
-				inputY.Text = val.y.ToString();
+				inputX.Text = val.x.ToString( RuntimeInspectorUtils.numberFormat );
+				inputY.Text = val.y.ToString( RuntimeInspectorUtils.numberFormat );
 			}
 		}
 
@@ -78,7 +79,7 @@ namespace RuntimeInspectorNamespace
 			if( isVector2Int )
 			{
 				int value;
-				if( int.TryParse( input, out value ) )
+				if( int.TryParse( input, NumberStyles.Integer, RuntimeInspectorUtils.numberFormat, out value ) )
 				{
 					Vector2Int val = (Vector2Int) Value;
 					if( source == inputX )
@@ -94,7 +95,7 @@ namespace RuntimeInspectorNamespace
 #endif
 			{
 				float value;
-				if( float.TryParse( input, out value ) )
+				if( float.TryParse( input, NumberStyles.Float, RuntimeInspectorUtils.numberFormat, out value ) )
 				{
 					Vector2 val = (Vector2) Value;
 					if( source == inputX )
@@ -147,9 +148,9 @@ namespace RuntimeInspectorNamespace
 				Vector2Int val = (Vector2Int) Value;
 
 				if( val.x != prevVal.x )
-					inputX.Text = val.x.ToString();
+					inputX.Text = val.x.ToString( RuntimeInspectorUtils.numberFormat );
 				if( val.y != prevVal.y )
-					inputY.Text = val.y.ToString();
+					inputY.Text = val.y.ToString( RuntimeInspectorUtils.numberFormat );
 			}
 			else
 #endif
@@ -159,9 +160,9 @@ namespace RuntimeInspectorNamespace
 				Vector2 val = (Vector2) Value;
 
 				if( val.x != prevVal.x )
-					inputX.Text = val.x.ToString();
+					inputX.Text = val.x.ToString( RuntimeInspectorUtils.numberFormat );
 				if( val.y != prevVal.y )
-					inputY.Text = val.y.ToString();
+					inputY.Text = val.y.ToString( RuntimeInspectorUtils.numberFormat );
 			}
 		}
 	}

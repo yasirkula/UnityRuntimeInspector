@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
@@ -59,6 +60,7 @@ namespace RuntimeInspectorNamespace
 		private static Tooltip tooltipPopup;
 		private static readonly Stack<DraggedReferenceItem> draggedReferenceItemsPool = new Stack<DraggedReferenceItem>();
 
+		internal static readonly NumberFormatInfo numberFormat = NumberFormatInfo.GetInstance( CultureInfo.InvariantCulture );
 		internal static readonly StringBuilder stringBuilder = new StringBuilder( 200 );
 
 		public static bool IsNull( this object obj )
@@ -300,7 +302,12 @@ namespace RuntimeInspectorNamespace
 						position = referenceCanvasTransform.TransformPoint( centerOffset );
 					}
 
+#if UNITY_5_6_OR_NEWER
 					canvas.transform.SetPositionAndRotation( position, referenceCanvasTransform.rotation );
+#else
+					canvas.transform.position = position;
+					canvas.transform.rotation = referenceCanvasTransform.rotation;
+#endif
 					canvas.transform.localScale = referenceCanvasTransform.localScale;
 					break;
 			}

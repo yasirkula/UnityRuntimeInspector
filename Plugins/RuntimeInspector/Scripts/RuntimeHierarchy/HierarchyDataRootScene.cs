@@ -21,7 +21,9 @@ namespace RuntimeInspectorNamespace
 		public override void RefreshContent()
 		{
 			rootObjects.Clear();
-			Scene.GetRootGameObjects( rootObjects );
+
+			if( Scene.isLoaded )
+				Scene.GetRootGameObjects( rootObjects );
 		}
 
 		public override Transform GetChild( int index )

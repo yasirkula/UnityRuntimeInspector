@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -168,7 +169,7 @@ namespace RuntimeInspectorNamespace
 				}
 			}
 
-			sizeInput.Text = Length.ToString();
+			sizeInput.Text = Length.ToString( RuntimeInspectorUtils.numberFormat );
 			elementsExpandedStates.Clear();
 		}
 
@@ -177,7 +178,7 @@ namespace RuntimeInspectorNamespace
 			Object assignableObject = RuntimeInspectorUtils.GetAssignableObjectFromDraggedReferenceItem( eventData, elementType );
 			if( assignableObject != null )
 			{
-				if( !OnSizeChanged( null, ( Length + 1 ).ToString() ) )
+				if( !OnSizeChanged( null, ( Length + 1 ).ToString( RuntimeInspectorUtils.numberFormat ) ) )
 					return;
 
 				if( isArray )
@@ -201,7 +202,7 @@ namespace RuntimeInspectorNamespace
 		private bool OnSizeInputBeingChanged( BoundInputField source, string input )
 		{
 			int value;
-			if( int.TryParse( input, out value ) && value >= 0 )
+			if( int.TryParse( input, NumberStyles.Integer, RuntimeInspectorUtils.numberFormat, out value ) && value >= 0 )
 				return true;
 
 			return false;
@@ -210,7 +211,7 @@ namespace RuntimeInspectorNamespace
 		private bool OnSizeChanged( BoundInputField source, string input )
 		{
 			int value;
-			if( int.TryParse( input, out value ) && value >= 0 )
+			if( int.TryParse( input, NumberStyles.Integer, RuntimeInspectorUtils.numberFormat, out value ) && value >= 0 )
 			{
 				int currLength = Length;
 				if( currLength != value )

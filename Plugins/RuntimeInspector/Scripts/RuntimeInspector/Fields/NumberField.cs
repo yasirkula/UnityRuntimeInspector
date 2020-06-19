@@ -41,13 +41,13 @@ namespace RuntimeInspectorNamespace
 		{
 			base.OnBound( variable );
 
-			numberHandler = NumberHandlers.Get( BoundVariableType );
-			input.Text = Value.ToString();
-
 			if( BoundVariableType == typeof( float ) || BoundVariableType == typeof( double ) || BoundVariableType == typeof( decimal ) )
 				input.BackingField.contentType = InputField.ContentType.DecimalNumber;
 			else
 				input.BackingField.contentType = InputField.ContentType.IntegerNumber;
+
+			numberHandler = NumberHandlers.Get( BoundVariableType );
+			input.Text = numberHandler.ToString( Value );
 		}
 
 		protected virtual bool OnValueChanged( BoundInputField source, string input )
@@ -84,7 +84,7 @@ namespace RuntimeInspectorNamespace
 			base.Refresh();
 
 			if( !numberHandler.ValuesAreEqual( Value, prevVal ) )
-				input.Text = Value.ToString();
+				input.Text = numberHandler.ToString( Value );
 		}
 	}
 }
