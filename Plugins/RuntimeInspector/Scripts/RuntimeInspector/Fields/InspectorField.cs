@@ -377,6 +377,14 @@ namespace RuntimeInspectorNamespace
 			ClearElements();
 		}
 
+		protected override void OnInspectorChanged()
+		{
+			base.OnInspectorChanged();
+
+			for( int i = 0; i < elements.Count; i++ )
+				elements[i].Inspector = Inspector;
+		}
+
 		protected override void OnSkinChanged()
 		{
 			base.OnSkinChanged();

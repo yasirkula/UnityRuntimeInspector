@@ -325,10 +325,11 @@ namespace RuntimeInspectorNamespace
 
 		// Refreshes the Inspector in the next Update. Called by most of the InspectorDrawers
 		// when their values have changed. If a drawer is bound to a property whose setter
-		// may modify the input data, the drawer's BoundInputFields will still show the unmodified
-		// input data until the next Refresh. That is because BoundInputFields don't have access
-		// to the fields/properties they are modifying, there is no way for the BoundInputFields to
-		// know whether or not the property has modified the input data.
+		// may modify the input data (e.g. when input data is 20 but the setter clamps it to 10),
+		// the drawer's BoundInputFields will still show the unmodified input data (20) until the
+		// next Refresh. That is because BoundInputFields don't have access to the fields/properties 
+		// they are modifying, there is no way for the BoundInputFields to know whether or not
+		// the property has modified the input data (changed it from 20 to 10).
 		// 
 		// Why not refresh only the changed InspectorDrawers? Because changing a property may affect
 		// multiple fields/properties that are bound to other drawers, we don't know which

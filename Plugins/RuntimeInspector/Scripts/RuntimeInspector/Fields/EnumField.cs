@@ -16,7 +16,13 @@ namespace RuntimeInspectorNamespace
 		private Image dropdownArrow;
 
 		[SerializeField]
-		private RectTransform templateTransform;
+		private RectTransform templateRoot;
+
+		[SerializeField]
+		private RectTransform templateContentTransform;
+
+		[SerializeField]
+		private RectTransform templateItemTransform;
 
 		[SerializeField]
 		private Image templateBackground;
@@ -78,6 +84,23 @@ namespace RuntimeInspectorNamespace
 			input.AddOptions( currEnumNames );
 		}
 
+		protected override void OnInspectorChanged()
+		{
+			base.OnInspectorChanged();
+			OnTransformParentChanged();
+		}
+
+		private void OnTransformParentChanged()
+		{
+			if( Inspector && Skin )
+			{
+				// Dropdown's list should be able to expand as much as possible when necessary
+				Vector2 templateRootSizeDelta = templateRoot.sizeDelta;
+				templateRootSizeDelta.y = ( ( (RectTransform) Inspector.Canvas.transform ).rect.height - Skin.LineHeight ) * 0.5f;
+				templateRoot.sizeDelta = templateRootSizeDelta;
+			}
+		}
+
 		private void OnValueChanged( int input )
 		{
 			Value = currEnumValues[input];
@@ -87,10 +110,28 @@ namespace RuntimeInspectorNamespace
 		protected override void OnSkinChanged()
 		{
 			base.OnSkinChanged();
+			OnTransformParentChanged();
 
-			Vector2 templateSizeDelta = templateTransform.sizeDelta;
-			templateSizeDelta.y = Skin.LineHeight;
-			templateTransform.sizeDelta = templateSizeDelta;
+			Vector2 templateContentSizeDelta = templateContentTransform.sizeDelta;
+			templateContentSizeDelta.y = Skin.LineHeight + 6f; // Padding at top and bottom edges
+			templateContentTransform.sizeDelta = templateContentSizeDelta;
+
+			Vector2 templateItemSizeDelta = templateItemTransform.sizeDelta;
+			templateItemSizeDelta.y = Skin.LineHeight;
+			templateItemTransform.sizeDelta = templateItemSizeDelta;
+
+			// Resize the checkmark icon
+			float templateCheckmarkSize = Skin.LineHeight * 0.66f;
+			Vector2 templateTextSizeDelta = templateText.rectTransform.sizeDelta;
+			templateTextSizeDelta.x -= templateCheckmarkSize - templateCheckmark.rectTransform.sizeDelta.x;
+			templateText.rectTransform.sizeDelta = templateTextSizeDelta;
+			templateCheckmark.rectTransform.sizeDelta = new Vector2( templateCheckmarkSize, templateCheckmarkSize );
+
+			// Resize the dropdown arrow
+			Vector2 dropdownTextSizeDelta = input.captionText.rectTransform.sizeDelta;
+			dropdownTextSizeDelta.x -= templateCheckmarkSize - dropdownArrow.rectTransform.sizeDelta.x;
+			input.captionText.rectTransform.sizeDelta = dropdownTextSizeDelta;
+			dropdownArrow.rectTransform.sizeDelta = new Vector2( templateCheckmarkSize, templateCheckmarkSize );
 
 			background.color = Skin.InputFieldNormalBackgroundColor;
 			dropdownArrow.color = Skin.TextColor.Tint( 0.1f );
