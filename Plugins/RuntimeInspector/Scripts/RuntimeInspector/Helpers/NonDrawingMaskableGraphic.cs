@@ -1,8 +1,10 @@
-﻿using UnityEngine.UI;
+﻿using UnityEngine;
+using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
 	// Credit: http://answers.unity.com/answers/1157876/view.html
+	[RequireComponent( typeof( CanvasRenderer ) )]
 	public class NonDrawingMaskableGraphic : MaskableGraphic
 	{
 		public override void SetMaterialDirty() { return; }
