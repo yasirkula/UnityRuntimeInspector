@@ -52,13 +52,20 @@ namespace RuntimeInspectorNamespace
 		{
 			PointerEventListener sliderPointerListener = slider.gameObject.AddComponent<PointerEventListener>();
 			sliderPointerListener.PointerDown += ( ev ) => sliderFocused = true;
-			sliderPointerListener.PointerDown -= ( ev ) => sliderFocused = false;
+			sliderPointerListener.PointerUp += ( ev ) => sliderFocused = false;
 
 			slider.onValueChanged.AddListener( SliderValueChanged );
 		}
 
+		private void OnDisable()
+		{
+			sliderFocused = false;
+		}
+
 		public void SetRange( float min, float max )
 		{
+			sliderFocused = false;
+
 			if( min > max )
 			{
 				float temp = min;
