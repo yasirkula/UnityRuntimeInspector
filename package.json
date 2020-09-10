@@ -1,7 +1,7 @@
 {
   "name": "com.yasirkula.runtimeinspector",
   "displayName": "Runtime Inspector & Hierarchy",
-  "version": "1.5.3",
+  "version": "1.5.4",
   "description": "This is a simple yet powerful runtime Inspector and Hierarchy solution for Unity 3D that should work on pretty much any platform that Unity supports, including mobile platforms.",
   "hideInEditor": false
 }

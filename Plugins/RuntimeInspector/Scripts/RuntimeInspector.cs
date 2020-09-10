@@ -156,6 +156,8 @@ namespace RuntimeInspectorNamespace
 
 		private static int aliveInspectors = 0;
 
+		private bool initialized = false;
+
 		private readonly Dictionary<Type, InspectorField[]> typeToDrawers = new Dictionary<Type, InspectorField[]>( 89 );
 		private readonly Dictionary<Type, InspectorField[]> typeToReferenceDrawers = new Dictionary<Type, InspectorField[]>( 89 );
 		private readonly List<InspectorField> eligibleDrawers = new List<InspectorField>( 4 );
@@ -197,6 +199,15 @@ namespace RuntimeInspectorNamespace
 		protected override void Awake()
 		{
 			base.Awake();
+			Initialize();
+		}
+
+		private void Initialize()
+		{
+			if( initialized )
+				return;
+
+			initialized = true;
 
 			drawArea = scrollView.content;
 			m_canvas = GetComponentInParent<Canvas>();
@@ -359,6 +370,7 @@ namespace RuntimeInspectorNamespace
 				return;
 
 			isDirty = false;
+			Initialize();
 
 			if( OnInspectedObjectChanging != null )
 				obj = OnInspectedObjectChanging( m_inspectedObject, obj );
@@ -387,12 +399,12 @@ namespace RuntimeInspectorNamespace
 					return;
 				}
 
-				if( !gameObject.activeSelf )
-				{
-					m_inspectedObject = null;
-					Debug.LogError( "Can't inspect while Inspector is inactive!" );
-					return;
-				}
+				//if( !gameObject.activeSelf )
+				//{
+				//	m_inspectedObject = null;
+				//	Debug.LogError( "Can't inspect while Inspector is inactive!" );
+				//	return;
+				//}
 
 				InspectorField inspectedObjectDrawer = CreateDrawerForType( obj.GetType(), drawArea, 0, false );
 				if( inspectedObjectDrawer != null )
