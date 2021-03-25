@@ -224,6 +224,9 @@ namespace RuntimeInspectorNamespace
 
 			for( int i = 0; i < settings.Length; i++ )
 			{
+				if( !settings[i] )
+					continue;
+
 				VariableSet[] hiddenVariablesForTypes = settings[i].HiddenVariables;
 				for( int j = 0; j < hiddenVariablesForTypes.Length; j++ )
 				{
@@ -421,10 +424,10 @@ namespace RuntimeInspectorNamespace
 						( (ExpandableInspectorField) currentDrawer ).HeaderVisibility = m_inspectedObjectHeaderVisibility;
 
 					GameObject go = m_inspectedObject as GameObject;
-					if( go && m_inspectedObject is Component )
+					if( !go && m_inspectedObject as Component )
 						go = ( (Component) m_inspectedObject ).gameObject;
 
-					if( ConnectedHierarchy && ( !go || !ConnectedHierarchy.Select( go.transform ) ) )
+					if( ConnectedHierarchy && go && !ConnectedHierarchy.Select( go.transform ) )
 						ConnectedHierarchy.Deselect();
 				}
 				else
@@ -443,9 +446,6 @@ namespace RuntimeInspectorNamespace
 
 			if( currentDrawer != null )
 			{
-				if( currentDrawer is ExpandableInspectorField )
-					( (ExpandableInspectorField) currentDrawer ).HeaderVisibility = HeaderVisibility.Collapsible;
-
 				currentDrawer.Unbind();
 				currentDrawer = null;
 			}

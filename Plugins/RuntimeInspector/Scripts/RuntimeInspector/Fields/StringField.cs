@@ -70,6 +70,12 @@ namespace RuntimeInspectorNamespace
 			}
 		}
 
+		protected override void OnUnbound()
+		{
+			base.OnUnbound();
+			SetterMode = Mode.OnValueChange;
+		}
+
 		private bool OnValueChanged( BoundInputField source, string input )
 		{
 			if( m_setterMode == Mode.OnValueChange )

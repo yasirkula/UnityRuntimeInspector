@@ -10,7 +10,6 @@ namespace RuntimeInspectorNamespace
 		protected override int Length { get { return components.Count + 4; } } // 4: active, name, tag, layer
 
 		private string currentTag = null;
-		private StringField nameField, tagField;
 
 		private Getter isActiveGetter, nameGetter, tagGetter;
 		private Setter isActiveSetter, nameSetter, tagSetter;
@@ -71,18 +70,6 @@ namespace RuntimeInspectorNamespace
 
 		protected override void ClearElements()
 		{
-			if( nameField != null )
-			{
-				nameField.SetterMode = StringField.Mode.OnValueChange;
-				nameField = null;
-			}
-
-			if( tagField != null )
-			{
-				tagField.SetterMode = StringField.Mode.OnValueChange;
-				tagField = null;
-			}
-
 			componentsExpandedStates.Clear();
 			for( int i = 0; i < elements.Count; i++ )
 				componentsExpandedStates.Add( ( elements[i] is ExpandableInspectorField ) ? ( (ExpandableInspectorField) elements[i] ).IsExpanded : false );
@@ -96,8 +83,8 @@ namespace RuntimeInspectorNamespace
 				return;
 
 			CreateDrawer( typeof( bool ), "Is Active", isActiveGetter, isActiveSetter );
-			nameField = CreateDrawer( typeof( string ), "Name", nameGetter, nameSetter ) as StringField;
-			tagField = CreateDrawer( typeof( string ), "Tag", tagGetter, tagSetter ) as StringField;
+			StringField nameField = CreateDrawer( typeof( string ), "Name", nameGetter, nameSetter ) as StringField;
+			StringField tagField = CreateDrawer( typeof( string ), "Tag", tagGetter, tagSetter ) as StringField;
 			CreateDrawerForVariable( layerProp, "Layer" );
 
 			for( int i = 0, j = elements.Count; i < components.Count; i++ )

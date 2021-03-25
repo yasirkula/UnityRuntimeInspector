@@ -280,6 +280,9 @@ namespace RuntimeInspectorNamespace
 						UnityEditor.Selection.activeTransform = m_currentSelection;
 #endif
 
+					if( ConnectedInspector && m_currentSelection )
+						ConnectedInspector.Inspect( m_currentSelection.gameObject );
+
 					if( OnSelectionChanged != null )
 						OnSelectionChanged( m_currentSelection );
 				}
@@ -331,16 +334,6 @@ namespace RuntimeInspectorNamespace
 			nullPointerEventData = new PointerEventData( null );
 
 			searchInputField.onValueChanged.AddListener( OnSearchTermChanged );
-			OnSelectionChanged += ( transform ) =>
-			{
-				if( ConnectedInspector )
-				{
-					if( !transform )
-						ConnectedInspector.StopInspect();
-					else
-						ConnectedInspector.Inspect( transform.gameObject );
-				}
-			};
 
 			m_showHorizontalScrollbar = !m_showHorizontalScrollbar;
 			ShowHorizontalScrollbar = !m_showHorizontalScrollbar;
@@ -401,7 +394,7 @@ namespace RuntimeInspectorNamespace
 			if( !syncSelectionWithEditorHierarchy )
 				return;
 
-			if( UnityEditor.Selection.activeTransform || !UnityEditor.Selection.activeObject )
+			if( UnityEditor.Selection.activeTransform )
 				Select( UnityEditor.Selection.activeTransform );
 		}
 #endif

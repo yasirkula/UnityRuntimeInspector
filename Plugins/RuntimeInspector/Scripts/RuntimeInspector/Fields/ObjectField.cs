@@ -14,6 +14,7 @@ namespace RuntimeInspectorNamespace
 #pragma warning restore 0649
 
 		private bool elementsInitialized = false;
+		private IRuntimeInspectorCustomEditor customEditor;
 
 		protected override int Length
 		{
@@ -67,14 +68,69 @@ namespace RuntimeInspectorNamespace
 
 			initializeObjectButton.gameObject.SetActive( false );
 
-			foreach( MemberInfo variable in Inspector.GetExposedVariablesForType( Value.GetType() ) )
-				CreateDrawerForVariable( variable );
+			if( ( customEditor = RuntimeInspectorUtils.GetCustomEditor( Value.GetType() ) ) != null )
+				customEditor.GenerateElements( this );
+			else
+				CreateDrawersForVariables();
+		}
+
+		protected override void ClearElements()
+		{
+			base.ClearElements();
+
+			if( customEditor != null )
+			{
+				customEditor.Cleanup();
+				customEditor = null;
+			}
 		}
 
 		protected override void OnSkinChanged()
 		{
 			base.OnSkinChanged();
 			initializeObjectButton.SetSkinButton( Skin );
+		}
+
+		public override void Refresh()
+		{
+			base.Refresh();
+
+			if( customEditor != null )
+				customEditor.Refresh();
+		}
+
+		public void CreateDrawersForVariables( params string[] variables )
+		{
+			if( variables == null || variables.Length == 0 )
+			{
+				foreach( MemberInfo variable in Inspector.GetExposedVariablesForType( Value.GetType() ) )
+					CreateDrawerForVariable( variable );
+			}
+			else
+			{
+				foreach( MemberInfo variable in Inspector.GetExposedVariablesForType( Value.GetType() ) )
+				{
+					if( Array.IndexOf( variables, variable.Name ) >= 0 )
+						CreateDrawerForVariable( variable );
+				}
+			}
+		}
+
+		public void CreateDrawersForVariablesExcluding( params string[] variablesToExclude )
+		{
+			if( variablesToExclude == null || variablesToExclude.Length == 0 )
+			{
+				foreach( MemberInfo variable in Inspector.GetExposedVariablesForType( Value.GetType() ) )
+					CreateDrawerForVariable( variable );
+			}
+			else
+			{
+				foreach( MemberInfo variable in Inspector.GetExposedVariablesForType( Value.GetType() ) )
+				{
+					if( Array.IndexOf( variablesToExclude, variable.Name ) < 0 )
+						CreateDrawerForVariable( variable );
+				}
+			}
 		}
 
 		private bool CanInitializeNewObject()

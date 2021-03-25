@@ -61,10 +61,10 @@ namespace RuntimeInspectorNamespace
 		protected Type BoundVariableType { get { return m_boundVariableType; } }
 
 		private object m_value;
-		protected object Value
+		public object Value
 		{
 			get { return m_value; }
-			set
+			protected set
 			{
 				try { setter( value ); m_value = value; }
 				catch { }
@@ -74,7 +74,7 @@ namespace RuntimeInspectorNamespace
 		private int m_depth = -1;
 		public int Depth
 		{
-			protected get { return m_depth; }
+			get { return m_depth; }
 			set
 			{
 				if( m_depth != value )
@@ -374,6 +374,8 @@ namespace RuntimeInspectorNamespace
 			base.OnUnbound();
 
 			IsExpanded = false;
+			HeaderVisibility = RuntimeInspector.HeaderVisibility.Collapsible;
+
 			ClearElements();
 		}
 
@@ -485,7 +487,7 @@ namespace RuntimeInspectorNamespace
 			}
 		}
 
-		protected InspectorField CreateDrawerForComponent( Component component, string variableName = null )
+		public InspectorField CreateDrawerForComponent( Component component, string variableName = null )
 		{
 			InspectorField variableDrawer = Inspector.CreateDrawerForType( component.GetType(), drawArea, Depth + 1, false );
 			if( variableDrawer != null )
@@ -502,7 +504,7 @@ namespace RuntimeInspectorNamespace
 			return variableDrawer;
 		}
 
-		protected InspectorField CreateDrawerForVariable( MemberInfo variable, string variableName = null )
+		public InspectorField CreateDrawerForVariable( MemberInfo variable, string variableName = null )
 		{
 			Type variableType = variable is FieldInfo ? ( (FieldInfo) variable ).FieldType : ( (PropertyInfo) variable ).PropertyType;
 			InspectorField variableDrawer = Inspector.CreateDrawerForType( variableType, drawArea, Depth + 1, true, variable );
@@ -515,7 +517,7 @@ namespace RuntimeInspectorNamespace
 			return variableDrawer;
 		}
 
-		protected InspectorField CreateDrawer( Type variableType, string variableName, Getter getter, Setter setter, bool drawObjectsAsFields = true )
+		public InspectorField CreateDrawer( Type variableType, string variableName, Getter getter, Setter setter, bool drawObjectsAsFields = true )
 		{
 			InspectorField variableDrawer = Inspector.CreateDrawerForType( variableType, drawArea, Depth + 1, drawObjectsAsFields );
 			if( variableDrawer != null )

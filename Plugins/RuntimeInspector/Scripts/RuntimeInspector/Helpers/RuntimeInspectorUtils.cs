@@ -53,6 +53,9 @@ namespace RuntimeInspectorNamespace
 		private static readonly List<ExposedExtensionMethodHolder> exposedExtensionMethods = new List<ExposedExtensionMethodHolder>();
 		public static Type ExposedExtensionMethodsHolder { set { GetExposedExtensionMethods( value ); } }
 
+		private static Dictionary<Type, Type> customEditors;
+		private static readonly List<RuntimeInspectorCustomEditorAttribute> customEditorAttributes = new List<RuntimeInspectorCustomEditorAttribute>( 4 );
+
 		public static readonly HashSet<Transform> IgnoredTransformsInHierarchy = new HashSet<Transform>();
 
 		private static Canvas popupCanvas = null;
@@ -679,7 +682,6 @@ namespace RuntimeInspectorNamespace
 			}
 		}
 
-		// Credit: http://answers.unity3d.com/answers/239152/view.html
 		public static Type GetType( string typeName )
 		{
 			try
@@ -690,47 +692,18 @@ namespace RuntimeInspectorNamespace
 				if( type != null )
 					return type;
 
-				// If the TypeName is a full name, then we can try loading the defining assembly directly
-				if( typeName.Contains( "." ) )
-				{
-					// Get the name of the assembly (Assumption is that we are using 
-					// fully-qualified type names)
-					var assemblyName = typeName.Substring( 0, typeName.IndexOf( '.' ) );
-
-					// Attempt to load the indicated Assembly
-#if UNITY_EDITOR || !NETFX_CORE
-					Assembly assembly = Assembly.Load( assemblyName );
-#else
-					Assembly assembly = Assembly.Load( new AssemblyName( assemblyName ) );
-#endif
-					if( assembly == null )
-						return null;
-
-					// Ask that assembly to return the proper Type
-					type = assembly.GetType( typeName );
-					if( type != null )
-						return type;
-				}
-				else
-				{
-#if UNITY_EDITOR || !NETFX_CORE
-					type = Assembly.Load( "UnityEngine" ).GetType( "UnityEngine." + typeName );
-#else
-					type = Assembly.Load( new AssemblyName( "UnityEngine" ) ).GetType( "UnityEngine." + typeName );
-#endif
-
-					if( type != null )
-						return type;
-				}
+				// Try loading type from UnityEngine namespace
+				type = typeof( Transform ).Assembly.GetType( "UnityEngine." + typeName );
+				if( type != null )
+					return type;
 
 #if UNITY_EDITOR || !NETFX_CORE
-				// Credit: https://forum.unity.com/threads/using-type-gettype-with-unity-objects.136580/#post-1799037
 				// Search all assemblies for type
 				foreach( Assembly assembly in AppDomain.CurrentDomain.GetAssemblies() )
 				{
 					foreach( Type t in assembly.GetTypes() )
 					{
-						if( t.Name == typeName )
+						if( t.Name == typeName || t.FullName == typeName )
 							return t;
 					}
 				}
@@ -762,6 +735,111 @@ namespace RuntimeInspectorNamespace
 				if( !attribute.IsInitializer || parameterType.IsAssignableFrom( methods[i].ReturnType ) )
 					exposedExtensionMethods.Add( new ExposedExtensionMethodHolder( parameterType, methods[i], attribute ) );
 			}
+		}
+
+		// This function can be called to manually register a custom editor with RuntimeInspectorCustomEditor attribute on UWP platform (no need to call it on other platforms)
+		public static void AddCustomEditor( Type customEditorType )
+		{
+			AddCustomEditorInternal( customEditorType, true );
+		}
+
+		private static void AddCustomEditorInternal( Type customEditorType, bool showWarnings )
+		{
+			// Initialize custom editors list if it isn't already initialized
+			if( customEditors == null )
+				GetCustomEditor( typeof( object ) );
+
+			if( !typeof( IRuntimeInspectorCustomEditor ).IsAssignableFrom( customEditorType ) )
+			{
+				if( showWarnings )
+					Debug.LogWarning( "Type doesn't implement IRuntimeInspectorCustomEditor interface: " + customEditorType );
+
+				return;
+			}
+
+			RuntimeInspectorCustomEditorAttribute[] attributes = (RuntimeInspectorCustomEditorAttribute[]) Attribute.GetCustomAttributes( customEditorType, typeof( RuntimeInspectorCustomEditorAttribute ), false );
+			if( attributes == null || attributes.Length == 0 )
+			{
+				if( showWarnings )
+					Debug.LogWarning( "Type doesn't have RuntimeInspectorCustomEditor attribute: " + customEditorType );
+
+				return;
+			}
+
+			for( int i = 0; i < attributes.Length; i++ )
+			{
+				customEditors[attributes[i].InspectedType] = customEditorType;
+
+				if( customEditorAttributes.Contains( attributes[i] ) )
+					continue;
+
+				// Insert RuntimeInspectorCustomEditor attributes using binary search to ensure that these attributes are sorted by their depths in descending order
+				int insertIndex = customEditorAttributes.BinarySearch( attributes[i] );
+				if( insertIndex < 0 )
+					insertIndex = ~insertIndex;
+
+				customEditorAttributes.Insert( insertIndex, attributes[i] );
+			}
+		}
+
+		public static IRuntimeInspectorCustomEditor GetCustomEditor( Type type )
+		{
+			if( customEditors == null )
+			{
+				customEditors = new Dictionary<Type, Type>( 89 );
+
+#if UNITY_EDITOR || !NETFX_CORE
+				// Search all assemblies for RuntimeInspectorCustomEditor attributes
+				foreach( Assembly assembly in AppDomain.CurrentDomain.GetAssemblies() )
+				{
+#if NET_4_6 || NET_STANDARD_2_0
+					if( assembly.IsDynamic )
+						continue;
+#endif
+					try
+					{
+						foreach( Type _type in assembly.GetExportedTypes() )
+							AddCustomEditorInternal( _type, false );
+					}
+					catch( NotSupportedException ) { }
+					catch( System.IO.FileNotFoundException ) { }
+					catch( Exception e )
+					{
+						Debug.LogError( "Couldn't search assembly for RuntimeInspectorCustomEditor attributes: " + assembly.GetName().Name + "\n" + e.ToString() );
+					}
+				}
+#endif
+			}
+
+			Type customEditorType;
+			if( !customEditors.TryGetValue( type, out customEditorType ) )
+			{
+				for( int i = 0; i < customEditorAttributes.Count; i++ )
+				{
+					if( customEditorAttributes[i].EditorForChildClasses && customEditorAttributes[i].InspectedType.IsAssignableFrom( type ) )
+					{
+						customEditorType = customEditors[customEditorAttributes[i].InspectedType];
+						break;
+					}
+				}
+
+				customEditors[type] = customEditorType;
+			}
+
+			if( customEditorType != null )
+			{
+				try
+				{
+					return (IRuntimeInspectorCustomEditor) Activator.CreateInstance( customEditorType, true );
+				}
+				catch( Exception e )
+				{
+					Debug.LogException( e );
+					customEditors[type] = null;
+				}
+			}
+
+			return null;
 		}
 	}
 }

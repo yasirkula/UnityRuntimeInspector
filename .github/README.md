@@ -156,7 +156,6 @@ private object OnlyInspectObjectsWithRenderer( object previousInspectedObject, o
   - **string label**: the text that will appear on the button
   - **bool isInitializer**: if set to true, and if the function returns an object that is assignable to the type that the function was defined in, the resulting value of the function will be assigned back to the inspected object. In other words, this function can be used to initialize null objects or change the variables of alive objects
   - **ButtonVisibility visibility**: determines when the button can be visible. Buttons with `ButtonVisibility.InitializedObjects` can appear only when the inspected object is not null whereas buttons with `ButtonVisibility.UninitializedObjects` can appear only when the inspected object is null. You can use `ButtonVisibility.InitializedObjects | ButtonVisibility.UninitializedObjects` to always show the button in the inspector
-
 - Although you can't add *RuntimeInspectorButton* attribute to Unity's built-in functions, you can show buttons under built-in Unity types via **extension methods**. You must write all such extension methods in a single static class, mark the methods with *RuntimeInspectorButton* attribute and then introduce these functions to the RuntimeInspector as following: `RuntimeInspectorUtils.ExposedExtensionMethodsHolder = typeof( TheScriptThatContainsTheExtensionsMethods );`
 
 ### F.1. PSEUDO-SCENES
@@ -214,77 +213,198 @@ You can also use your own scripts to create dragged reference items by calling t
 public static DraggedReferenceItem CreateDraggedReferenceItem( Object reference, PointerEventData draggingPointer, UISkin skin = null );
 ```
 
-### F.3. CUSTOM PROPERTY DRAWERS
+### F.3. CUSTOM DRAWERS (EDITORS)
 
-**NOTE**: this section talks about the architecture of the Inspector drawers. However, the amount of information presented here might be overwhelming or boring; thus, you are also recommended to examine some of the built-in drawers. For starters, you can examine **BoolField** and **TransformField**. Then, you can progress to **BoundsField**, **GameObjectField** and **ArrayField**.
+**NOTE:** if you just want to hide some fields/properties from the RuntimeInspector, simply use **Settings** asset's **Hidden Variables** list (mentioned in section **E.1**).
 
-You can introduce your own property drawers to the inspector to extend its functionality using a **Settings** asset mentioned in section **E.1**. Each property drawer extends from **InspectorField** base class. There is also an **ExpandableInspectorField** abstract class that allows you to create an expandable/collapsable property drawer like arrays. Lastly, extending **ObjectReferenceField** class allows you to create drawers that can be assigned values via the reference picker or via drag&drop.
+You can introduce your own custom drawers to RuntimeInspector. These drawers will then be used to draw inspected objects' properties in RuntimeInspector. If no custom drawer is specified for a type, built-in *ObjectField* will be used to draw all properties of that type. There are 2 ways to create custom drawers:
+
+- creating a drawer prefab and adding it to the **Settings** asset mentioned in section **E.1**. Each drawer extends from **InspectorField** base class. There is also an **ExpandableInspectorField** abstract class that allows you to create an expandable/collapsable drawer like arrays. Lastly, extending **ObjectReferenceField** class allows you to create drawers that can be assigned values via the reference picker or via drag&drop. This option provides the most flexibility because you'll be able to customize the drawer prefab as you wish. The downside is, you'll have to create a prefab asset and manually add it to RuntimeInspector's **Settings** asset. All built-in drawers use this method; they can be as simple as **BoolField** and **TransformField**, or as complex as **BoundsField**, **GameObjectField** and **ArrayField**
+- extending **IRuntimeInspectorCustomEditor** interface and decorating the class/struct with **RuntimeInspectorCustomEditor** attribute. This method is simpler because you won't have to create a prefab asset for the drawer. Created custom drawer will internally be used by *ObjectField* to populate its sub-drawers. This option should be sufficient for most use-cases. But imagine that you want to create a custom drawer for Matrix4x4 where the cells are displayed in a 4x4 grid. In this case, you must use the first method because you'll need a custom prefab with 16 InputFields organized in a 4x4 grid for it. But if you can represent the custom drawer you have in mind by using a combination of built-in drawers, then this second option should suffice
 
 #### F.3.1. InspectorField
 
-To have a standardized visual appearance across all the property drawers, there are some common variables for each drawer:
-- **Layout Element**: is used to set the height of the property drawer. A standard height is set by the currently active Inspector skin's **Line Height** property. This value is multiplied by the virtual **HeightMultiplier** property of the drawer. For ExpandableInspectorField's of unknown height, this variable should be left unassigned
-- **Variable Name Text**: the **Text** object that displays the name of the exposed variable
-- **Variable Name Mask**: to understand this one, you may have to examine a simple property drawer like BoolField. An **Image** is drawn on top of the *Variable Name Text* in order to mask its visible area in an efficient way. And this mask is assigned to this variable
+To have a standardized visual appearance across all the drawers, there are some common variables for each drawer:
 
-Each property drawer has access to the following properties:
+- **Layout Element**: is used to set the height of the drawer. A standard height is set by the currently active Inspector skin's **Line Height** property. This value is multiplied by the virtual **HeightMultiplier** property of the drawer. For ExpandableInspectorField's of unknown height, this variable should be left unassigned
+- **Variable Name Text**: the **Text** object that displays the name of the exposed variable
+- **Variable Name Mask**: to understand this one, you may have to examine a simple drawer like BoolField. An **Image** is drawn on top of the *Variable Name Text* in order to mask its visible area in an efficient way. And this mask is assigned to this variable
+
+Each drawer has access to the following properties:
+
 - **object Value**: the most recent value of the variable that this drawer is bound to. It is refreshed at each refresh interval of the inspector. Changing this property will also change the bound object
 - **RuntimeInspector Inspector**: the RuntimeInspector that currently uses this drawer
 - **UISkin Skin**: the skin that is assigned to this drawer
 - **Type BoundVariableType**: the type of the bound object
-- **int Depth**: the depth that this drawer is drawn at. As Depth increases, a padding should be applied to the contents of this drawer from left
-- **string Name**: the name of the bound variable. When set, the variable name is converted to title case format, if *Use Title Case Naming* is enabled in the inspector
+- **int Depth**: the depth that this drawer is drawn at. As Depth increases, a padding should be applied to the contents of this drawer from left (in OnDepthChanged function)
+- **string Name**: the name of the bound variable. When set, the variable name is converted to title case format if *Use Title Case Naming* is enabled in the inspector
 - **string NameRaw**: When set, the variable name is used as is without being converted to title case format
 - **float HeightMultiplier**: affects the height of the drawer
 
 There are some special functions on drawers that are invoked on certain circumstances:
+
 - **void Initialize()**: should be used instead of *Awake*/*Start* to initialize the drawer
-- **bool SupportsType( Type type )**: returns whether or not this property drawer can expose (supports) a certain type in the inspector
+- **bool SupportsType( Type type )**: returns whether or not this drawer can expose (supports) a certain type in the inspector
 - **bool CanBindTo( Type type, MemberInfo variable )**: returns whether or not this drawer can expose the provided *variable*. This function is called only if *SupportsType* returns *true*. This function is useful for drawers that can expose only variables with specific attribute(s) (e.g. *NumberRangeField* queries RangeAttribute). Please note that the *variable* parameter **can be** *null*. By default, this function returns true
 - **void OnBound( MemberInfo variable )**: called when the drawer is bound to a variable via reflection. Please note that the *variable* parameter **can be** *null*
 - **void OnUnbound()**: called when the drawer is unbound from the variable that it was bound to
 - **void OnInspectorChanged()**: called when the *Inspector* property of the drawer is changed
 - **void OnSkinChanged()**: called when the *Skin* property of the drawer is changed. Your custom drawers must adjust their UI elements' visual appearance here to comply with the assigned skin's standards
 - **void OnDepthChanged()**: called when the *Depth* property of the drawer is changed. Here, your custom drawers must add a padding to their content from left to comply with the nesting standard. This function is also called when the *Skin* changes
-- **void Refresh()**: called when the value of the bound object is refreshed. Drawers must refresh the values of their UI elements here
+- **void Refresh()**: called when the value of the bound object is refreshed. Drawers must refresh the values of their UI elements here. Invoked by RuntimeInspector at every **Refresh Interval** seconds
 
 #### F.3.2. ExpandableInspectorField
 
 Custom drawers that extend **ExpandableInspectorField** have access to the following properties:
-- **bool IsExpanded**: returns whether the drawer is expanded or collapsed. When set to *true*, the drawer is expanded and its content is drawn under it
+
+- **bool IsExpanded**: returns whether the drawer is expanded or collapsed. When set to *true*, the drawer is expanded and its contents are drawn under it
+- **HeaderVisibility HeaderVisibility**: sets the visibility of this drawer's header: **Collapsible**, **AlwaysVisible** or **Hidden**. By default, this value is set to *Collapsible*
 - **int Length**: the number of elements that this drawer aims to draw. If its value does not match the number of child drawers that this drawer has, the contents of the drawer are regenerated
 
 *ExpandableInspectorField* has the following special functions:
+
 - **void GenerateElements()**: the sub-drawers of this drawer must be generated here 
 - **void ClearElements()**: the sub-drawers of this drawer must be cleared here
 
-Sub-drawers of an ExpandableInspectorField should be stored in the `protected List<InspectorField> elements` variable as ExpandableInspectorField uses this list to compare the number of sub-drawers with the *Length* property. Also, when *Refresh()* is called, sub-drawers in this list are also refreshed automatically and when *ClearElements()* is called, sub-drawers in this list are cleared automatically.
+Sub-drawers of an ExpandableInspectorField should be stored in the `protected List<InspectorField> elements` variable as ExpandableInspectorField uses this list to compare the number of sub-drawers with the *Length* property. When *Refresh()* is called, sub-drawers in this list are refreshed automatically and when *ClearElements()* is called, sub-drawers in this list are cleared automatically.
 
-You can create sub-drawers using the `RuntimeInspector.CreateDrawerForType( Type type, Transform drawerParent, int depth, bool drawObjectsAsFields = true )` function. If no property drawer is found that can expose this type, the function returns *null*. Here, for ExpandableInspectorField's, the **drawerParent** parameter should be set as the **drawArea** variable of the ExpandableInspectorField. If the **drawObjectsAsFields** parameter is set to true and if the type extends **UnityEngine.Object**, *Reference Drawers* are searched for a drawer that supports this type. Otherwise *Standard Drawers* are searched.
+You can create sub-drawers using the `RuntimeInspector.CreateDrawerForType( Type type, Transform drawerParent, int depth, bool drawObjectsAsFields = true )` function. If no drawer is found that can expose this type, the function returns *null*. Here, for ExpandableInspectorFields, the **drawerParent** parameter should be set as the **drawArea** variable of the ExpandableInspectorField. If the **drawObjectsAsFields** parameter is set to true and if the type extends **UnityEngine.Object**, *Reference Drawers* are searched for a drawer that supports this type. Otherwise *Standard Drawers* are searched.
 
-After creating sub-drawers, *ExpandableInspectorField*'s must bind their sub-drawers to their corresponding variables manually. This is done via the following **BindTo** functions of the *InspectorField* class:
+After creating sub-drawers, *ExpandableInspectorField*s must bind their sub-drawers to their corresponding variables manually. This is done via the following **BindTo** functions of the *InspectorField* class:
+
 - `BindTo( InspectorField parent, MemberInfo variable, string variableName = null )`: binds the object to a **MemberInfo** (it can be received via reflection). Here, **parent** parameter should be set to this *ExpandableInspectorField*. If **variableName** is set to null, its value is fetched directly from the MemberInfo parameter
-- `BindTo( Type variableType, string variableName, Getter getter, Setter setter, MemberInfo variable = null )`: this one allows you to define your own getter and setter functions for this sub-drawer. For example, *ArrayField* uses this function because there is no direct MemberInfo to access an element of an array. With this method, you can use custom functions instead of MemberInfo's to get/set the values of the bound objects (ArrayField uses *Array.GetValue* for its elements' getter function and *Array.SetValue* for its elements' setter function)
+- `BindTo( Type variableType, string variableName, Getter getter, Setter setter, MemberInfo variable = null )`: this one allows you to define your own getter and setter functions for this sub-drawer. For example, *ArrayField* uses this function because there is no direct MemberInfo to access an element of an array. With this method, you can use custom functions instead of MemberInfos to get/set the values of the bound objects (ArrayField uses *Array.GetValue* for its elements' getter function and *Array.SetValue* for its elements' setter function)
 
-There are actually some helper functions in ExpandableInspectorField to easily create sub-drawers without having to call *CreateDrawerForType* or *BindTo* manually:
+There are also some helper functions in ExpandableInspectorField to easily create sub-drawers without having to call *CreateDrawerForType* or *BindTo* manually:
+
 - `InspectorField CreateDrawerForComponent( Component component, string variableName = null )`: creates a *Standard Drawer* for a component
-- `InspectorField CreateDrawerForVariable( MemberInfo variable, string variableName = null )`: creates a drawer for the variable that the *MemberInfo* stores
+- `InspectorField CreateDrawerForVariable( MemberInfo variable, string variableName = null )`: creates a drawer for the variable that the *MemberInfo* stores. This variable must be declared inside inspected object's class/struct or one of its base classes
 - `InspectorField CreateDrawer( Type variableType, string variableName, Getter getter, Setter setter, bool drawObjectsAsFields = true )`: similar to the *BindTo* function with the *Getter* and *Setter* parameters, allows you to use custom functions to get and set the value of the object that the sub-drawer is bound to
 
 If you don't want the name of the variable to be title case formatted, you can enter an empty string as the **variableName** parameter and then set the *NameRaw* property of the returned *InspectorField* object.
 
 #### F.3.3. ObjectReferenceField
 
-Property drawers that extend **ObjectReferenceField** class have access to the `void OnReferenceChanged( Object reference )` function that is called when the reference assigned to that drawer is changed.
+Drawers that extend **ObjectReferenceField** class have access to the `void OnReferenceChanged( Object reference )` function that is called when the reference assigned to that drawer is changed.
 
 #### F.3.4. Helper Classes
 
-**PointerEventListener**: this is a simple helper component that invokes **PointerDown** event pressed, **PointerUp** event when released and **PointerClick** event when clicked
+**PointerEventListener**: this is a simple helper component that invokes **PointerDown** event when its UI GameObject is pressed, **PointerUp** event when it is released and **PointerClick** event when it is clicked
 
-**BoundInputField**: most of the built-in drawers use this component for their input fields. This helper component allows you to validate the input of the input field when the input has changed and get notified when the input is submitted. It has the following properties and functions:
+**BoundInputField**: most of the built-in drawers use this component for their input fields. This helper component allows you to validate the input as it is entered and also get notified when the input is submitted. It has the following properties and functions:
+
 - **string DefaultEmptyValue**: the default value that the input field will have when its input is empty. For example, NumberField sets this value to "0"
 - **string Text**: a property to refresh the current value of the input field. If the input field is currently focused and being edited, then this property will not change its text immediately but store the value in a variable so that it can be used when the input field is no longer focused. Also, setting this property will not invoke the *OnValueChanged* event
 - **UISkin Skin**: the skin that this input field uses. When set, input field will adjust its UI accordingly
 - **OnValueChangedDelegate OnValueChanged**: called while the value of input field is being edited (called at each change to the input). The **OnValueChangedDelegate** has the following signature: `bool OnValueChangedDelegate( BoundInputField source, string input )`. A function that is registered to this event should parse the **input** and return *true* if the input is valid, *false* otherwise
 - **OnValueChangedDelegate OnValueSubmitted**: called when user finishes editing the value of input field. Similar to *OnValueChanged*, a function that is registered to this event should parse the **input** and return *true* only if the input is valid
 - **bool CacheTextOnValueChange**: determines what will happen when user stops editing the input field while its contents are invalid (i.e. its background has turned red). If this variable is set to *true*, input field's text will revert to the latest value that returned *true* for OnValueChanged. Otherwise, the text will revert to the value input field had when it was focused
+
+#### F.3.5. RuntimeInspectorCustomEditor Attribute
+
+To create drawers without having to create a prefab for it, you can declara a class/struct that extends **IRuntimeInspectorCustomEditor** and has one or more **RuntimeInspectorCustomEditor** attributes.
+
+*RuntimeInspectorCustomEditor* attribute has the following properties:
+
+- **Type inspectedType**: the type this custom drawer supports (can expose)
+- **bool editorForChildClasses**: if set to true, types derived from *inspectedType* can also be drawn with this drawer. By default, this value is *false*
+
+*IRuntimeInspectorCustomEditor* has the following functions:
+
+- **void GenerateElements( ObjectField parent )**: called by built-in *ObjectField*'s *GenerateElements* function. Sub-drawers should be added to *ObjectField* in this function
+- **void Refresh()**: called by *ObjectField*'s *Refresh* function
+- **void Cleanup()**: called by *ObjectField*'s *ClearElements* function. If the drawer has created some disposable resources, they must be disposed here. No need to destroy the created sub-drawers here because it is handled by *ObjectField* automatically, as explained in **ExpandableInspectorField** section
+
+Inside *GenerateElements* function, you can call **parent** parameter's **CreateDrawerForComponent**, **CreateDrawerForVariable** and **CreateDrawer** functions to create sub-drawers. In addition to these, you can also call the following helper functions of *ObjectField*:
+
+- `void CreateDrawersForVariables( params string[] variables )`: creates drawers for the specified variables of the inspected object. If no specific variables are provided, drawers will be created for all exposed variables of the inspected object
+- `void CreateDrawersForVariablesExcluding( params string[] variablesToExclude )`: creates drawers for all exposed variables of the inspected object except the variables specified in *variablesToExclude* list. If no variables are excluded, drawers will be created for all exposed variables of the inspected object
+
+Here are some example custom drawers:
+
+![screenshot](images/CustomColliderEditor.png)
+
+```csharp
+// Custom drawer for Collider type and the types that derive from it
+[RuntimeInspectorCustomEditor( typeof( Collider ), true )]
+public class ColliderEditor : IRuntimeInspectorCustomEditor
+{
+	public void GenerateElements( ObjectField parent )
+	{
+		// Exposes only "enabled" and "isTrigger" properties of Colliders
+		// Note that we could achieve the same thing by modifying the "Hidden Variables" and "Exposed Variables" lists of RuntimeInspector's Settings asset
+		parent.CreateDrawersForVariables( "enabled", "isTrigger" );
+	}
+
+	public void Refresh() { }
+	public void Cleanup() { }
+}
+```
+
+![screenshot](images/CustomMeshRendererEditor.png)
+
+```csharp
+// Custom drawer for MeshRenderer type (but not the types that derive from it)
+[RuntimeInspectorCustomEditor( typeof( MeshRenderer ), false )]
+public class MeshRendererEditor : IRuntimeInspectorCustomEditor
+{
+	public void GenerateElements( ObjectField parent )
+	{
+		// Get the MeshRenderer object we are inspecting
+		MeshRenderer renderer = (MeshRenderer) parent.Value;
+
+		// Instead of exposing the MeshRenderer's properties, expose its sharedMaterial's properties
+		ExpandableInspectorField materialField = (ExpandableInspectorField) parent.CreateDrawer( typeof( Material ), "", () => renderer.sharedMaterial, ( value ) => renderer.sharedMaterial = (Material) value, false );
+
+		// The drawer for materials is, by default, an ExpandableInspectorField. We don't need to draw its collapsible header
+		materialField.HeaderVisibility = RuntimeInspector.HeaderVisibility.Hidden;
+	}
+
+	public void Refresh() { }
+	public void Cleanup() { }
+}
+```
+
+![screenshot](images/CustomCameraEditor.png)
+
+```csharp
+// Custom drawer for Camera type (but not the types that derive from it)
+[RuntimeInspectorCustomEditor( typeof( Camera ), false )]
+public class CameraEditor : IRuntimeInspectorCustomEditor
+{
+	// Some of the sub-drawers that are created inside GenerateElements
+	private BoolField isOrthographicField;
+	private NumberField orthographicSizeField, fieldOfViewField;
+
+	public void GenerateElements( ObjectField parent )
+	{
+		// Create sub-drawers for the Camera's "orthographic", "orthographicSize" and "fieldOfView" properties and store them in variables
+		isOrthographicField = (BoolField) parent.CreateDrawerForVariable( typeof( Camera ).GetProperty( "orthographic", BindingFlags.Public | BindingFlags.Instance ), "Is Orthographic" );
+		orthographicSizeField = (NumberField) parent.CreateDrawerForVariable( typeof( Camera ).GetProperty( "orthographicSize", BindingFlags.Public | BindingFlags.Instance ) );
+		fieldOfViewField = (NumberField) parent.CreateDrawerForVariable( typeof( Camera ).GetProperty( "fieldOfView", BindingFlags.Public | BindingFlags.Instance ) );
+
+		// Add additional indentation for "orthographicSize" and "fieldOfView" sub-drawers
+		orthographicSizeField.Depth++;
+		fieldOfViewField.Depth++;
+
+		// Create sub-drawers for the rest of the exposed properties of the Camera
+		parent.CreateDrawersForVariablesExcluding( "orthographic", "orthographicSize", "fieldOfView" );
+	}
+
+	public void Refresh()
+	{
+		// Check if Camera is currently using orthographic projection
+		bool isOrthographicCamera = (bool) isOrthographicField.Value;
+
+		// Show either "orthographicSize" sub-drawer or "fieldOfView" sub-drawer depending on camera's current projection type
+		// (Here, we're first checking if the sub-drawer is already active/inactive via 'activeSelf' for optimization purposes because GameObject.SetActive
+		// causes considerable GC allocations and unfortunately doesn't automatically check if GameObject is already active/inactive, at least on some Unity versions)
+		if( orthographicSizeField.gameObject.activeSelf != isOrthographicCamera )
+			orthographicSizeField.gameObject.SetActive( isOrthographicCamera );
+		if( fieldOfViewField.gameObject.activeSelf == isOrthographicCamera )
+			fieldOfViewField.gameObject.SetActive( !isOrthographicCamera );
+	}
+
+	public void Cleanup() { }
+}
+```
