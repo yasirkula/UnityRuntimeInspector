@@ -14,6 +14,14 @@ namespace RuntimeInspectorNamespace
 			m_version = Random.Range( int.MinValue, int.MaxValue );
 		}
 
+#if UNITY_EDITOR
+		protected virtual void OnValidate()
+		{
+			// Refresh all UIs that use this skin
+			Invalidate();
+		}
+#endif
+
 #pragma warning disable 0649
 		[SerializeField]
 		private Font m_font;

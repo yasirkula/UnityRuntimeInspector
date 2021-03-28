@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System;
+using System.Globalization;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -64,7 +65,7 @@ namespace RuntimeInspectorNamespace
 		private Canvas referenceCanvas;
 
 		private Color initialValue;
-		private ColorWheelControl.OnColorChangedDelegate onColorChanged;
+		private ColorWheelControl.OnColorChangedDelegate onColorChanged, onColorConfirmed;
 
 		protected override void Awake()
 		{
@@ -76,7 +77,20 @@ namespace RuntimeInspectorNamespace
 			aInput.Initialize();
 
 			cancelButton.onClick.AddListener( Cancel );
-			okButton.onClick.AddListener( Close );
+			okButton.onClick.AddListener( () =>
+			{
+				try
+				{
+					if( onColorConfirmed != null )
+						onColorConfirmed( colorWheel.Color );
+				}
+				catch( Exception e )
+				{
+					Debug.LogException( e );
+				}
+
+				Close();
+			} );
 		}
 
 		private void Start()
@@ -102,7 +116,7 @@ namespace RuntimeInspectorNamespace
 			OnSelectedColorChanged( colorWheel.Color );
 		}
 
-		public void Show( ColorWheelControl.OnColorChangedDelegate onColorChanged, Color initialColor, Canvas referenceCanvas )
+		public void Show( ColorWheelControl.OnColorChangedDelegate onColorChanged, ColorWheelControl.OnColorChangedDelegate onColorConfirmed, Color initialColor, Canvas referenceCanvas )
 		{
 			initialValue = initialColor;
 
@@ -111,6 +125,7 @@ namespace RuntimeInspectorNamespace
 			alphaSlider.Color = initialColor;
 			alphaSlider.Value = initialColor.a;
 			this.onColorChanged = onColorChanged;
+			this.onColorConfirmed = onColorConfirmed;
 
 			if( referenceCanvas && this.referenceCanvas != referenceCanvas )
 			{
@@ -127,8 +142,15 @@ namespace RuntimeInspectorNamespace
 
 		public void Cancel()
 		{
-			if( colorWheel.Color != initialValue && onColorChanged != null )
-				onColorChanged( initialValue );
+			try
+			{
+				if( colorWheel.Color != initialValue && onColorChanged != null )
+					onColorChanged( initialValue );
+			}
+			catch( Exception e )
+			{
+				Debug.LogException( e );
+			}
 
 			Close();
 		}
@@ -136,6 +158,8 @@ namespace RuntimeInspectorNamespace
 		public void Close()
 		{
 			onColorChanged = null;
+			onColorConfirmed = null;
+
 			gameObject.SetActive( false );
 		}
 
@@ -166,8 +190,15 @@ namespace RuntimeInspectorNamespace
 
 			alphaSlider.Color = color;
 
-			if( onColorChanged != null )
-				onColorChanged( color );
+			try
+			{
+				if( onColorChanged != null )
+					onColorChanged( color );
+			}
+			catch( Exception e )
+			{
+				Debug.LogException( e );
+			}
 		}
 
 		private void OnAlphaChanged( float alpha )
@@ -178,8 +209,15 @@ namespace RuntimeInspectorNamespace
 			Color color = colorWheel.Color;
 			color.a = alpha;
 
-			if( onColorChanged != null )
-				onColorChanged( color );
+			try
+			{
+				if( onColorChanged != null )
+					onColorChanged( color );
+			}
+			catch( Exception e )
+			{
+				Debug.LogException( e );
+			}
 		}
 
 		private bool OnRGBAChanged( BoundInputField source, string input )

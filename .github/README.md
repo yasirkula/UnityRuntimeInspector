@@ -52,8 +52,6 @@ Note that these connections are *one-directional*, meaning that assigning the in
 
 ![screenshot](images/img3.png)
 
-Be aware that the changes made to a skin via the Unity Inspector might not be reflected to the UI immediately. To reflect these changes to the UI, you may have to click the *cog icon* while the skin is selected and select **Refresh UI**.
-
 ### E.1. INSPECTOR
 
 ![screenshot](images/img4.png)
@@ -65,6 +63,8 @@ RuntimeInspector works similar to the editor Inspector. It can expose commonly u
 - **Expose Properties**: determines which properties of the inspected object should be exposed
 - **Array Indices Start At One**: when enabled, exposed arrays and lists start their indices at 1 instead of 0 (just a visual change)
 - **Use Title Case Naming**: when enabled, variable names are displayed in title case format (e.g. *m_myVariable* becomes *My Variable*)
+- **Show Add Component Button**: when enabled, *Add Component* button will appear while inspecting a GameObject
+- **Show Remove Component Button**: when enabled, *Remove Component* button will appear under inspected components
 - **Show Tooltips**: when enabled, hovering over a variable's name for a while will show a tooltip displaying the variable's name. Can be useful for variables whose names are partially obscured
 - **Tooltip Delay**: determines how long the cursor should remain static over a variable's name before the tooltip appears. Has no effect if *Show Tooltips* is disabled
 - **Nest Limit**: imagine exposing a linked list. This variable defines how many nodes you can expose in the inspector starting from the initial node until the inspector stops exposing any further nodes
@@ -188,7 +188,42 @@ public void DeleteAllPseudoScenes();
 
 This helper component allows you to add an object's children to a pseudo-scene in the hierarchy. When a child is added to or removed from the object, this component refreshes the pseudo-scene automatically. If **HideOnDisable** is enabled, the object's children are removed from the pseudo-scene when the object is disabled.
 
-### F.2. DRAGGED REFERENCE ITEMS
+### F.2. COLOR PICKER
+
+You can access the built-in color picker via **ColorPicker.Instance** and then present it with the following function:
+
+```csharp
+public void Show( ColorWheelControl.OnColorChangedDelegate onColorChanged, ColorWheelControl.OnColorChangedDelegate onColorConfirmed, Color initialColor, Canvas referenceCanvas );
+```
+
+- **onColorChanged**: invoked regularly as the user changes the color. `ColorWheelControl.OnColorChangedDelegate` takes a *Color32* parameter
+- **onColorConfirmed**: invoked when user submits the color via *OK* button
+- **initialColor**: the initial value of the color picker
+- **referenceCanvas**: if assigned, the reference canvas' properties will be copied to the color picker canvas
+
+You can change the color picker's visual appearance by assigning a *UISkin* to its **Skin** property.
+
+### F.3. OBJECT REFERENCE PICKER
+
+You can access the built-in object reference picker via **ObjectReferencePicker.Instance** and then present it with the following function:
+
+```csharp
+public void Show( ReferenceCallback onReferenceChanged, ReferenceCallback onSelectionConfirmed, NameGetter referenceNameGetter, NameGetter referenceDisplayNameGetter, object[] references, object initialReference, bool includeNullReference, string title, Canvas referenceCanvas );
+```
+
+- **onReferenceChanged**: invoked when the user selects a reference from the list. `ReferenceCallback` takes an *object* parameter
+- **onSelectionConfirmed**: invoked when user submits the selected reference via *OK* button
+- **referenceNameGetter**: `NameGetter` takes an *object* parameter and returns that object's name as string. The passed function will be used to sort the references list and compare the references' names with the search string
+- **referenceDisplayNameGetter**: the passed function will be used to get display names for the references. Usually, the same function is passed to this parameter and the *referenceNameGetter* parameter
+- **references**: array of references to pick from
+- **initialReference**: initially selected reference
+- **includeNullReference**: is set to *true*, a null reference option will be added to the top of the references list
+- **title**: title of the object reference picker
+- **referenceCanvas**: if assigned, the reference canvas' properties will be copied to the object reference picker canvas
+
+You can change the object reference picker's visual appearance by assigning a *UISkin* to its **Skin** property.
+
+### F.4. DRAGGED REFERENCE ITEMS
 
 In section **E.2**, it is mentioned that you can drag&drop objects from the hierarchy to the variables in the inspector to assign these objects to those variables. However, you are not limited with just hierarchy. There are two helper components that you can use to create dragged reference items for other objects:
 
@@ -213,7 +248,7 @@ You can also use your own scripts to create dragged reference items by calling t
 public static DraggedReferenceItem CreateDraggedReferenceItem( Object reference, PointerEventData draggingPointer, UISkin skin = null );
 ```
 
-### F.3. CUSTOM DRAWERS (EDITORS)
+## G. CUSTOM DRAWERS (EDITORS)
 
 **NOTE:** if you just want to hide some fields/properties from the RuntimeInspector, simply use **Settings** asset's **Hidden Variables** list (mentioned in section **E.1**).
 
@@ -222,7 +257,7 @@ You can introduce your own custom drawers to RuntimeInspector. These drawers wil
 - creating a drawer prefab and adding it to the **Settings** asset mentioned in section **E.1**. Each drawer extends from **InspectorField** base class. There is also an **ExpandableInspectorField** abstract class that allows you to create an expandable/collapsable drawer like arrays. Lastly, extending **ObjectReferenceField** class allows you to create drawers that can be assigned values via the reference picker or via drag&drop. This option provides the most flexibility because you'll be able to customize the drawer prefab as you wish. The downside is, you'll have to create a prefab asset and manually add it to RuntimeInspector's **Settings** asset. All built-in drawers use this method; they can be as simple as **BoolField** and **TransformField**, or as complex as **BoundsField**, **GameObjectField** and **ArrayField**
 - extending **IRuntimeInspectorCustomEditor** interface and decorating the class/struct with **RuntimeInspectorCustomEditor** attribute. This method is simpler because you won't have to create a prefab asset for the drawer. Created custom drawer will internally be used by *ObjectField* to populate its sub-drawers. This option should be sufficient for most use-cases. But imagine that you want to create a custom drawer for Matrix4x4 where the cells are displayed in a 4x4 grid. In this case, you must use the first method because you'll need a custom prefab with 16 InputFields organized in a 4x4 grid for it. But if you can represent the custom drawer you have in mind by using a combination of built-in drawers, then this second option should suffice
 
-#### F.3.1. InspectorField
+### G.1. InspectorField
 
 To have a standardized visual appearance across all the drawers, there are some common variables for each drawer:
 
@@ -253,7 +288,7 @@ There are some special functions on drawers that are invoked on certain circumst
 - **void OnDepthChanged()**: called when the *Depth* property of the drawer is changed. Here, your custom drawers must add a padding to their content from left to comply with the nesting standard. This function is also called when the *Skin* changes
 - **void Refresh()**: called when the value of the bound object is refreshed. Drawers must refresh the values of their UI elements here. Invoked by RuntimeInspector at every **Refresh Interval** seconds
 
-#### F.3.2. ExpandableInspectorField
+### G.2. ExpandableInspectorField
 
 Custom drawers that extend **ExpandableInspectorField** have access to the following properties:
 
@@ -281,13 +316,11 @@ There are also some helper functions in ExpandableInspectorField to easily creat
 - `InspectorField CreateDrawerForVariable( MemberInfo variable, string variableName = null )`: creates a drawer for the variable that the *MemberInfo* stores. This variable must be declared inside inspected object's class/struct or one of its base classes
 - `InspectorField CreateDrawer( Type variableType, string variableName, Getter getter, Setter setter, bool drawObjectsAsFields = true )`: similar to the *BindTo* function with the *Getter* and *Setter* parameters, allows you to use custom functions to get and set the value of the object that the sub-drawer is bound to
 
-If you don't want the name of the variable to be title case formatted, you can enter an empty string as the **variableName** parameter and then set the *NameRaw* property of the returned *InspectorField* object.
-
-#### F.3.3. ObjectReferenceField
+### G.3. ObjectReferenceField
 
 Drawers that extend **ObjectReferenceField** class have access to the `void OnReferenceChanged( Object reference )` function that is called when the reference assigned to that drawer is changed.
 
-#### F.3.4. Helper Classes
+### G.4. Helper Classes
 
 **PointerEventListener**: this is a simple helper component that invokes **PointerDown** event when its UI GameObject is pressed, **PointerUp** event when it is released and **PointerClick** event when it is clicked
 
@@ -300,7 +333,7 @@ Drawers that extend **ObjectReferenceField** class have access to the `void OnRe
 - **OnValueChangedDelegate OnValueSubmitted**: called when user finishes editing the value of input field. Similar to *OnValueChanged*, a function that is registered to this event should parse the **input** and return *true* only if the input is valid
 - **bool CacheTextOnValueChange**: determines what will happen when user stops editing the input field while its contents are invalid (i.e. its background has turned red). If this variable is set to *true*, input field's text will revert to the latest value that returned *true* for OnValueChanged. Otherwise, the text will revert to the value input field had when it was focused
 
-#### F.3.5. RuntimeInspectorCustomEditor Attribute
+### G.5. RuntimeInspectorCustomEditor Attribute
 
 To create drawers without having to create a prefab for it, you can declara a class/struct that extends **IRuntimeInspectorCustomEditor** and has one or more **RuntimeInspectorCustomEditor** attributes.
 
@@ -341,6 +374,8 @@ public class ColliderEditor : IRuntimeInspectorCustomEditor
 }
 ```
 
+---
+
 ![screenshot](images/CustomMeshRendererEditor.png)
 
 ```csharp
@@ -364,6 +399,8 @@ public class MeshRendererEditor : IRuntimeInspectorCustomEditor
 	public void Cleanup() { }
 }
 ```
+
+---
 
 ![screenshot](images/CustomCameraEditor.png)
 

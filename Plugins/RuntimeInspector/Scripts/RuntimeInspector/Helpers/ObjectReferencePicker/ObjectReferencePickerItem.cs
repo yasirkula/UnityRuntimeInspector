@@ -18,7 +18,7 @@ namespace RuntimeInspectorNamespace
 		private Text referenceNameText;
 #pragma warning restore 0649
 
-		public Object Reference { get; private set; }
+		public object Reference { get; private set; }
 
 		private int m_skinVersion = 0;
 		private UISkin m_skin;
@@ -71,12 +71,12 @@ namespace RuntimeInspectorNamespace
 			GetComponent<PointerEventListener>().PointerClick += ( eventData ) => OnClick();
 		}
 
-		public void SetContent( Object reference )
+		public void SetContent( object reference, string displayName )
 		{
 			Reference = reference;
-			referenceNameText.text = reference.GetNameWithType();
+			referenceNameText.text = displayName;
 
-			Texture previewTex = reference.GetTexture();
+			Texture previewTex = ( reference as Object ).GetTexture();
 			if( previewTex != null )
 			{
 				texturePreview.gameObject.SetActive( true );

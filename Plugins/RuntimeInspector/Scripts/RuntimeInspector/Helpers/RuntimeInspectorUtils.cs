@@ -130,14 +130,6 @@ namespace RuntimeInspectorNamespace
 			return stringBuilder.ToString();
 		}
 
-		public static string GetName( this Object obj )
-		{
-			if( !obj )
-				return "None";
-
-			return obj.name;
-		}
-
 		public static string GetNameWithType( this object obj, Type defaultType = null )
 		{
 			if( obj.IsNull() )

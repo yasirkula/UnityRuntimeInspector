@@ -283,7 +283,7 @@ namespace RuntimeInspectorNamespace
 #pragma warning restore 0649
 
 		protected readonly List<InspectorField> elements = new List<InspectorField>( 8 );
-		private readonly List<ExposedMethodField> exposedMethods = new List<ExposedMethodField>();
+		protected readonly List<ExposedMethodField> exposedMethods = new List<ExposedMethodField>();
 
 		protected virtual int Length { get { return elements.Count; } }
 
@@ -427,15 +427,18 @@ namespace RuntimeInspectorNamespace
 			{
 				drawArea.gameObject.SetActive( true );
 				GenerateElements();
-				GenerateMethods();
+				GenerateExposedMethodButtons();
 				drawArea.gameObject.SetActive( m_isExpanded );
 			}
 		}
 
 		protected abstract void GenerateElements();
 
-		private void GenerateMethods()
+		private void GenerateExposedMethodButtons()
 		{
+			if( Inspector.ShowRemoveComponentButton && typeof( Component ).IsAssignableFrom( BoundVariableType ) && !typeof( Transform ).IsAssignableFrom( BoundVariableType ) )
+				CreateExposedMethodButton( GameObjectField.removeComponentMethod, () => this, ( value ) => { } );
+
 			ExposedMethod[] methods = BoundVariableType.GetExposedMethods();
 			if( methods != null )
 			{
@@ -444,16 +447,7 @@ namespace RuntimeInspectorNamespace
 				{
 					ExposedMethod method = methods[i];
 					if( ( isInitialized && method.VisibleWhenInitialized ) || ( !isInitialized && method.VisibleWhenUninitialized ) )
-					{
-						ExposedMethodField methodDrawer = (ExposedMethodField) Inspector.CreateDrawerForType( typeof( ExposedMethod ), drawArea, Depth + 1, false );
-						if( methodDrawer != null )
-						{
-							methodDrawer.BindTo( typeof( ExposedMethod ), string.Empty, () => Value, ( value ) => Value = value );
-							methodDrawer.SetBoundMethod( method );
-
-							exposedMethods.Add( methodDrawer );
-						}
-					}
+						CreateExposedMethodButton( method, () => Value, ( value ) => Value = value );
 				}
 			}
 		}
@@ -510,7 +504,10 @@ namespace RuntimeInspectorNamespace
 			InspectorField variableDrawer = Inspector.CreateDrawerForType( variableType, drawArea, Depth + 1, true, variable );
 			if( variableDrawer != null )
 			{
-				variableDrawer.BindTo( this, variable, variableName );
+				variableDrawer.BindTo( this, variable, variableName == null ? null : string.Empty );
+				if( variableName != null )
+					variableDrawer.NameRaw = variableName;
+
 				elements.Add( variableDrawer );
 			}
 
@@ -522,11 +519,28 @@ namespace RuntimeInspectorNamespace
 			InspectorField variableDrawer = Inspector.CreateDrawerForType( variableType, drawArea, Depth + 1, drawObjectsAsFields );
 			if( variableDrawer != null )
 			{
-				variableDrawer.BindTo( variableType, variableName, getter, setter );
+				variableDrawer.BindTo( variableType, variableName == null ? null : string.Empty, getter, setter );
+				if( variableName != null )
+					variableDrawer.NameRaw = variableName;
+
 				elements.Add( variableDrawer );
 			}
 
 			return variableDrawer;
+		}
+
+		public ExposedMethodField CreateExposedMethodButton( ExposedMethod method, Getter getter, Setter setter )
+		{
+			ExposedMethodField methodDrawer = (ExposedMethodField) Inspector.CreateDrawerForType( typeof( ExposedMethod ), drawArea, Depth + 1, false );
+			if( methodDrawer != null )
+			{
+				methodDrawer.BindTo( typeof( ExposedMethod ), string.Empty, getter, setter );
+				methodDrawer.SetBoundMethod( method );
+
+				exposedMethods.Add( methodDrawer );
+			}
+
+			return methodDrawer;
 		}
 	}
 }

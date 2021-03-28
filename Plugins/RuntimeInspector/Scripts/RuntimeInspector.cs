@@ -84,6 +84,36 @@ namespace RuntimeInspectorNamespace
 		}
 
 		[SerializeField]
+		private bool m_showAddComponentButton = true;
+		public bool ShowAddComponentButton
+		{
+			get { return m_showAddComponentButton; }
+			set
+			{
+				if( m_showAddComponentButton != value )
+				{
+					m_showAddComponentButton = value;
+					isDirty = true;
+				}
+			}
+		}
+
+		[SerializeField]
+		private bool m_showRemoveComponentButton = true;
+		public bool ShowRemoveComponentButton
+		{
+			get { return m_showRemoveComponentButton; }
+			set
+			{
+				if( m_showRemoveComponentButton != value )
+				{
+					m_showRemoveComponentButton = value;
+					isDirty = true;
+				}
+			}
+		}
+
+		[SerializeField]
 		private bool m_showTooltips;
 		public bool ShowTooltips { get { return m_showTooltips; } }
 
@@ -183,6 +213,9 @@ namespace RuntimeInspectorNamespace
 		private Canvas m_canvas;
 		public Canvas Canvas { get { return m_canvas; } }
 
+		// Used to make sure that the scrolled content always remains within the scroll view's boundaries
+		private PointerEventData nullPointerEventData;
+
 		public InspectedObjectChangingDelegate OnInspectedObjectChanging;
 
 		private ComponentFilterDelegate m_componentFilter;
@@ -211,6 +244,7 @@ namespace RuntimeInspectorNamespace
 
 			drawArea = scrollView.content;
 			m_canvas = GetComponentInParent<Canvas>();
+			nullPointerEventData = new PointerEventData( null );
 
 			GameObject poolParentGO = GameObject.Find( POOL_OBJECT_NAME );
 			if( poolParentGO == null )
@@ -271,6 +305,16 @@ namespace RuntimeInspectorNamespace
 		{
 			m_canvas = GetComponentInParent<Canvas>();
 		}
+
+#if UNITY_EDITOR
+		protected override void OnValidate()
+		{
+			base.OnValidate();
+
+			if( UnityEditor.EditorApplication.isPlaying )
+				isDirty = true;
+		}
+#endif
 
 		protected override void Update()
 		{
@@ -356,6 +400,16 @@ namespace RuntimeInspectorNamespace
 		public void RefreshDelayed()
 		{
 			nextRefreshTime = 0f;
+		}
+
+		// Makes sure that scroll view's contents are within scroll view's bounds
+		public void EnsureScrollViewIsWithinBounds()
+		{
+			// When scrollbar is snapped to the very bottom of the scroll view, sometimes OnScroll alone doesn't work
+			if( scrollView.normalizedPosition.y <= Mathf.Epsilon )
+				scrollView.normalizedPosition = new Vector2( scrollView.normalizedPosition.x, 0.001f );
+
+			scrollView.OnScroll( nullPointerEventData );
 		}
 
 		protected override void RefreshSkin()

@@ -27,8 +27,11 @@ namespace RuntimeInspectorNamespace
 			}
 		}
 
-		public delegate void OnReferenceChanged( Object reference );
-		private OnReferenceChanged onReferenceChanged;
+		public delegate void ReferenceCallback( object reference );
+		private ReferenceCallback onReferenceChanged, onSelectionConfirmed;
+
+		public delegate string NameGetter( object reference );
+		private NameGetter referenceNameGetter, referenceDisplayNameGetter;
 
 #pragma warning disable 0649
 		[SerializeField]
@@ -73,12 +76,12 @@ namespace RuntimeInspectorNamespace
 
 		private Canvas referenceCanvas;
 
-		private readonly List<Object> references = new List<Object>( 64 );
-		private readonly List<Object> filteredReferences = new List<Object>( 64 );
+		private readonly List<object> references = new List<object>( 64 );
+		private readonly List<object> filteredReferences = new List<object>( 64 );
 
-		private Object initialValue;
+		private object initialValue;
 
-		private Object currentlySelectedObject;
+		private object currentlySelectedObject;
 		private ObjectReferencePickerItem currentlySelectedItem;
 
 		int IListViewAdapter.Count { get { return filteredReferences.Count; } }
@@ -92,13 +95,30 @@ namespace RuntimeInspectorNamespace
 			searchBar.onValueChanged.AddListener( OnSearchTextChanged );
 
 			cancelButton.onClick.AddListener( Cancel );
-			okButton.onClick.AddListener( Close );
+			okButton.onClick.AddListener( () =>
+			{
+				try
+				{
+					if( onSelectionConfirmed != null )
+						onSelectionConfirmed( currentlySelectedObject );
+				}
+				catch( Exception e )
+				{
+					Debug.LogException( e );
+				}
+
+				Close();
+			} );
 		}
 
-		public void Show( OnReferenceChanged onReferenceChanged, Type referenceType, Object[] references, Object initialReference, Canvas referenceCanvas )
+		public void Show( ReferenceCallback onReferenceChanged, ReferenceCallback onSelectionConfirmed, NameGetter referenceNameGetter, NameGetter referenceDisplayNameGetter, object[] references, object initialReference, bool includeNullReference, string title, Canvas referenceCanvas )
 		{
 			initialValue = initialReference;
+
 			this.onReferenceChanged = onReferenceChanged;
+			this.onSelectionConfirmed = onSelectionConfirmed;
+			this.referenceNameGetter = referenceNameGetter ?? ( ( reference ) => reference.GetNameWithType() );
+			this.referenceDisplayNameGetter = referenceDisplayNameGetter ?? ( ( reference ) => reference.GetNameWithType() );
 
 			if( referenceCanvas && this.referenceCanvas != referenceCanvas )
 			{
@@ -112,16 +132,29 @@ namespace RuntimeInspectorNamespace
 			panel.rectTransform.anchoredPosition = Vector2.zero;
 			gameObject.SetActive( true );
 
-			selectPromptText.text = "Select " + referenceType.Name;
+			selectPromptText.text = title;
 			currentlySelectedObject = initialReference;
 
-			GenerateReferenceItems( references, referenceType );
+			GenerateReferenceItems( references, includeNullReference );
+
+#if UNITY_EDITOR || UNITY_STANDALONE || UNITY_WEBGL
+			// On desktop platforms, automatically focus on search field
+			// We don't do the same on mobile because immediately showing the on-screen keyboard after presenting the window wouldn't be nice
+			searchBar.ActivateInputField();
+#endif
 		}
 
 		public void Cancel()
 		{
-			if( currentlySelectedObject != initialValue && onReferenceChanged != null )
-				onReferenceChanged( initialValue );
+			try
+			{
+				if( currentlySelectedObject != initialValue && onReferenceChanged != null )
+					onReferenceChanged( initialValue );
+			}
+			catch( Exception e )
+			{
+				Debug.LogException( e );
+			}
 
 			Close();
 		}
@@ -129,6 +162,9 @@ namespace RuntimeInspectorNamespace
 		public void Close()
 		{
 			onReferenceChanged = null;
+			onSelectionConfirmed = null;
+			referenceNameGetter = null;
+			referenceDisplayNameGetter = null;
 			initialValue = null;
 			currentlySelectedObject = null;
 			currentlySelectedItem = null;
@@ -161,29 +197,33 @@ namespace RuntimeInspectorNamespace
 			listView.ResetList();
 		}
 
-		private void GenerateReferenceItems( Object[] references, Type referenceType )
+		private void GenerateReferenceItems( object[] references, bool includeNullReference )
 		{
 			this.references.Clear();
 			filteredReferences.Clear();
 			searchBar.text = string.Empty;
 
-			this.references.Add( null );
-			Array.Sort( references, ( ref1, ref2 ) => ref1.GetName().CompareTo( ref2.GetName() ) );
+			if( includeNullReference )
+				this.references.Add( null );
 
-			bool isTexture = referenceType == typeof( Texture ) || referenceType == typeof( Texture ) || referenceType == typeof( Sprite );
+			Array.Sort( references, ( ref1, ref2 ) => referenceNameGetter( ref1 ).CompareTo( referenceNameGetter( ref2 ) ) );
+
 			for( int i = 0; i < references.Length; i++ )
 			{
-				if( !references[i] )
-					continue;
+				Object unityReference = references[i] as Object;
+				if( unityReference )
+				{
+					if( unityReference.hideFlags != HideFlags.None && unityReference.hideFlags != HideFlags.NotEditable &&
+						unityReference.hideFlags != HideFlags.HideInHierarchy && unityReference.hideFlags != HideFlags.HideInInspector )
+						continue;
 
-				if( references[i].hideFlags != HideFlags.None && references[i].hideFlags != HideFlags.NotEditable &&
-					references[i].hideFlags != HideFlags.HideInHierarchy && references[i].hideFlags != HideFlags.HideInInspector )
-					continue;
+					if( ( unityReference is Texture || unityReference is Sprite ) && unityReference.name.StartsWith( SPRITE_ATLAS_PREFIX ) )
+						continue;
 
-				if( isTexture && references[i].name.StartsWith( SPRITE_ATLAS_PREFIX ) )
-					continue;
-
-				this.references.Add( references[i] );
+					this.references.Add( unityReference );
+				}
+				else if( references[i] != null )
+					this.references.Add( references[i] );
 			}
 
 			OnSearchTextChanged( string.Empty );
@@ -206,7 +246,7 @@ namespace RuntimeInspectorNamespace
 			value = value.ToLowerInvariant();
 			for( int i = 0; i < references.Count; i++ )
 			{
-				if( references[i].GetName().ToLowerInvariant().Contains( value ) )
+				if( referenceNameGetter( references[i] ).ToLowerInvariant().Contains( value ) )
 					filteredReferences.Add( references[i] );
 			}
 
@@ -216,7 +256,7 @@ namespace RuntimeInspectorNamespace
 		void IListViewAdapter.SetItemContent( RecycledListItem item )
 		{
 			ObjectReferencePickerItem it = (ObjectReferencePickerItem) item;
-			it.SetContent( filteredReferences[it.Position] );
+			it.SetContent( filteredReferences[it.Position], referenceDisplayNameGetter( filteredReferences[it.Position] ) );
 
 			if( it.Reference == currentlySelectedObject )
 			{
@@ -238,8 +278,15 @@ namespace RuntimeInspectorNamespace
 			currentlySelectedObject = currentlySelectedItem.Reference;
 			currentlySelectedItem.IsSelected = true;
 
-			if( onReferenceChanged != null )
-				onReferenceChanged( currentlySelectedItem.Reference );
+			try
+			{
+				if( onReferenceChanged != null )
+					onReferenceChanged( currentlySelectedObject );
+			}
+			catch( Exception e )
+			{
+				Debug.LogException( e );
+			}
 		}
 
 		public static void DestroyInstance()
