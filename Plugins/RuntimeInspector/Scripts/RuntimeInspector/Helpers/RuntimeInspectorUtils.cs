@@ -10,6 +10,10 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
+using UnityEngine.InputSystem;
+using Pointer = UnityEngine.InputSystem.Pointer;
+#endif
 using Object = UnityEngine.Object;
 
 namespace RuntimeInspectorNamespace
@@ -203,6 +207,12 @@ namespace RuntimeInspectorNamespace
 
 		public static DraggedReferenceItem CreateDraggedReferenceItem( Object reference, PointerEventData draggingPointer, UISkin skin = null, Canvas referenceCanvas = null )
 		{
+#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
+			// On new Input System, DraggedReferenceItem is tracked by a custom PointerEventData that is tracked by Pointer.current. Make sure that that pointer exists and is pressed
+			if( Pointer.current == null || !Pointer.current.press.isPressed )
+				return null;
+#endif
+
 			bool hasCanvasChanged = CreatePopupCanvas( referenceCanvas );
 
 			DraggedReferenceItem referenceItem;
@@ -233,16 +243,24 @@ namespace RuntimeInspectorNamespace
 
 		public static void PoolDraggedReferenceItem( DraggedReferenceItem item )
 		{
-			item.gameObject.SetActive( false );
-			draggedReferenceItemsPool.Push( item );
+			if( item.gameObject.activeSelf )
+			{
+				item.gameObject.SetActive( false );
+				draggedReferenceItemsPool.Push( item );
+			}
 		}
 
 		public static Object GetAssignableObjectFromDraggedReferenceItem( PointerEventData draggingPointer, Type assignableType )
 		{
+#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
+			// In new Input System, DraggedReferenceItems aren't tracked by the PointerEventData that initiated them. They are tracked manually by DraggedReferenceItem itself
+			DraggedReferenceItem draggedReference = DraggedReferenceItem.InstanceItem;
+#else
 			if( !draggingPointer.pointerDrag )
 				return null;
 
 			DraggedReferenceItem draggedReference = draggingPointer.pointerDrag.GetComponent<DraggedReferenceItem>();
+#endif
 			if( draggedReference && draggedReference.Reference )
 			{
 				if( assignableType.IsAssignableFrom( draggedReference.Reference.GetType() ) )
@@ -391,6 +409,9 @@ namespace RuntimeInspectorNamespace
 
 		public static bool IsPointerValid( this PointerEventData eventData )
 		{
+#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
+			return Pointer.current != null && Pointer.current.press.isPressed;
+#else
 			for( int i = Input.touchCount - 1; i >= 0; i-- )
 			{
 				if( Input.GetTouch( i ).fingerId == eventData.pointerId )
@@ -398,6 +419,7 @@ namespace RuntimeInspectorNamespace
 			}
 
 			return Input.GetMouseButton( (int) eventData.button );
+#endif
 		}
 
 		public static MemberInfo[] GetAllVariables( this Type type )

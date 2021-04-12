@@ -4,6 +4,9 @@ using System.Reflection;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
+using Pointer = UnityEngine.InputSystem.Pointer;
+#endif
 using Object = UnityEngine.Object;
 
 namespace RuntimeInspectorNamespace
@@ -280,6 +283,11 @@ namespace RuntimeInspectorNamespace
 
 			RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Add( drawArea );
 			RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Add( poolParent );
+
+#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
+			// On new Input System, scroll sensitivity is much higher than legacy Input system
+			scrollView.scrollSensitivity *= 0.25f;
+#endif
 		}
 
 		private void OnDestroy()
@@ -345,7 +353,13 @@ namespace RuntimeInspectorNamespace
 				// Check if a pointer has remained static over a drawer for a while; if so, show a tooltip
 				if( hoveringPointer != null )
 				{
+#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
+					// PointerEventData.delta isn't set to (0,0) for static pointers in the new Input System, so we use the active Pointer's delta instead
+					// The default value isn't Vector2.zero but Vector2.one because we don't want to show tooltip if there is no pointer
+					Vector2 pointerDelta = Pointer.current != null ? Pointer.current.delta.ReadValue() : Vector2.one;
+#else
 					Vector2 pointerDelta = hoveringPointer.delta;
+#endif
 					if( pointerDelta.x != 0f || pointerDelta.y != 0f )
 						hoveredDrawerTooltipShowTime = time + m_tooltipDelay;
 					else if( time > hoveredDrawerTooltipShowTime )

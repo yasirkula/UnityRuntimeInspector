@@ -14,7 +14,11 @@ namespace RuntimeInspectorNamespace
 
 		public void OnPointerEnter( PointerEventData eventData )
 		{
+#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
+			if( !eventData.dragging && !DraggedReferenceItem.InstanceItem ) // Don't show tooltip when there is an active DraggedReferenceItem
+#else
 			if( !eventData.dragging )
+#endif
 				drawer.Inspector.OnDrawerHovered( drawer, eventData, true );
 		}
 

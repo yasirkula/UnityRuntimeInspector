@@ -109,6 +109,11 @@ namespace RuntimeInspectorNamespace
 
 				Close();
 			} );
+
+#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
+			// On new Input System, scroll sensitivity is much higher than legacy Input system
+			listView.GetComponent<ScrollRect>().scrollSensitivity *= 0.25f;
+#endif
 		}
 
 		public void Show( ReferenceCallback onReferenceChanged, ReferenceCallback onSelectionConfirmed, NameGetter referenceNameGetter, NameGetter referenceDisplayNameGetter, object[] references, object initialReference, bool includeNullReference, string title, Canvas referenceCanvas )

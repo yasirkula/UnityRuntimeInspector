@@ -56,10 +56,12 @@ namespace RuntimeInspectorNamespace
 
 		private IEnumerator CreateReferenceItemCoroutine( PointerEventData eventData )
 		{
+			Vector2 pressPosition = eventData.pressPosition;
 			float dragThreshold = EventSystem.current.pixelDragThreshold;
+
 			yield return new WaitForSecondsRealtime( holdTime );
 
-			if( m_reference && ( eventData.position - eventData.pressPosition ).sqrMagnitude < dragThreshold * dragThreshold )
+			if( m_reference && ( eventData.position - pressPosition ).sqrMagnitude < dragThreshold * dragThreshold )
 				RuntimeInspectorUtils.CreateDraggedReferenceItem( m_reference, eventData, draggedReferenceSkin, GetComponentInParent<Canvas>() );
 		}
 	}

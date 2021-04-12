@@ -351,7 +351,7 @@ namespace RuntimeInspectorNamespace
 
 		void IPointerEnterHandler.OnPointerEnter( PointerEventData eventData )
 		{
-			if( !eventData.dragging || !hierarchy.CanReorganizeItems || hierarchy.IsInSearchMode )
+			if( !hierarchy.CanReorganizeItems || hierarchy.IsInSearchMode )
 				return;
 
 			if( !RuntimeInspectorUtils.GetAssignableObjectFromDraggedReferenceItem( eventData, typeof( Transform ) ) )
