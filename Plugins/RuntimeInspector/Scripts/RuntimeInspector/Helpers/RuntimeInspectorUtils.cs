@@ -782,12 +782,53 @@ namespace RuntimeInspectorNamespace
 
 #if UNITY_EDITOR || !NETFX_CORE
 				// Search all assemblies for RuntimeInspectorCustomEditor attributes
+				// Don't search built-in assemblies for custom editors since they can't have any
+				string[] ignoredAssemblies = new string[]
+				{
+					"Unity",
+					"System",
+					"Mono.",
+					"mscorlib",
+					"netstandard",
+					"TextMeshPro",
+					"Microsoft.GeneratedCode",
+					"I18N",
+					"Boo.",
+					"UnityScript.",
+					"ICSharpCode.",
+					"ExCSS.Unity",
+#if UNITY_EDITOR
+					"Assembly-CSharp-Editor",
+					"Assembly-UnityScript-Editor",
+					"nunit.",
+					"SyntaxTree.",
+					"AssetStoreTools",
+#endif
+				};
+
+				CompareInfo caseInsensitiveComparer = new CultureInfo( "en-US" ).CompareInfo;
+
 				foreach( Assembly assembly in AppDomain.CurrentDomain.GetAssemblies() )
 				{
 #if NET_4_6 || NET_STANDARD_2_0
 					if( assembly.IsDynamic )
 						continue;
 #endif
+
+					string assemblyName = assembly.GetName().Name;
+					bool ignoreAssembly = false;
+					for( int i = 0; i < ignoredAssemblies.Length; i++ )
+					{
+						if( caseInsensitiveComparer.IsPrefix( assemblyName, ignoredAssemblies[i], CompareOptions.IgnoreCase ) )
+						{
+							ignoreAssembly = true;
+							break;
+						}
+					}
+
+					if( ignoreAssembly )
+						continue;
+
 					try
 					{
 						foreach( Type _type in assembly.GetExportedTypes() )
