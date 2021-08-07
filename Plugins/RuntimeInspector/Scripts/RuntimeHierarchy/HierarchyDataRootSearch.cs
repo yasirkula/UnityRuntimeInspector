@@ -50,7 +50,7 @@ namespace RuntimeInspectorNamespace
 			bool result = base.Refresh();
 
 			// Scenes with no matching search results should be hidden in search mode
-			if( m_height == 1 )
+			if( searchResult.Count == 0 )
 			{
 				m_height = 0;
 				m_depth = -1;
