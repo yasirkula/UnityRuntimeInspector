@@ -399,8 +399,9 @@ namespace RuntimeInspectorNamespace
 			if( !syncSelectionWithEditorHierarchy )
 				return;
 
-			if( UnityEditor.Selection.activeTransform )
-				Select( UnityEditor.Selection.activeTransform );
+			Transform activeTransform = UnityEditor.Selection.activeTransform;
+			if( activeTransform && !RuntimeInspectorUtils.IsAnyParentIgnored( activeTransform ) )
+                Select( activeTransform );
 		}
 #endif
 
@@ -736,6 +737,8 @@ namespace RuntimeInspectorNamespace
 
 		public bool Select( Transform selection, bool forceSelection = false )
 		{
+
+
 			if( !selection )
 			{
 				Deselect();
