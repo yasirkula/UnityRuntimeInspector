@@ -737,8 +737,6 @@ namespace RuntimeInspectorNamespace
 
 		public bool Select( Transform selection, bool forceSelection = false )
 		{
-
-
 			if( !selection )
 			{
 				Deselect();
