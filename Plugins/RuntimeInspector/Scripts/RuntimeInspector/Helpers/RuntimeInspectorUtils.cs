@@ -896,16 +896,5 @@ namespace RuntimeInspectorNamespace
 
 			return null;
 		}
-
-		public static bool IsAnyParentIgnored( Transform transform )
-        {
-            while( transform != null )
-            {
-				if( IgnoredTransformsInHierarchy.Contains( transform.parent ) )
-					return true;
-				transform = transform.parent;
-            }
-			return false;
-        }
 	}
 }
