@@ -213,6 +213,9 @@ namespace RuntimeInspectorNamespace
 
 		public HierarchyDataTransform FindTransform( Transform target, Transform nextInPath = null )
 		{
+			if ( m_depth < 0 ) // This object is hidden from Hierarchy
+				return null;
+
 			bool isInitSearch = nextInPath == null;
 			if( isInitSearch )
 			{

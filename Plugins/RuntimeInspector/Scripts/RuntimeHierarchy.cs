@@ -399,7 +399,7 @@ namespace RuntimeInspectorNamespace
 			if( !syncSelectionWithEditorHierarchy )
 				return;
 
-			if( UnityEditor.Selection.activeTransform )
+			if ( UnityEditor.Selection.activeTransform )
 				Select( UnityEditor.Selection.activeTransform );
 		}
 #endif
