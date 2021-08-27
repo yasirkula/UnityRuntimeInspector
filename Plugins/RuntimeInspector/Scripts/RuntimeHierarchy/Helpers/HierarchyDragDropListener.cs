@@ -313,6 +313,9 @@ namespace RuntimeInspectorNamespace
 						{
 							( (HierarchyDataRootPseudoScene) newScene ).InsertChild( newSiblingIndex, droppedTransform );
 
+							if( droppedTransform.parent != target.BoundTransform.parent )
+								droppedTransform.SetParent( target.BoundTransform.parent );
+
 							// Don't try to change the actual sibling index of the Transform
 							newSiblingIndex = -1;
 							target = newScene;
