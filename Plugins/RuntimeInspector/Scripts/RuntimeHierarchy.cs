@@ -832,7 +832,7 @@ namespace RuntimeInspectorNamespace
 
 		private void OnSceneLoaded( Scene arg0, LoadSceneMode arg1 )
 		{
-			if( !ExposeUnityScenes || (exposedScenes != null && exposedScenes.Length > 0 && System.Array.IndexOf(exposedScenes, arg0.name) == -1) )
+			if( !ExposeUnityScenes || (arg0.buildIndex >= 0 && exposedScenes != null && exposedScenes.Length > 0 && System.Array.IndexOf(exposedScenes, arg0.name) == -1) )
 				return;
 
 			if( !arg0.IsValid() )
