@@ -64,6 +64,9 @@ namespace RuntimeInspectorNamespace
 		}
 
 		[SerializeField]
+		private string[] exposedScenes;
+
+		[SerializeField]
 		private bool m_exposeDontDestroyOnLoadScene = true;
 		public bool ExposeDontDestroyOnLoadScene
 		{
@@ -829,7 +832,7 @@ namespace RuntimeInspectorNamespace
 
 		private void OnSceneLoaded( Scene arg0, LoadSceneMode arg1 )
 		{
-			if( !ExposeUnityScenes )
+			if( !ExposeUnityScenes || (exposedScenes != null && exposedScenes.Length > 0 && System.Array.IndexOf(exposedScenes, arg0.name) == -1) )
 				return;
 
 			if( !arg0.IsValid() )
