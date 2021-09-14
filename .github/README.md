@@ -102,6 +102,7 @@ RuntimeHierarchy simply exposes the objects in your scenes to the user interface
 - **Object Names Refresh Interval**: accessing **GameObject.name** property generates garbage. Therefore, names of objects in the hierarchy are not synced at each *Refresh Interval* but rather at each *Object Names Refresh Interval* to help avoid excessive garbage
 - **Search Refresh Interval**: the refresh interval for the search results. At each refresh, each GameObject's name is checked to see if it matches the searched term, so this process will generate some garbage
 - **Expose Unity Scenes**: when disabled, Unity scenes are not exposed in the hierarchy. This is useful when you want to use the hierarchy solely for pseudo-scenes
+- **Exposed Scenes**: specifies the scenes that are exposed in the hierarchy by their name. When empty, all scenes are exposed
 - **Expose Dont Destroy On Load Scene**: when enabled, *DontDesroyOnLoad* objects will be exposed in the hierarchy
 - **Pseudo Scenes Order**: the order of the pseudo-scenes from top to bottom in the hierarchy. Note that entering a pseudo-scene here does not automatically create it when the application starts. Pseudo-scenes can be created via the scripting API only
 - **Create Dragged Reference On Hold**: when enabled, if you click and hold on an object in the hierarchy for a while, a **dragged reference item** will be created that can be dropped on a *reference drawer* in the inspector to assign that object to that variable (similar to Unity's drag&drop reference assignment)
