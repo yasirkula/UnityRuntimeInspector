@@ -56,7 +56,7 @@ This plugin supports Unity's new Input System but it requires some manual modifi
 
 ![screenshot](images/img2.png)
 
-- Visual appearance of the inspector and the hierarchy can be tweaked by changing their **Skin**. There are two premade skins included in the **Skins** directory: *LightSkin* and *DarkSkin* (pro-only.. meh, just kiddin'). You can create your own skins using the **Create-RuntimeInspector-UI Skin** context menu
+- Visual appearance of the inspector and the hierarchy can be tweaked by changing their **Skin**. There are two premade skins included in the **Skins** directory: *LightSkin* and *DarkSkin*. You can create your own skins using the **Assets-Create-yasirkula-RuntimeInspector-UI Skin** context menu
 
 ![screenshot](images/img3.png)
 
@@ -78,7 +78,7 @@ RuntimeInspector works similar to the editor Inspector. It can expose commonly u
 - **Nest Limit**: imagine exposing a linked list. This variable defines how many nodes you can expose in the inspector starting from the initial node until the inspector stops exposing any further nodes
 - **Inspected Object Header Visibility**: if the inspected object has a collapsible header, determines that header's visibility
 - **Pool Capacity**: the UI elements are pooled to avoid unnecessary *Instantiate* and *Destroy* calls. This value defines the pool capacity for each of the UI elements individually. On standalone platforms, you can increase this value for better performance
-- **Settings**: an array of settings for the inspector. A new settings asset can be created using the **Create-RuntimeInspector-Settings** context menu. A setting asset stores 4 different things:
+- **Settings**: an array of settings for the inspector. A new settings asset can be created using the **Assets-Create-yasirkula-RuntimeInspector-Settings** context menu. A setting asset stores 4 different things:
   - **Standard Drawers** and **Reference Drawers**: a drawer is a prefab used to expose a single variable in the inspector. For variables that extend **UnityEngine.Object**, a reference drawer is created and for other variables, a standard drawer is created
     - While searching for a suitable drawer for a variable, the corresponding drawers list is traversed from bottom to top until a drawer that supports that variable type is found. If such a drawer is not found, that variable is not exposed
   - **Hidden Variables**: allows you to hide some variables from the inspector for a given type and all the types that extend/implement it. You can enter asterisk character (\*) to hide all the variables for that type

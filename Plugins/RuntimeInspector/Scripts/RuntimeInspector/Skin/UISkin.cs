@@ -2,7 +2,7 @@
 
 namespace RuntimeInspectorNamespace
 {
-	[CreateAssetMenu( fileName = "UI Skin", menuName = "RuntimeInspector/UI Skin", order = 111 )]
+	[CreateAssetMenu( fileName = "UI Skin", menuName = "yasirkula/RuntimeInspector/UI Skin", order = 111 )]
 	public class UISkin : ScriptableObject
 	{
 		private int m_version = 0;

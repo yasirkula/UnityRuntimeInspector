@@ -2,7 +2,7 @@
 
 namespace RuntimeInspectorNamespace
 {
-	[CreateAssetMenu( fileName = "Inspector Settings", menuName = "RuntimeInspector/Settings", order = 111 )]
+	[CreateAssetMenu( fileName = "Inspector Settings", menuName = "yasirkula/RuntimeInspector/Settings", order = 111 )]
 	public class RuntimeInspectorSettings : ScriptableObject
 	{
 #pragma warning disable 0649
