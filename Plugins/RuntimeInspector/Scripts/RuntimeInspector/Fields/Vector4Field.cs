@@ -79,7 +79,7 @@ namespace RuntimeInspectorNamespace
 				inputX.Text = val.x.ToString( RuntimeInspectorUtils.numberFormat );
 				inputY.Text = val.y.ToString( RuntimeInspectorUtils.numberFormat );
 				inputZ.Text = val.z.ToString( RuntimeInspectorUtils.numberFormat );
-				inputW.Text = val.z.ToString( RuntimeInspectorUtils.numberFormat );
+				inputW.Text = val.w.ToString( RuntimeInspectorUtils.numberFormat );
 			}
 			else
 			{
@@ -87,7 +87,7 @@ namespace RuntimeInspectorNamespace
 				inputX.Text = val.x.ToString( RuntimeInspectorUtils.numberFormat );
 				inputY.Text = val.y.ToString( RuntimeInspectorUtils.numberFormat );
 				inputZ.Text = val.z.ToString( RuntimeInspectorUtils.numberFormat );
-				inputW.Text = val.z.ToString( RuntimeInspectorUtils.numberFormat );
+				inputW.Text = val.w.ToString( RuntimeInspectorUtils.numberFormat );
 			}
 		}
 
@@ -179,7 +179,7 @@ namespace RuntimeInspectorNamespace
 				if( val.z != prevVal.z )
 					inputZ.Text = val.z.ToString( RuntimeInspectorUtils.numberFormat );
 				if( val.w != prevVal.w )
-					inputW.Text = val.z.ToString( RuntimeInspectorUtils.numberFormat );
+					inputW.Text = val.w.ToString( RuntimeInspectorUtils.numberFormat );
 			}
 			else
 			{
@@ -194,7 +194,7 @@ namespace RuntimeInspectorNamespace
 				if( val.z != prevVal.z )
 					inputZ.Text = val.z.ToString( RuntimeInspectorUtils.numberFormat );
 				if( val.w != prevVal.w )
-					inputW.Text = val.z.ToString( RuntimeInspectorUtils.numberFormat );
+					inputW.Text = val.w.ToString( RuntimeInspectorUtils.numberFormat );
 			}
 		}
 	}
