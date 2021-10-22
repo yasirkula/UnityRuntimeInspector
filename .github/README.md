@@ -159,13 +159,32 @@ private object OnlyInspectObjectsWithRenderer( object previousInspectedObject, o
 ```
 
 - You can register to the `ComponentFilter` delegate of the inspector to filter the list of visible components of a GameObject in the inspector (e.g. hide some components)
+
+```csharp
+runtimeInspector.ComponentFilter = ( GameObject gameObject, List<Component> components ) =>
+{
+    // Simply remove the undesired Components from the 'components' list
+};
+```
+
 - You can register to the `GameObjectFilter` delegate of the hierarchy to hide some objects from the hierarchy (or, you can add those objects to `RuntimeInspectorUtils.IgnoredTransformsInHierarchy` and they will be hidden from all hierarchies; just make sure to remove them from this *HashSet* before they are destroyed)
+
+```csharp
+runtimeHierarchy.GameObjectFilter = ( Transform obj ) =>
+{
+    if( obj.CompareTag( "Main Camera" ) )
+        return false; // Hide Main Camera from hierarchy
+ 
+    return true;
+};
+```
+
 - You can register to the `OnItemDoubleClicked` event of the hierarchy to get notified when an object in the hierarchy is double clicked
 - You can add **RuntimeInspectorButton** attribute to your functions to expose them as buttons in the inspector. These buttons appear when an object of that type is inspected. This attribute takes 3 parameters:
   - **string label**: the text that will appear on the button
-  - **bool isInitializer**: if set to true, and if the function returns an object that is assignable to the type that the function was defined in, the resulting value of the function will be assigned back to the inspected object. In other words, this function can be used to initialize null objects or change the variables of alive objects
+  - **bool isInitializer**: if set to true and the function returns an object that is assignable to the type that the function was defined in, the resulting value of the function will be assigned back to the inspected object. In other words, this function can be used to initialize null objects or change the variables of structs
   - **ButtonVisibility visibility**: determines when the button can be visible. Buttons with `ButtonVisibility.InitializedObjects` can appear only when the inspected object is not null whereas buttons with `ButtonVisibility.UninitializedObjects` can appear only when the inspected object is null. You can use `ButtonVisibility.InitializedObjects | ButtonVisibility.UninitializedObjects` to always show the button in the inspector
-- Although you can't add *RuntimeInspectorButton* attribute to Unity's built-in functions, you can show buttons under built-in Unity types via **extension methods**. You must write all such extension methods in a single static class, mark the methods with *RuntimeInspectorButton* attribute and then introduce these functions to the RuntimeInspector as following: `RuntimeInspectorUtils.ExposedExtensionMethodsHolder = typeof( TheScriptThatContainsTheExtensionsMethods );`
+- Although you can't add *RuntimeInspectorButton* attribute to Unity's built-in functions, you can show buttons under built-in Unity types via **extension methods**. You must write all such extension methods in a single static class, mark the methods with *RuntimeInspectorButton* attribute and then introduce these functions to the RuntimeInspector as follows: `RuntimeInspectorUtils.ExposedExtensionMethodsHolder = typeof( TheScriptThatContainsTheExtensionsMethods );`
 
 ### F.1. PSEUDO-SCENES
 
@@ -402,7 +421,7 @@ public class MeshRendererEditor : IRuntimeInspectorCustomEditor
 		// Instead of exposing the MeshRenderer's properties, expose its sharedMaterial's properties
 		ExpandableInspectorField materialField = (ExpandableInspectorField) parent.CreateDrawer( typeof( Material ), "", () => renderer.sharedMaterial, ( value ) => renderer.sharedMaterial = (Material) value, false );
 
-		// The drawer for materials is, by default, an ExpandableInspectorField. We don't need to draw its collapsible header
+		// The drawer for materials is, by default, an ExpandableInspectorField. We don't want to draw its collapsible header in this example
 		materialField.HeaderVisibility = RuntimeInspector.HeaderVisibility.Hidden;
 	}
 
