@@ -747,12 +747,15 @@ namespace RuntimeInspectorNamespace
 
 				// Make sure that the contents of the hierarchy are up-to-date
 				Refresh();
+				RefreshSearchResults();
 
 				Scene selectionScene = selection.gameObject.scene;
+				List<HierarchyDataRoot> sceneData = m_isInSearchMode ? searchSceneData : this.sceneData;
+
 				for( int i = 0; i < sceneData.Count; i++ )
 				{
 					HierarchyDataRoot data = sceneData[i];
-					if( ( data is HierarchyDataRootPseudoScene ) || ( (HierarchyDataRootScene) data ).Scene == selectionScene )
+					if( m_isInSearchMode || ( data is HierarchyDataRootPseudoScene ) || ( (HierarchyDataRootScene) data ).Scene == selectionScene )
 					{
 						HierarchyDataTransform selectionItem = sceneData[i].FindTransform( selection );
 						if( selectionItem != null )

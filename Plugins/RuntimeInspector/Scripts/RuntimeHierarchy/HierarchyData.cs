@@ -219,7 +219,7 @@ namespace RuntimeInspectorNamespace
 			bool isInitSearch = nextInPath == null;
 			if( isInitSearch )
 			{
-				nextInPath = target.root;
+				nextInPath = ( this is HierarchyDataRootSearch ) ? target : target.root;
 				( (HierarchyDataRoot) this ).RefreshContent();
 			}
 
