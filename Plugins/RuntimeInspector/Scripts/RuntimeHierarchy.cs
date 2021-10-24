@@ -768,7 +768,16 @@ namespace RuntimeInspectorNamespace
 								itemIndex += sceneData[i].Height;
 
 							LayoutRebuilder.ForceRebuildLayoutImmediate( drawArea );
-							scrollView.verticalNormalizedPosition = Mathf.Clamp01( 1f - (float) itemIndex / totalItemCount );
+
+							// Focus ScrollRect on selectionItem
+							// Credit: https://gist.github.com/yasirkula/75ca350fb83ddcc1558d33a8ecf1483f
+							float drawAreaHeight = drawArea.rect.height;
+							float viewportHeight = ( (RectTransform) drawArea.parent ).rect.height;
+							if( drawAreaHeight > viewportHeight )
+							{
+								float focusPoint = ( (float) itemIndex / totalItemCount ) * drawAreaHeight + Skin.LineHeight * 0.5f;
+								scrollView.verticalNormalizedPosition = 1f - Mathf.Clamp01( ( focusPoint - viewportHeight * 0.5f ) / ( drawAreaHeight - viewportHeight ) );
+							}
 
 							return true;
 						}
