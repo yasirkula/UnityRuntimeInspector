@@ -412,12 +412,9 @@ namespace RuntimeInspectorNamespace
 			base.Update();
 
 			float time = Time.realtimeSinceStartup;
-			if( !m_isInSearchMode )
-			{
-				if( time > nextHierarchyRefreshTime )
-					Refresh();
-			}
-			else if( time > nextSearchRefreshTime )
+			if( time > nextHierarchyRefreshTime )
+				Refresh();
+			if( m_isInSearchMode && time > nextSearchRefreshTime )
 				RefreshSearchResults();
 
 			if( isListViewDirty )
@@ -482,9 +479,6 @@ namespace RuntimeInspectorNamespace
 
 		public void Refresh()
 		{
-			if( m_isInSearchMode )
-				return;
-
 			nextHierarchyRefreshTime = Time.realtimeSinceStartup + m_refreshInterval;
 
 			bool hasChanged = false;
