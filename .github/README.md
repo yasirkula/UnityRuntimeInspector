@@ -6,6 +6,8 @@
 
 **Forum Thread:** https://forum.unity.com/threads/runtime-inspector-and-hierarchy-open-source.501220/
 
+**Discord:** https://discord.gg/UJJt549AaV
+
 **[Support the Developer ☕](https://yasirkula.itch.io/unity3d)**
 
 ## A. ABOUT
