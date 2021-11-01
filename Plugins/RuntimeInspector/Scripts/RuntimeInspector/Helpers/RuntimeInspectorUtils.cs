@@ -78,6 +78,21 @@ namespace RuntimeInspectorNamespace
 			return obj == null;
 		}
 
+		// Checks if all the objects inside the IList are null
+		public static bool IsEmpty<T>( this IList<T> objects )
+		{
+			if( objects == null )
+				return true;
+
+			for( int i = objects.Count - 1; i >= 0; i-- )
+			{
+				if( !objects[i].IsNull() )
+					return false;
+			}
+
+			return true;
+		}
+
 		public static string ToTitleCase( this string str )
 		{
 			if( str == null || str.Length == 0 )
@@ -207,11 +222,21 @@ namespace RuntimeInspectorNamespace
 
 		public static DraggedReferenceItem CreateDraggedReferenceItem( Object reference, PointerEventData draggingPointer, UISkin skin = null, Canvas referenceCanvas = null )
 		{
+			return CreateDraggedReferenceItem( new Object[1] { reference }, draggingPointer, skin, referenceCanvas );
+		}
+
+		public static DraggedReferenceItem CreateDraggedReferenceItem( Object[] references, PointerEventData draggingPointer, UISkin skin = null, Canvas referenceCanvas = null )
+		{
+			if( references.IsEmpty() )
+				return null;
+
 #if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
 			// On new Input System, DraggedReferenceItem is tracked by a custom PointerEventData that is tracked by Pointer.current. Make sure that that pointer exists and is pressed
 			if( Pointer.current == null || !Pointer.current.press.isPressed )
 				return null;
 #endif
+
+			HideTooltip();
 
 			bool hasCanvasChanged = CreatePopupCanvas( referenceCanvas );
 
@@ -233,7 +258,7 @@ namespace RuntimeInspectorNamespace
 			if( skin )
 				referenceItem.Skin = skin;
 
-			referenceItem.SetContent( reference, draggingPointer );
+			referenceItem.SetContent( references, draggingPointer );
 
 			draggingPointer.dragging = true;
 			draggingPointer.eligibleForClick = false;
@@ -250,7 +275,27 @@ namespace RuntimeInspectorNamespace
 			}
 		}
 
-		public static Object GetAssignableObjectFromDraggedReferenceItem( PointerEventData draggingPointer, Type assignableType )
+		public static T GetAssignableObjectFromDraggedReferenceItem<T>( PointerEventData draggingPointer )
+		{
+			return (T) GetAssignableObjectsFromDraggedReferenceItemInternal( draggingPointer, typeof( T ), true );
+		}
+
+		public static T[] GetAssignableObjectsFromDraggedReferenceItem<T>( PointerEventData draggingPointer )
+		{
+			return (T[]) GetAssignableObjectsFromDraggedReferenceItemInternal( draggingPointer, typeof( T ), false );
+		}
+
+		public static object GetAssignableObjectFromDraggedReferenceItem( PointerEventData draggingPointer, Type assignableType )
+		{
+			return GetAssignableObjectsFromDraggedReferenceItemInternal( draggingPointer, assignableType, true );
+		}
+
+		public static object[] GetAssignableObjectsFromDraggedReferenceItem( PointerEventData draggingPointer, Type assignableType )
+		{
+			return (object[]) GetAssignableObjectsFromDraggedReferenceItemInternal( draggingPointer, assignableType, false );
+		}
+
+		private static object GetAssignableObjectsFromDraggedReferenceItemInternal( PointerEventData draggingPointer, Type assignableType, bool returnFirstObject )
 		{
 #if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
 			// In new Input System, DraggedReferenceItems aren't tracked by the PointerEventData that initiated them. They are tracked manually by DraggedReferenceItem itself
@@ -261,25 +306,73 @@ namespace RuntimeInspectorNamespace
 
 			DraggedReferenceItem draggedReference = draggingPointer.pointerDrag.GetComponent<DraggedReferenceItem>();
 #endif
-			if( draggedReference && draggedReference.Reference )
+			if( draggedReference && draggedReference.References != null && draggedReference.References.Length > 0 )
 			{
-				if( assignableType.IsAssignableFrom( draggedReference.Reference.GetType() ) )
-					return draggedReference.Reference;
-				else if( typeof( Component ).IsAssignableFrom( assignableType ) )
+				object[] references = draggedReference.References;
+				bool allReferencesAreAlreadyOfAssignableType = true;
+				for( int i = 0; i < references.Length; i++ )
 				{
-					Object component = null;
-					if( draggedReference.Reference is Component )
-						component = ( (Component) draggedReference.Reference ).GetComponent( assignableType );
-					else if( draggedReference.Reference is GameObject )
-						component = ( (GameObject) draggedReference.Reference ).GetComponent( assignableType );
-
-					if( component )
-						return component;
+					if( references[i].IsNull() || !assignableType.IsAssignableFrom( references[i].GetType() ) )
+					{
+						allReferencesAreAlreadyOfAssignableType = false;
+						break;
+					}
+					else if( returnFirstObject )
+						break;
 				}
-				else if( typeof( GameObject ).IsAssignableFrom( assignableType ) )
+
+				if( allReferencesAreAlreadyOfAssignableType )
 				{
-					if( draggedReference.Reference is Component )
-						return ( (Component) draggedReference.Reference ).gameObject;
+					if( returnFirstObject )
+						return references[0];
+					else
+						return references;
+				}
+
+				Array result = returnFirstObject ? null : Array.CreateInstance( assignableType, references.Length );
+				int resultLength = 0;
+
+				for( int i = 0; i < references.Length; i++ )
+				{
+					object reference = references[i];
+					if( reference.IsNull() )
+						continue;
+
+					object validReference = null;
+					if( assignableType.IsAssignableFrom( reference.GetType() ) )
+						validReference = reference;
+					else if( typeof( Component ).IsAssignableFrom( assignableType ) )
+					{
+						if( reference is Component )
+							validReference = ( (Component) reference ).GetComponent( assignableType );
+						else if( reference is GameObject )
+							validReference = ( (GameObject) reference ).GetComponent( assignableType );
+					}
+					else if( typeof( GameObject ).IsAssignableFrom( assignableType ) )
+					{
+						if( reference is Component )
+							validReference = ( (Component) reference ).gameObject;
+					}
+
+					if( !validReference.IsNull() )
+					{
+						if( returnFirstObject )
+							return validReference;
+						else
+							result.SetValue( validReference, resultLength++ );
+					}
+				}
+
+				if( resultLength > 0 )
+				{
+					if( resultLength != result.Length )
+					{
+						Array _result = Array.CreateInstance( assignableType, resultLength );
+						Array.Copy( result, _result, resultLength );
+						return _result;
+					}
+
+					return result;
 				}
 			}
 

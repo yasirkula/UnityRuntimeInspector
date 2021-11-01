@@ -8,8 +8,8 @@ namespace RuntimeInspectorNamespace
 {
 	public class DraggedReferenceItem : PopupBase, IDragHandler, IEndDragHandler
 	{
-		private Object m_reference;
-		public Object Reference { get { return m_reference; } }
+		private object[] m_references;
+		public object[] References { get { return m_references; } }
 
 #if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
 		// In new Input System, it is just not possible to change a PointerEventData's pointerDrag and dragging variables inside Update/LateUpdate,
@@ -20,7 +20,7 @@ namespace RuntimeInspectorNamespace
 		private readonly System.Collections.Generic.List<RaycastResult> hoveredUIElements = new System.Collections.Generic.List<RaycastResult>( 4 );
 #endif
 
-		public void SetContent( Object reference, PointerEventData draggingPointer )
+		public void SetContent( object[] references, PointerEventData draggingPointer )
 		{
 #if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
 			if( InstanceItem )
@@ -36,8 +36,8 @@ namespace RuntimeInspectorNamespace
 			};
 #endif
 
-			m_reference = reference;
-			label.text = reference.GetNameWithType();
+			m_references = references;
+			label.text = ( references.Length == 1 ) ? references[0].GetNameWithType() : string.Concat( references[0].GetNameWithType(), " (and ", ( references.Length - 1 ).ToString( RuntimeInspectorUtils.numberFormat ), " more)" );
 
 			draggingPointer.pointerDrag = gameObject;
 			draggingPointer.dragging = true;

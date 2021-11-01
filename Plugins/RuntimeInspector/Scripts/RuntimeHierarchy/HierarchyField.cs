@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
-	public class HierarchyField : RecycledListItem
+	public class HierarchyField : RecycledListItem, ITooltipContent
 	{
 		private enum ExpandedState { Collapsed = 0, Expanded = 1, ArrowHidden = 2 };
 
@@ -26,6 +26,12 @@ namespace RuntimeInspectorNamespace
 
 		[SerializeField]
 		private Image expandArrow;
+
+		[SerializeField]
+		private Toggle multiSelectionToggle;
+
+		[SerializeField]
+		private Image multiSelectionToggleBackground;
 #pragma warning restore 0649
 
 		private RectTransform rectTransform;
@@ -47,6 +53,13 @@ namespace RuntimeInspectorNamespace
 
 					nameText.SetSkinText( Skin );
 					expandArrow.color = Skin.ExpandArrowColor;
+
+					nameText.rectTransform.anchoredPosition = new Vector2( Skin.ExpandArrowSpacing + Skin.LineHeight * 0.75f, 0f );
+					( (RectTransform) expandToggle.transform ).sizeDelta = new Vector2( Skin.LineHeight, Skin.LineHeight );
+					( (RectTransform) multiSelectionToggle.transform ).sizeDelta = new Vector2( Skin.LineHeight * 0.8f, Skin.LineHeight * 0.8f );
+
+					multiSelectionToggle.graphic.color = Skin.ToggleCheckmarkColor;
+					multiSelectionToggleBackground.color = Skin.InputFieldNormalBackgroundColor;
 				}
 			}
 		}
@@ -73,6 +86,7 @@ namespace RuntimeInspectorNamespace
 
 				textColor.a = m_isActive ? 1f : INACTIVE_ITEM_TEXT_ALPHA;
 				nameText.color = textColor;
+				multiSelectionToggle.isOn = m_isSelected;
 			}
 		}
 
@@ -89,6 +103,22 @@ namespace RuntimeInspectorNamespace
 					Color color = nameText.color;
 					color.a = m_isActive ? 1f : INACTIVE_ITEM_TEXT_ALPHA;
 					nameText.color = color;
+				}
+			}
+		}
+
+		public bool MultiSelectionToggleVisible
+		{
+			get { return multiSelectionToggle.gameObject.activeSelf; }
+			set
+			{
+				if( Data == null || Data.Depth <= 0 )
+					value = false;
+
+				if( multiSelectionToggle.gameObject.activeSelf != value )
+				{
+					multiSelectionToggle.gameObject.SetActive( value );
+					contentTransform.anchoredPosition = new Vector2( Skin.IndentAmount * Data.Depth + ( value ? Skin.LineHeight * 0.8f : 0f ), 0f );
 				}
 			}
 		}
@@ -114,6 +144,9 @@ namespace RuntimeInspectorNamespace
 			}
 		}
 
+		bool ITooltipContent.IsActive { get { return this && gameObject.activeSelf; } }
+		string ITooltipContent.TooltipText { get { return Data.Name; } }
+
 		public float PreferredWidth { get; private set; }
 
 		public RuntimeHierarchy Hierarchy { get; private set; }
@@ -126,6 +159,9 @@ namespace RuntimeInspectorNamespace
 			rectTransform = (RectTransform) transform;
 			background = clickListener.GetComponent<Image>();
 
+			if( hierarchy.ShowTooltips )
+				clickListener.gameObject.AddComponent<TooltipArea>().Initialize( hierarchy.TooltipListener, this );
+
 			expandToggle.PointerClick += ( eventData ) => ToggleExpandedState();
 			clickListener.PointerClick += ( eventData ) => OnClick();
 			clickListener.PointerDown += OnPointerDown;
@@ -136,7 +172,7 @@ namespace RuntimeInspectorNamespace
 		{
 			Data = data;
 
-			contentTransform.anchoredPosition = new Vector2( Skin.IndentAmount * data.Depth, 0f );
+			contentTransform.anchoredPosition = new Vector2( Skin.IndentAmount * data.Depth + ( MultiSelectionToggleVisible ? Skin.LineHeight * 0.8f : 0f ), 0f );
 			background.sprite = data.Depth == 0 ? Hierarchy.SceneDrawerBackground : Hierarchy.TransformDrawerBackground;
 
 			RefreshName();

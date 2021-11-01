@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
-	public abstract class InspectorField : MonoBehaviour
+	public abstract class InspectorField : MonoBehaviour, ITooltipContent
 	{
 		public delegate object Getter();
 		public delegate void Setter( object value );
@@ -99,6 +99,9 @@ namespace RuntimeInspectorNamespace
 			get { if( variableNameText ) return variableNameText.text; return string.Empty; }
 			set { if( variableNameText ) variableNameText.text = value; }
 		}
+
+		bool ITooltipContent.IsActive { get { return this && gameObject.activeSelf; } }
+		string ITooltipContent.TooltipText { get { return NameRaw; } }
 
 		public virtual bool ShouldRefresh { get { return m_isVisible; } }
 
@@ -203,13 +206,12 @@ namespace RuntimeInspectorNamespace
 
 			if( m_inspector.ShowTooltips )
 			{
-				if( !variableNameText.GetComponent<TooltipArea>() )
-				{
-					TooltipArea tooltipArea = variableNameText.gameObject.AddComponent<TooltipArea>();
-					tooltipArea.Initialize( this );
+				TooltipArea tooltipArea = variableNameText.GetComponent<TooltipArea>();
+				if( !tooltipArea )
+					tooltipArea = variableNameText.gameObject.AddComponent<TooltipArea>();
 
-					variableNameText.raycastTarget = true;
-				}
+				tooltipArea.Initialize( m_inspector.TooltipListener, this );
+				variableNameText.raycastTarget = true;
 			}
 			else
 			{
@@ -334,14 +336,14 @@ namespace RuntimeInspectorNamespace
 						if( expandArrow != null )
 							expandArrow.gameObject.SetActive( true );
 
-						( (RectTransform) variableNameText.transform ).sizeDelta = new Vector2( -35f, 0f );
+						variableNameText.rectTransform.sizeDelta = new Vector2( -( Skin.ExpandArrowSpacing + Skin.LineHeight * 0.5f ), 0f );
 					}
 					else if( m_headerVisibility == RuntimeInspector.HeaderVisibility.AlwaysVisible )
 					{
 						if( expandArrow != null )
 							expandArrow.gameObject.SetActive( false );
 
-						( (RectTransform) variableNameText.transform ).sizeDelta = new Vector2( 0f, 0f );
+						variableNameText.rectTransform.sizeDelta = new Vector2( 0f, 0f );
 
 						if( !m_isExpanded )
 							IsExpanded = true;
@@ -396,10 +398,19 @@ namespace RuntimeInspectorNamespace
 			expandToggleTransform.sizeDelta = expandToggleSizeDelta;
 
 			if( m_headerVisibility != RuntimeInspector.HeaderVisibility.Hidden )
+			{
 				layoutGroup.padding.top = Skin.LineHeight;
 
+				if( m_headerVisibility == RuntimeInspector.HeaderVisibility.Collapsible )
+					variableNameText.rectTransform.sizeDelta = new Vector2( -( Skin.ExpandArrowSpacing + Skin.LineHeight * 0.5f ), 0f );
+			}
+
 			if( expandArrow != null )
+			{
 				expandArrow.color = Skin.ExpandArrowColor;
+				expandArrow.rectTransform.anchoredPosition = new Vector2( Skin.LineHeight * 0.25f, 0f );
+				expandArrow.rectTransform.sizeDelta = new Vector2( Skin.LineHeight * 0.5f, Skin.LineHeight * 0.5f );
+			}
 
 			for( int i = 0; i < elements.Count; i++ )
 				elements[i].Skin = Skin;

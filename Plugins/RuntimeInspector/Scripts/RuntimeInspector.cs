@@ -4,16 +4,13 @@ using System.Reflection;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
-using Pointer = UnityEngine.InputSystem.Pointer;
-#endif
 using Object = UnityEngine.Object;
 
 namespace RuntimeInspectorNamespace
 {
-	public class RuntimeInspector : SkinnedWindow
+	public class RuntimeInspector : SkinnedWindow, ITooltipManager
 	{
-		public enum VariableVisibility { None = 0, SerializableOnly = 1, All = 2 }
+		public enum VariableVisibility { None = 0, SerializableOnly = 1, All = 2 };
 		public enum HeaderVisibility { Collapsible = 0, AlwaysVisible = 1, Hidden = 2 };
 
 		private const string POOL_OBJECT_NAME = "RuntimeInspectorPool";
@@ -22,10 +19,16 @@ namespace RuntimeInspectorNamespace
 		public delegate void ComponentFilterDelegate( GameObject gameObject, List<Component> components );
 
 #pragma warning disable 0649
-		[SerializeField]
-		private float refreshInterval = 0f;
+		[SerializeField, UnityEngine.Serialization.FormerlySerializedAs( "refreshInterval" )]
+		private float m_refreshInterval = 0f;
 		private float nextRefreshTime = -1f;
+		public float RefreshInterval
+		{
+			get { return m_refreshInterval; }
+			set { m_refreshInterval = value; }
+		}
 
+		[Space]
 		[SerializeField]
 		private VariableVisibility m_exposeFields = VariableVisibility.SerializableOnly;
 		public VariableVisibility ExposeFields
@@ -56,6 +59,7 @@ namespace RuntimeInspectorNamespace
 			}
 		}
 
+		[Space]
 		[SerializeField]
 		private bool m_arrayIndicesStartAtOne = false;
 		public bool ArrayIndicesStartAtOne
@@ -86,6 +90,7 @@ namespace RuntimeInspectorNamespace
 			}
 		}
 
+		[Space]
 		[SerializeField]
 		private bool m_showAddComponentButton = true;
 		public bool ShowAddComponentButton
@@ -116,18 +121,22 @@ namespace RuntimeInspectorNamespace
 			}
 		}
 
+		[Space]
 		[SerializeField]
 		private bool m_showTooltips;
 		public bool ShowTooltips { get { return m_showTooltips; } }
 
 		[SerializeField]
-		private float m_tooltipDelay = 1f;
+		private float m_tooltipDelay = 0.5f;
 		public float TooltipDelay
 		{
 			get { return m_tooltipDelay; }
 			set { m_tooltipDelay = value; }
 		}
 
+		internal TooltipListener TooltipListener { get; private set; }
+
+		[Space]
 		[SerializeField]
 		private int m_nestLimit = 5;
 		public int NestLimit
@@ -175,6 +184,13 @@ namespace RuntimeInspectorNamespace
 		[SerializeField]
 		private RuntimeInspectorSettings[] settings;
 
+		private bool m_isLocked = false;
+		public bool IsLocked
+		{
+			get { return m_isLocked; }
+			set { m_isLocked = value; }
+		}
+
 		[Header( "Internal Variables" )]
 		[SerializeField]
 		private ScrollRect scrollView;
@@ -203,10 +219,6 @@ namespace RuntimeInspectorNamespace
 		private InspectorField currentDrawer = null;
 		private bool inspectLock = false;
 		private bool isDirty = false;
-
-		private InspectorField hoveredDrawer;
-		private PointerEventData hoveringPointer;
-		private float hoveredDrawerTooltipShowTime;
 
 		private object m_inspectedObject;
 		public object InspectedObject { get { return m_inspectedObject; } }
@@ -248,6 +260,12 @@ namespace RuntimeInspectorNamespace
 			drawArea = scrollView.content;
 			m_canvas = GetComponentInParent<Canvas>();
 			nullPointerEventData = new PointerEventData( null );
+
+			if( m_showTooltips )
+			{
+				TooltipListener = gameObject.AddComponent<TooltipListener>();
+				TooltipListener.Initialize( this );
+			}
 
 			GameObject poolParentGO = GameObject.Find( POOL_OBJECT_NAME );
 			if( poolParentGO == null )
@@ -335,53 +353,23 @@ namespace RuntimeInspectorNamespace
 				{
 					// Rebind to refresh the exposed variables in Inspector
 					object inspectedObject = m_inspectedObject;
-					StopInspect();
-					Inspect( inspectedObject );
+					StopInspectInternal();
+					InspectInternal( inspectedObject );
 
 					isDirty = false;
-					nextRefreshTime = time + refreshInterval;
+					nextRefreshTime = time + m_refreshInterval;
 				}
 				else
 				{
 					if( time > nextRefreshTime )
 					{
-						nextRefreshTime = time + refreshInterval;
+						nextRefreshTime = time + m_refreshInterval;
 						Refresh();
-					}
-				}
-
-				// Check if a pointer has remained static over a drawer for a while; if so, show a tooltip
-				if( hoveringPointer != null )
-				{
-#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
-					// PointerEventData.delta isn't set to (0,0) for static pointers in the new Input System, so we use the active Pointer's delta instead
-					// The default value isn't Vector2.zero but Vector2.one because we don't want to show tooltip if there is no pointer
-					Vector2 pointerDelta = Pointer.current != null ? Pointer.current.delta.ReadValue() : Vector2.one;
-#else
-					Vector2 pointerDelta = hoveringPointer.delta;
-#endif
-					if( pointerDelta.x != 0f || pointerDelta.y != 0f )
-						hoveredDrawerTooltipShowTime = time + m_tooltipDelay;
-					else if( time > hoveredDrawerTooltipShowTime )
-					{
-						// Make sure that everything is OK
-						if( !hoveredDrawer || !hoveredDrawer.gameObject.activeSelf )
-						{
-							hoveredDrawer = null;
-							hoveringPointer = null;
-						}
-						else
-						{
-							RuntimeInspectorUtils.ShowTooltip( hoveredDrawer.NameRaw, hoveringPointer, Skin, m_canvas );
-
-							// Don't show the tooltip again until the pointer moves
-							hoveredDrawerTooltipShowTime = float.PositiveInfinity;
-						}
 					}
 				}
 			}
 			else if( currentDrawer != null )
-				StopInspect();
+				StopInspectInternal();
 		}
 
 		public void Refresh()
@@ -417,11 +405,11 @@ namespace RuntimeInspectorNamespace
 		}
 
 		// Makes sure that scroll view's contents are within scroll view's bounds
-		public void EnsureScrollViewIsWithinBounds()
+		internal void EnsureScrollViewIsWithinBounds()
 		{
 			// When scrollbar is snapped to the very bottom of the scroll view, sometimes OnScroll alone doesn't work
-			if( scrollView.normalizedPosition.y <= Mathf.Epsilon )
-				scrollView.normalizedPosition = new Vector2( scrollView.normalizedPosition.x, 0.001f );
+			if( scrollView.verticalNormalizedPosition <= Mathf.Epsilon )
+				scrollView.verticalNormalizedPosition = 0.0001f;
 
 			scrollView.OnScroll( nullPointerEventData );
 		}
@@ -437,6 +425,12 @@ namespace RuntimeInspectorNamespace
 
 		public void Inspect( object obj )
 		{
+			if( !m_isLocked )
+				InspectInternal( obj );
+		}
+
+		internal void InspectInternal( object obj )
+		{
 			if( inspectLock )
 				return;
 
@@ -449,7 +443,7 @@ namespace RuntimeInspectorNamespace
 			if( m_inspectedObject == obj )
 				return;
 
-			StopInspect();
+			StopInspectInternal();
 
 			inspectLock = true;
 			try
@@ -495,7 +489,7 @@ namespace RuntimeInspectorNamespace
 					if( !go && m_inspectedObject as Component )
 						go = ( (Component) m_inspectedObject ).gameObject;
 
-					if( ConnectedHierarchy && go && !ConnectedHierarchy.Select( go.transform ) )
+					if( ConnectedHierarchy && go && !ConnectedHierarchy.Select( go.transform, RuntimeHierarchy.SelectOptions.FocusOnSelection ) )
 						ConnectedHierarchy.Deselect();
 				}
 				else
@@ -508,6 +502,12 @@ namespace RuntimeInspectorNamespace
 		}
 
 		public void StopInspect()
+		{
+			if( !m_isLocked )
+				StopInspectInternal();
+		}
+
+		internal void StopInspectInternal()
 		{
 			if( inspectLock )
 				return;
@@ -617,24 +617,6 @@ namespace RuntimeInspectorNamespace
 			}
 			else
 				Destroy( drawer.gameObject );
-		}
-
-		internal void OnDrawerHovered( InspectorField drawer, PointerEventData pointer, bool isHovering )
-		{
-			// Hide tooltip if it is currently visible
-			RuntimeInspectorUtils.HideTooltip();
-
-			if( isHovering )
-			{
-				hoveredDrawer = drawer;
-				hoveringPointer = pointer;
-				hoveredDrawerTooltipShowTime = Time.realtimeSinceStartup + m_tooltipDelay;
-			}
-			else if( hoveredDrawer == drawer )
-			{
-				hoveredDrawer = null;
-				hoveringPointer = null;
-			}
 		}
 
 		internal ExposedVariablesEnumerator GetExposedVariablesForType( Type type )

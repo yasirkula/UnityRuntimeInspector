@@ -265,6 +265,7 @@ MonoBehaviour:
   layoutElement: {fileID: 0}
   variableNameText: {fileID: 114388060010477348}
   variableNameMask: {fileID: 0}
+  visibleArea: {fileID: 0}
   drawArea: {fileID: 224001017472868870}
   expandToggle: {fileID: 114670433935644450}
   layoutGroup: {fileID: 114834506766290994}

@@ -11,7 +11,7 @@ namespace RuntimeInspectorNamespace
 		[ContextMenu( "Refresh UI" )]
 		private void Invalidate()
 		{
-			m_version = Random.Range( int.MinValue, int.MaxValue );
+			m_version = Random.Range( int.MinValue / 2, int.MaxValue / 2 );
 		}
 
 #if UNITY_EDITOR
@@ -93,6 +93,21 @@ namespace RuntimeInspectorNamespace
 				if( m_labelWidthPercentage != value )
 				{
 					m_labelWidthPercentage = value;
+					m_version++;
+				}
+			}
+		}
+
+		[SerializeField]
+		private float m_expandArrowSpacing = 10f;
+		public float ExpandArrowSpacing
+		{
+			get { return m_expandArrowSpacing; }
+			set
+			{
+				if( m_expandArrowSpacing != value )
+				{
+					m_expandArrowSpacing = value;
 					m_version++;
 				}
 			}

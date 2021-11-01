@@ -220,7 +220,10 @@ namespace RuntimeInspectorNamespace
 			if( isInitSearch )
 			{
 				nextInPath = ( this is HierarchyDataRootSearch ) ? target : target.root;
-				( (HierarchyDataRoot) this ).RefreshContent();
+
+				// In the current implementation, FindTransform is only called from RuntimeHierarchy.Select which
+				// automatically calls RefreshContent prior to FindTransform
+				//( (HierarchyDataRoot) this ).RefreshContent();
 			}
 
 			int childIndex = IndexOf( nextInPath );
@@ -278,6 +281,30 @@ namespace RuntimeInspectorNamespace
 			return result;
 		}
 
+		public virtual HierarchyDataTransform FindTransformInVisibleChildren( Transform target, int targetDepth = -1 )
+		{
+			for( int i = 0; i < children.Count; i++ )
+			{
+				HierarchyDataTransform child = children[i];
+				if( child.m_depth < 0 )
+					continue;
+
+				if( ReferenceEquals( child.BoundTransform, target ) )
+				{
+					if( targetDepth <= 0 || child.m_depth == targetDepth )
+						return child;
+				}
+				else if( ( targetDepth <= 0 || child.m_depth < targetDepth ) && child.IsExpanded && child.BoundTransform && target.IsChildOf( child.BoundTransform ) )
+				{
+					child = child.FindTransformInVisibleChildren( target, targetDepth );
+					if( child != null )
+						return child;
+				}
+			}
+
+			return null;
+		}
+
 		public abstract Transform GetChild( int index );
 
 		public int IndexOf( Transform transform )
@@ -289,6 +316,33 @@ namespace RuntimeInspectorNamespace
 			}
 
 			return -1;
+		}
+
+		public void GetSiblingIndexTraversalList( List<int> traversalList )
+		{
+			traversalList.Clear();
+
+			HierarchyData current = this;
+			while( current.parent != null )
+			{
+				traversalList.Add( current.parent.children.IndexOf( (HierarchyDataTransform) current ) );
+				current = current.parent;
+			}
+		}
+
+		public HierarchyData TraverseSiblingIndexList( List<int> traversalList )
+		{
+			HierarchyData current = this;
+			for( int i = traversalList.Count - 1; i >= 0; i-- )
+			{
+				int siblingIndex = traversalList[i];
+				if( current.children == null || siblingIndex >= current.children.Count )
+					return null;
+
+				current = current.children[siblingIndex];
+			}
+
+			return current;
 		}
 
 		private void GenerateChildItem( Transform child, int index, RuntimeHierarchy hierarchy )

@@ -56,5 +56,18 @@ namespace RuntimeInspectorNamespace
 		{
 			return rootObjects[index];
 		}
+
+		public override Transform GetNearestRootOf( Transform target )
+		{
+			Transform result = null;
+			for( int i = rootObjects.Count - 1; i >= 0; i-- )
+			{
+				Transform rootObject = rootObjects[i];
+				if( rootObject && target.IsChildOf( rootObject ) && ( !result || rootObject.IsChildOf( result ) ) )
+					result = rootObject;
+			}
+
+			return result;
+		}
 	}
 }

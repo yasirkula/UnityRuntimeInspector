@@ -62,9 +62,9 @@ namespace RuntimeInspectorNamespace
 			if( Value != null && !Value.Equals( null ) )
 			{
 				if( Value is Component )
-					Inspector.Inspect( ( (Component) Value ).gameObject );
+					Inspector.InspectInternal( ( (Component) Value ).gameObject );
 				else
-					Inspector.Inspect( Value );
+					Inspector.InspectInternal( Value );
 			}
 		}
 
@@ -90,8 +90,8 @@ namespace RuntimeInspectorNamespace
 
 		public void OnDrop( PointerEventData eventData )
 		{
-			Object assignableObject = RuntimeInspectorUtils.GetAssignableObjectFromDraggedReferenceItem( eventData, BoundVariableType );
-			if( assignableObject != null )
+			Object assignableObject = (Object) RuntimeInspectorUtils.GetAssignableObjectFromDraggedReferenceItem( eventData, BoundVariableType );
+			if( assignableObject )
 				OnReferenceChanged( assignableObject );
 		}
 

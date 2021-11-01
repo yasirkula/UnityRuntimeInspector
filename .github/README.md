@@ -1,6 +1,6 @@
 # Runtime Inspector & Hierarchy for Unity 3D
 
-![screenshot](images/img1.png) 
+![screenshot](Images/DarkSkin.png) 
 
 **Available on Asset Store:** https://assetstore.unity.com/packages/tools/gui/runtime-inspector-hierarchy-111349
 
@@ -51,20 +51,22 @@ This plugin supports Unity's new Input System but it requires some manual modifi
 
 ## E. FEATURES
 
-- The hierarchy costs **1 SetPass call** and **~5 batches** (assuming that **Sprite Packing** is enabled in *Editor Settings*)
-- The inspector costs **1 SetPass call** and **~10 batches** (assuming that **Sprite Packing** is enabled in *Editor Settings*)
-- Both panels are heavily optimized in terms of GC in order not to generate any unnecessary garbage. By default, both the inspector and the hierarchy are refreshed 4 times a second to reflect any changes to their user interface almost immediately. Each refresh of the inspector generates some garbage for GC since most of the time, the inspected object has variables of value types. These variables are *boxed* when accessed via reflection and this boxing creates some unavoidable garbage. However, this process can be greatly optimized by increasing the **Refresh Interval** of the inspector and/or the hierarchy
+- Both panels are heavily optimized in terms of GC in order not to cause any unnecessary allocations. By default, both the inspector and the hierarchy are refreshed 4 times a second to reflect any changes to their user interface almost immediately. Each refresh of the inspector generates some garbage for GC since most of the time, the inspected object has variables of value types. These variables are *boxed* when accessed via reflection and this boxing creates some unavoidable garbage. However, this process can be greatly optimized by increasing the **Refresh Interval** of the inspector and/or the hierarchy
 - Includes a built-in color picker and a reference picker:
 
-![screenshot](images/img2.png)
+![screenshot](Images/Pickers.png)
 
 - Visual appearance of the inspector and the hierarchy can be tweaked by changing their **Skin**. There are two premade skins included in the **Skins** directory: *LightSkin* and *DarkSkin*. You can create your own skins using the **Assets-Create-yasirkula-RuntimeInspector-UI Skin** context menu
 
-![screenshot](images/img3.png)
+![screenshot](Images/LightSkin.png)
+
+- The hierarchy supports multi-selection:
+
+![screenshot](Images/HierarchyMultiSelection.png)
 
 ### E.1. INSPECTOR
 
-![screenshot](images/img4.png)
+![screenshot](Images/InspectorProperties.png)
 
 RuntimeInspector works similar to the editor Inspector. It can expose commonly used Unity types out-of-the-box, as well as custom classes and structs that are marked with **System.Serializable** attribute. 1-dimensional arrays and generic Lists are also supported. 
 
@@ -96,33 +98,40 @@ While changing the inspector's settings, you are advised not to touch **Internal
 
 ### E.2. HIERARCHY
 
-![screenshot](images/img5.png)
+![screenshot](Images/HierarchyProperties.png)
 
 RuntimeHierarchy simply exposes the objects in your scenes to the user interface. In addition to exposing the currently active Unity scenes in the hierarchy, you can also expose a specific set of objects under what is called a **pseudo-scene** in the hierarchy. Pseudo-scenes can help you categorize the objects in your scene. Adding/removing objects to/from pseudo-scenes is only possible via the scripting API and helper components.
 
 - **Refresh Interval**: the refresh interval of the hierarchy. At each refresh, the destroyed objects are removed from the hierarchy while newly created objects are added to the hierarchy. Sibling indices of the objects are also synced with the Unity Hierarchy at each refresh
 - **Object Names Refresh Interval**: accessing **GameObject.name** property generates garbage. Therefore, names of objects in the hierarchy are not synced at each *Refresh Interval* but rather at each *Object Names Refresh Interval* to help avoid excessive garbage
 - **Search Refresh Interval**: the refresh interval for the search results. At each refresh, each GameObject's name is checked to see if it matches the searched term, so this process will generate some garbage
+- **Allow Multi Selection**: when disabled, only a single Transform can be selected in the hierarchy
 - **Expose Unity Scenes**: when disabled, Unity scenes are not exposed in the hierarchy. This is useful when you want to use the hierarchy solely for pseudo-scenes
-- **Exposed Scenes**: specifies the scenes that are exposed in the hierarchy by their name. When empty, all scenes are exposed
+- **Exposed Unity Scenes Subset**: specifies the scenes that are exposed in the hierarchy by their name. When empty, all scenes are exposed
 - **Expose Dont Destroy On Load Scene**: when enabled, *DontDesroyOnLoad* objects will be exposed in the hierarchy
 - **Pseudo Scenes Order**: the order of the pseudo-scenes from top to bottom in the hierarchy. Note that entering a pseudo-scene here does not automatically create it when the application starts. Pseudo-scenes can be created via the scripting API only
-- **Create Dragged Reference On Hold**: when enabled, if you click and hold on an object in the hierarchy for a while, a **dragged reference item** will be created that can be dropped on a *reference drawer* in the inspector to assign that object to that variable (similar to Unity's drag&drop reference assignment)
-- **Dragged Reference Hold Time**: this value defines the hold time in seconds before a dragged reference item is created
-- **Can Reorganize Items**: when enabled, dropping a dragged reference item that holds a Transform onto an object in the hierarchy will change the dragged Transform's parent (similar to parenting in Unity's Hierarchy)
+- **Pointer Long Press Action**: determines what will happen when an object is clicked and then held for a while:
+  - **None**: nothing ¯\\\_(ツ)\_/¯
+  - **Create Dragged Reference Item**: creates a **dragged reference item** that can be dropped onto a *reference drawer* in the inspector to assign the held object(s) to that variable (similar to Unity's drag&drop reference assignment)
+  - **Show Multi Selection Toggles**: displays multi-selection toggles in front of each object. This is mostly useful on mobile devices where CTRL and Shift keys aren't present. Has no effect if *Allow Multi Selection* is disabled
+  - **Show Multi Selection Toggles Then Create Dragged Reference Item**: if multi-selection toggles aren't visible, displays them. Otherwise, creates a dragged reference item
+- **Pointer Long Press Duration**: determines how long an object should be held until the *Pointer Long Press Action* is executed
 - **Double Click Threshold**: when an object in the hierarchy is double clicked, **OnItemDoubleClicked** event is raised (see *SCRIPTING API*). This value determines the maximum allowed delay between two clicks to register a double click
+- **Can Reorganize Items**: when enabled, dropping a dragged reference item that holds Transform(s) onto an object in the hierarchy will change the dragged Transform(s)' parents (similar to parenting in Unity's Hierarchy)
+- **Can Drop Dragged Parent On Child**: when enabled, a dragged reference item can be dropped onto one of its child objects. In this case, the child object will be unparented and then the dragged reference item will become a child of it. Has no effect if *Can Reorganize Items* is disabled
+- **Can Drop Dragged Objects To Pseudo Scenes**: when enabled, dropping a dragged reference item onto a pseudo-scene or above/below a root object in the pseudo-scene will automatically add it to that pseudo-scene. Has no effect if *Can Reorganize Items* is disabled
+- **Show Tooltips**: when enabled, hovering over an object for a while will show a tooltip displaying the object's name. Can be useful for objects with very long names
+- **Tooltip Delay**: determines how long the cursor should remain static over an object before the tooltip appears. Has no effect if *Show Tooltips* is disabled
 - **Show Horizontal Scrollbar**: when enabled, a horizontal scrollbar will be displayed if the names displayed in the hierarchy don't fit the available space. Note that only the visible items' width values are used to determine the size of the scrollable area
 - **Sync Selection With Editor Hierarchy**: simply synchronizes the selected object between the Unity Hierarchy and this RuntimeHierarchy
 
 Additional settings for *Can Reorganize Items* can be found at the *RuntimeHierarchy/ScrollView/Viewport* object:
 
-![screenshot](images/img6.png)
+![screenshot](Images/HierarchyDropListenerProperties.png)
 
 - **Sibling Index Modification Area**: when a dragged reference item is dropped near the top or bottom edges of a Transform in hierarchy, it will be inserted above or belove the target Transform. This value determines the size of the area near the top and bottom edges
 - **Scrollable Area**: while hovering the cursor near the top or bottom edges of the scroll view with a dragged reference item, scroll view will automatically be scrolled to show contents in that direction. This value determines the size of the area near the top and bottom edges of the scroll view
 - **Scroll Speed**: determines how fast the scroll view will be scrolled while hovering the cursor over *Scrollable Area*
-- **Can Drop Parent On Child**: when enabled, a dragged reference item can be dropped onto one of its child objects. In this case, the child object will be unparented and then the dragged reference item will become a child of it
-- **Can Add Objects To Pseudo Scenes**: when enabled, dropping a dragged reference item onto a pseudo-scene or above/below a root object in the pseudo-scene will automatically add it to that pseudo-scene
 
 ## F. SCRIPTING API
 
@@ -139,12 +148,26 @@ public void StopInspect();
 - You can change the selected object in the hierarchy using the following functions:
 
 ```csharp
-public bool Select( Transform selection ); // returns true when the selection is changed successfully
-public void Deselect();
+// SelectOptions is an enum flag meaning that it can take multiple values with | (OR) operator. These values are:
+// - Additive: new selection will be appended to the current selection instead of replacing it
+// - FocusOnSelection: scroll view will be snapped to the selected object(s)
+// - ForceRevealSelection: normally, when selection changes, the new selection will be fully explored in the hierarchy (i.e. all of the parents of the selection will be
+//   expanded to reveal the selection). This doesn't automatically happen if selection doesn't change. When this flag is set, however, the selected objects will be fully
+//   revealed/explored even if the selection doesn't change
+public bool Select( Transform selection, SelectOptions selectOptions = SelectOptions.None ); // Selects the specified Transform. Returns true when the selection is changed successfully
+public bool Select( IList<Transform> selection, SelectOptions selectOptions = SelectOptions.None ); // Selects the specified Transform(s)
+
+public void Deselect(); // Deselects all Transforms
+public void Deselect( Transform deselection ); // Deselects only the specified Transform
+public void Deselect( IList<Transform> deselection ); // Deselects only the specified Transform(s)
+
+public bool IsSelected( Transform transform ); // Returns true if the selection includes the Transform
 ```
 
-- You can access the currently selected object in the hierarchy via the `CurrentSelection` property
+- You can access the currently selected object(s) in the hierarchy via the `CurrentSelection` property
+- Hierarchy's multi-selection toggles can be enabled manually via the `MultiSelectionToggleSelectionMode` property
 - You can call the `Refresh()` function on the inspector and/or the hierarchy to refresh them manually
+- You can lock the inspector and/or the hierarchy via the `IsLocked` property
 - You can register to the `OnSelectionChanged` event of the hierarchy to get notified when the selection has changed
 - You can register to the `OnInspectedObjectChanging` delegate of the inspector to get notified when the inspected object is about to change and, if you prefer, change the inspected object altogether. For example, if you want to inspect only objects that have a *Renderer* component attached, you can use the following function:
 
@@ -270,12 +293,13 @@ private Object CreateDraggedReferenceItemForNPCsOnly( RaycastHit hit )
 }
 ```
 
-- **DraggedReferenceSourceUI**: when assigned to a UI element, that element can create a dragged reference item for its **Reference** object after it is clicked and held for a while
+- **DraggedReferenceSourceUI**: when assigned to a UI element, that element can create a dragged reference item for its **References** object(s) after it is clicked and held for a while
 
-You can also use your own scripts to create dragged reference items by calling the following function in the **RuntimeInspectorUtils** class:
+You can also use your own scripts to create dragged reference items by calling the following functions in the **RuntimeInspectorUtils** class:
 
 ```csharp
 public static DraggedReferenceItem CreateDraggedReferenceItem( Object reference, PointerEventData draggingPointer, UISkin skin = null );
+public static DraggedReferenceItem CreateDraggedReferenceItem( Object[] references, PointerEventData draggingPointer, UISkin skin = null, Canvas referenceCanvas = null );
 ```
 
 ## G. CUSTOM DRAWERS (EDITORS)
@@ -387,7 +411,7 @@ Inside *GenerateElements* function, you can call **parent** parameter's **Create
 
 Here are some example custom drawers:
 
-![screenshot](images/CustomColliderEditor.png)
+![screenshot](Images/CustomColliderEditor.png)
 
 ```csharp
 // Custom drawer for Collider type and the types that derive from it
@@ -408,7 +432,7 @@ public class ColliderEditor : IRuntimeInspectorCustomEditor
 
 ---
 
-![screenshot](images/CustomMeshRendererEditor.png)
+![screenshot](Images/CustomMeshRendererEditor.png)
 
 ```csharp
 // Custom drawer for MeshRenderer type (but not the types that derive from it)
@@ -434,7 +458,7 @@ public class MeshRendererEditor : IRuntimeInspectorCustomEditor
 
 ---
 
-![screenshot](images/CustomCameraEditor.png)
+![screenshot](Images/CustomCameraEditor.png)
 
 ```csharp
 // Custom drawer for Camera type (but not the types that derive from it)

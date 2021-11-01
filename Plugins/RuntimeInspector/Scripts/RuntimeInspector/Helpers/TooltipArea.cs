@@ -5,11 +5,13 @@ namespace RuntimeInspectorNamespace
 {
 	public class TooltipArea : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 	{
-		private InspectorField drawer;
+		private TooltipListener tooltipListener;
+		private ITooltipContent tooltipContent;
 
-		public void Initialize( InspectorField drawer )
+		public void Initialize( TooltipListener tooltipListener, ITooltipContent tooltipContent )
 		{
-			this.drawer = drawer;
+			this.tooltipListener = tooltipListener;
+			this.tooltipContent = tooltipContent;
 		}
 
 		public void OnPointerEnter( PointerEventData eventData )
@@ -19,12 +21,12 @@ namespace RuntimeInspectorNamespace
 #else
 			if( !eventData.dragging )
 #endif
-				drawer.Inspector.OnDrawerHovered( drawer, eventData, true );
+				tooltipListener.OnDrawerHovered( tooltipContent, eventData, true );
 		}
 
 		public void OnPointerExit( PointerEventData eventData )
 		{
-			drawer.Inspector.OnDrawerHovered( drawer, eventData, false );
+			tooltipListener.OnDrawerHovered( tooltipContent, eventData, false );
 		}
 	}
 }

@@ -30,5 +30,10 @@ namespace RuntimeInspectorNamespace
 		{
 			return rootObjects[index].transform;
 		}
+
+		public override Transform GetNearestRootOf( Transform target )
+		{
+			return ( target.gameObject.scene == Scene ) ? target.root : null;
+		}
 	}
 }

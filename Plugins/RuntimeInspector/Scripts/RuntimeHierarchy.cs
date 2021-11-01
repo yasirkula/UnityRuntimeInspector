@@ -1,15 +1,23 @@
 ﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
+using UnityEngine.InputSystem;
+#endif
 
 namespace RuntimeInspectorNamespace
 {
-	public class RuntimeHierarchy : SkinnedWindow, IListViewAdapter
+	public class RuntimeHierarchy : SkinnedWindow, IListViewAdapter, ITooltipManager
 	{
-		public delegate void SelectionChangedDelegate( Transform selection );
-		public delegate void DoubleClickDelegate( Transform selection );
+		[System.Flags]
+		public enum SelectOptions { None = 0, Additive = 1, FocusOnSelection = 2, ForceRevealSelection = 4 };
+		public enum LongPressAction { None = 0, CreateDraggedReferenceItem = 1, ShowMultiSelectionToggles = 2, ShowMultiSelectionTogglesThenCreateDraggedReferenceItem = 3 };
+
+		public delegate void SelectionChangedDelegate( ReadOnlyCollection<Transform> selection );
+		public delegate void DoubleClickDelegate( HierarchyData clickedItem );
 		public delegate bool GameObjectFilterDelegate( Transform transform );
 
 #pragma warning disable 0649
@@ -41,6 +49,72 @@ namespace RuntimeInspectorNamespace
 		private float nextObjectNamesRefreshTime = -1f;
 		private float nextSearchRefreshTime = -1f;
 
+		[Space]
+		[SerializeField]
+		private bool m_allowMultiSelection = true;
+		public bool AllowMultiSelection
+		{
+			get { return m_allowMultiSelection; }
+			set
+			{
+				if( m_allowMultiSelection != value )
+				{
+					m_allowMultiSelection = value;
+
+					if( !value )
+					{
+						MultiSelectionToggleSelectionMode = false;
+
+						if( m_currentSelection.Count > 1 )
+						{
+							for( int i = m_currentSelection.Count - 1; i >= 0; i-- )
+							{
+								if( m_currentSelection[i] )
+								{
+									singleTransformSelection[0] = m_currentSelection[i];
+									SelectInternal( singleTransformSelection );
+
+									return;
+								}
+							}
+
+							DeselectInternal( null );
+						}
+					}
+				}
+			}
+		}
+
+		private bool m_multiSelectionToggleSelectionMode = false;
+		private bool justActivatedMultiSelectionToggleSelectionMode = false;
+		public bool MultiSelectionToggleSelectionMode
+		{
+			get { return m_multiSelectionToggleSelectionMode; }
+			set
+			{
+				if( !m_allowMultiSelection )
+					value = false;
+
+				if( m_multiSelectionToggleSelectionMode != value )
+				{
+					m_multiSelectionToggleSelectionMode = value;
+					shouldRecalculateContentWidth = true;
+
+					for( int i = drawers.Count - 1; i >= 0; i-- )
+					{
+						if( drawers[i].gameObject.activeSelf )
+							drawers[i].MultiSelectionToggleVisible = value;
+					}
+
+					deselectAllButton.gameObject.SetActive( value );
+
+					if( !value )
+						EnsureScrollViewIsWithinBounds();
+				}
+			}
+		}
+
+		[Space]
 		[SerializeField]
 		private bool m_exposeUnityScenes = true;
 		public bool ExposeUnityScenes
@@ -63,8 +137,8 @@ namespace RuntimeInspectorNamespace
 			}
 		}
 
-		[SerializeField]
-		private string[] exposedScenes;
+		[SerializeField, UnityEngine.Serialization.FormerlySerializedAs( "exposedScenes" )]
+		private string[] exposedUnityScenesSubset;
 
 		[SerializeField]
 		private bool m_exposeDontDestroyOnLoadScene = true;
@@ -88,28 +162,21 @@ namespace RuntimeInspectorNamespace
 		[SerializeField]
 		private string[] pseudoScenesOrder;
 
+		[Space]
 		[SerializeField]
-		private bool m_createDraggedReferenceOnHold = true;
-		public bool CreateDraggedReferenceOnHold
+		private LongPressAction m_pointerLongPressAction = LongPressAction.CreateDraggedReferenceItem;
+		public LongPressAction PointerLongPressAction
 		{
-			get { return m_createDraggedReferenceOnHold; }
-			set { m_createDraggedReferenceOnHold = value; }
+			get { return m_pointerLongPressAction; }
+			set { m_pointerLongPressAction = value; }
 		}
 
-		[SerializeField]
-		private float m_draggedReferenceHoldTime = 0.4f;
-		public float DraggedReferenceHoldTime
+		[SerializeField, UnityEngine.Serialization.FormerlySerializedAs( "m_draggedReferenceHoldTime" )]
+		private float m_pointerLongPressDuration = 0.4f;
+		public float PointerLongPressDuration
 		{
-			get { return m_draggedReferenceHoldTime; }
-			set { m_draggedReferenceHoldTime = value; }
-		}
-
-		[SerializeField]
-		private bool m_canReorganizeItems = false;
-		public bool CanReorganizeItems
-		{
-			get { return m_canReorganizeItems; }
-			set { m_canReorganizeItems = value; }
+			get { return m_pointerLongPressDuration; }
+			set { m_pointerLongPressDuration = value; }
 		}
 
 		[SerializeField]
@@ -120,6 +187,47 @@ namespace RuntimeInspectorNamespace
 			set { m_doubleClickThreshold = value; }
 		}
 
+		[Space]
+		[SerializeField]
+		private bool m_canReorganizeItems = false;
+		public bool CanReorganizeItems
+		{
+			get { return m_canReorganizeItems; }
+			set { m_canReorganizeItems = value; }
+		}
+
+		[SerializeField]
+		private bool m_canDropDraggedParentOnChild = false;
+		public bool CanDropDraggedParentOnChild
+		{
+			get { return m_canDropDraggedParentOnChild; }
+			set { m_canDropDraggedParentOnChild = value; }
+		}
+
+		[SerializeField]
+		private bool m_canDropDraggedObjectsToPseudoScenes = false;
+		public bool CanDropDraggedObjectsToPseudoScenes
+		{
+			get { return m_canDropDraggedObjectsToPseudoScenes; }
+			set { m_canDropDraggedObjectsToPseudoScenes = value; }
+		}
+
+		[Space]
+		[SerializeField]
+		private bool m_showTooltips;
+		public bool ShowTooltips { get { return m_showTooltips; } }
+
+		[SerializeField]
+		private float m_tooltipDelay = 0.5f;
+		public float TooltipDelay
+		{
+			get { return m_tooltipDelay; }
+			set { m_tooltipDelay = value; }
+		}
+
+		internal TooltipListener TooltipListener { get; private set; }
+
+		[Space]
 		[SerializeField]
 		private bool m_showHorizontalScrollbar;
 		public bool ShowHorizontalScrollbar
@@ -176,10 +284,24 @@ namespace RuntimeInspectorNamespace
 				if( m_connectedInspector != value )
 				{
 					m_connectedInspector = value;
-					if( m_currentSelection )
-						m_connectedInspector.Inspect( m_currentSelection.gameObject );
+
+					for( int i = m_currentSelection.Count - 1; i >= 0; i-- )
+					{
+						if( m_currentSelection[i] )
+						{
+							m_connectedInspector.Inspect( m_currentSelection[i].gameObject );
+							break;
+						}
+					}
 				}
 			}
+		}
+
+		private bool m_isLocked = false;
+		public bool IsLocked
+		{
+			get { return m_isLocked; }
+			set { m_isLocked = value; }
 		}
 
 		[Header( "Internal Variables" )]
@@ -214,6 +336,15 @@ namespace RuntimeInspectorNamespace
 		private LayoutElement searchBarLayoutElement;
 
 		[SerializeField]
+		private Button deselectAllButton;
+
+		[SerializeField]
+		private LayoutElement deselectAllLayoutElement;
+
+		[SerializeField]
+		private Text deselectAllLabel;
+
+		[SerializeField]
 		private Image selectedPathBackground;
 
 		[SerializeField]
@@ -236,19 +367,40 @@ namespace RuntimeInspectorNamespace
 
 		private static int aliveHierarchies = 0;
 
+		private bool initialized = false;
+
 		private readonly List<HierarchyField> drawers = new List<HierarchyField>( 32 );
 
 		private readonly List<HierarchyDataRoot> sceneData = new List<HierarchyDataRoot>( 8 );
 		private readonly List<HierarchyDataRoot> searchSceneData = new List<HierarchyDataRoot>( 8 );
 		private readonly Dictionary<string, HierarchyDataRootPseudoScene> pseudoSceneDataLookup = new Dictionary<string, HierarchyDataRootPseudoScene>();
 
+		private readonly List<Transform> m_currentSelection = new List<Transform>( 16 );
+		public ReadOnlyCollection<Transform> CurrentSelection { get { return m_currentSelection.AsReadOnly(); } }
+
+		// Stores the selected Transforms' instanceIDs. An object's instanceID can be retrieved via GetInstanceID() but it
+		// makes an unnecessary "EnsureRunningOnMainThread()" call. Luckily, GetHashCode() also returns the instanceID and
+		// it doesn't call "EnsureRunningOnMainThread()"
+		private readonly HashSet<int> currentSelectionSet = new HashSet<int>();
+		private readonly HashSet<int> newSelectionSet = new HashSet<int>();
+
+#pragma warning disable 0414 // Value is assigned but never used on Android & iOS
+		private Transform multiSelectionPivotTransform;
+		private HierarchyDataRoot multiSelectionPivotSceneData;
+		private readonly List<int> multiSelectionPivotSiblingIndexTraversalList = new List<int>( 8 );
+#pragma warning restore 0414
+
+		private readonly Transform[] singleTransformSelection = new Transform[1];
+
 		private int totalItemCount;
 		internal int ItemCount { get { return totalItemCount; } }
 
+		private bool selectLock = false;
 		private bool isListViewDirty = true;
 		private bool shouldRecalculateContentWidth;
 
 		private float lastClickTime;
+		private HierarchyField lastClickedDrawer;
 		private HierarchyField currentlyPressedDrawer;
 		private float pressedDrawerDraggedReferenceCreateTime;
 		private PointerEventData pressedDrawerActivePointer;
@@ -264,33 +416,6 @@ namespace RuntimeInspectorNamespace
 
 		public SelectionChangedDelegate OnSelectionChanged;
 		public DoubleClickDelegate OnItemDoubleClicked;
-
-		private Transform m_currentSelection = null;
-		public Transform CurrentSelection
-		{
-			get { return m_currentSelection; }
-			private set
-			{
-				if( !value )
-					value = null;
-
-				if( m_currentSelection != value )
-				{
-					m_currentSelection = value;
-
-#if UNITY_EDITOR
-					if( syncSelectionWithEditorHierarchy )
-						UnityEditor.Selection.activeTransform = m_currentSelection;
-#endif
-
-					if( ConnectedInspector && m_currentSelection )
-						ConnectedInspector.Inspect( m_currentSelection.gameObject );
-
-					if( OnSelectionChanged != null )
-						OnSelectionChanged( m_currentSelection );
-				}
-			}
-		}
 
 		private GameObjectFilterDelegate m_gameObjectDelegate;
 		public GameObjectFilterDelegate GameObjectFilter
@@ -329,6 +454,16 @@ namespace RuntimeInspectorNamespace
 		protected override void Awake()
 		{
 			base.Awake();
+			Initialize();
+		}
+
+		private void Initialize()
+		{
+			if( initialized )
+				return;
+
+			initialized = true;
+
 			listView.SetAdapter( this );
 
 			aliveHierarchies++;
@@ -337,9 +472,20 @@ namespace RuntimeInspectorNamespace
 			nullPointerEventData = new PointerEventData( null );
 
 			searchInputField.onValueChanged.AddListener( OnSearchTermChanged );
+			deselectAllButton.onClick.AddListener( () =>
+			{
+				DeselectInternal( null );
+				MultiSelectionToggleSelectionMode = false;
+			} );
 
 			m_showHorizontalScrollbar = !m_showHorizontalScrollbar;
 			ShowHorizontalScrollbar = !m_showHorizontalScrollbar;
+
+			if( m_showTooltips )
+			{
+				TooltipListener = gameObject.AddComponent<TooltipListener>();
+				TooltipListener.Initialize( this );
+			}
 
 			RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Add( drawArea );
 
@@ -402,8 +548,9 @@ namespace RuntimeInspectorNamespace
 			if( !syncSelectionWithEditorHierarchy )
 				return;
 
-			if( UnityEditor.Selection.activeTransform )
-				Select( UnityEditor.Selection.activeTransform );
+			Transform[] selection = UnityEditor.Selection.GetFiltered<Transform>( UnityEditor.SelectionMode.ExcludePrefab );
+			if( selection.Length > 0 )
+				Select( selection );
 		}
 #endif
 
@@ -454,19 +601,59 @@ namespace RuntimeInspectorNamespace
 					}
 				}
 
+				if( m_multiSelectionToggleSelectionMode && drawers.Count > 0 )
+					preferredWidth += Skin.LineHeight;
+
 				float contentMinWidth = listView.ViewportWidth + scrollView.verticalScrollbarSpacing;
 				if( preferredWidth > contentMinWidth )
 					scrollView.content.sizeDelta = new Vector2( preferredWidth - contentMinWidth, scrollView.content.sizeDelta.y );
 				else
 					scrollView.content.sizeDelta = new Vector2( 0f, scrollView.content.sizeDelta.y );
+
+				EnsureScrollViewIsWithinBounds();
 			}
 
-			if( m_createDraggedReferenceOnHold && currentlyPressedDrawer && time > pressedDrawerDraggedReferenceCreateTime )
+			if( m_pointerLongPressAction != LongPressAction.None && currentlyPressedDrawer && time > pressedDrawerDraggedReferenceCreateTime )
 			{
 				if( currentlyPressedDrawer.gameObject.activeSelf && currentlyPressedDrawer.Data.BoundTransform )
 				{
-					if( RuntimeInspectorUtils.CreateDraggedReferenceItem( currentlyPressedDrawer.Data.BoundTransform, pressedDrawerActivePointer, Skin, m_canvas ) )
-						( (IPointerEnterHandler) dragDropListener ).OnPointerEnter( pressedDrawerActivePointer );
+					if( m_pointerLongPressAction == LongPressAction.CreateDraggedReferenceItem || ( m_pointerLongPressAction == LongPressAction.ShowMultiSelectionTogglesThenCreateDraggedReferenceItem && ( !m_allowMultiSelection || m_multiSelectionToggleSelectionMode ) ) )
+					{
+						Transform[] draggedReferences = currentlyPressedDrawer.IsSelected ? m_currentSelection.ToArray() : new Transform[1] { currentlyPressedDrawer.Data.BoundTransform };
+						if( draggedReferences.Length > 1 )
+						{
+							// The held drawer's Transform should be the first Transform in the array so that it'll be the Transform that will be received
+							// by RuntimeInspector's object reference drawers
+							int currentlyPressedDrawerIndex = System.Array.IndexOf( draggedReferences, currentlyPressedDrawer.Data.BoundTransform );
+							if( currentlyPressedDrawerIndex > 0 )
+							{
+								for( int i = currentlyPressedDrawerIndex; i > 0; i-- )
+									draggedReferences[i] = draggedReferences[i - 1];
+
+								draggedReferences[0] = currentlyPressedDrawer.Data.BoundTransform;
+							}
+						}
+
+						if( RuntimeInspectorUtils.CreateDraggedReferenceItem( draggedReferences, pressedDrawerActivePointer, Skin, m_canvas ) )
+							( (IPointerEnterHandler) dragDropListener ).OnPointerEnter( pressedDrawerActivePointer );
+					}
+					else if( m_allowMultiSelection && !m_multiSelectionToggleSelectionMode )
+					{
+						if( currentSelectionSet.Add( currentlyPressedDrawer.Data.BoundTransform.GetHashCode() ) )
+						{
+							m_currentSelection.Add( currentlyPressedDrawer.Data.BoundTransform );
+							currentlyPressedDrawer.IsSelected = true;
+
+							OnCurrentSelectionChanged();
+						}
+
+						MultiSelectionToggleSelectionMode = true;
+						justActivatedMultiSelectionToggleSelectionMode = true;
+
+						// Tooltip may accidentally appear while long pressing the drawer, hide the tooltip in that case
+						if( TooltipListener )
+							TooltipListener.OnDrawerHovered( null, null, false );
+					}
 				}
 
 				currentlyPressedDrawer = null;
@@ -514,10 +701,10 @@ namespace RuntimeInspectorNamespace
 			}
 
 			listView.UpdateList( false );
-			scrollView.OnScroll( nullPointerEventData );
+			EnsureScrollViewIsWithinBounds();
 		}
 
-		public void SetListViewDirty()
+		internal void SetListViewDirty()
 		{
 			isListViewDirty = true;
 		}
@@ -583,6 +770,10 @@ namespace RuntimeInspectorNamespace
 			searchIcon.color = Skin.ButtonTextColor;
 			searchBarLayoutElement.SetHeight( Skin.LineHeight );
 
+			deselectAllLayoutElement.SetHeight( Skin.LineHeight );
+			deselectAllButton.targetGraphic.color = Skin.InputFieldInvalidBackgroundColor;
+			deselectAllLabel.SetSkinInputFieldText( Skin );
+
 			selectedPathBackground.color = Skin.BackgroundColor.Tint( 0.1f );
 			selectedPathText.SetSkinButtonText( Skin );
 
@@ -601,6 +792,16 @@ namespace RuntimeInspectorNamespace
 			listView.ResetList();
 		}
 
+		// Makes sure that scroll view's contents are within scroll view's bounds
+		private void EnsureScrollViewIsWithinBounds()
+		{
+			// When scrollbar is snapped to the very bottom of the scroll view, sometimes OnScroll alone doesn't work
+			if( scrollView.verticalNormalizedPosition <= Mathf.Epsilon )
+				scrollView.verticalNormalizedPosition = 0.0001f;
+
+			scrollView.OnScroll( nullPointerEventData );
+		}
+
 		void IListViewAdapter.SetItemContent( RecycledListItem item )
 		{
 			if( isListViewDirty )
@@ -612,7 +813,8 @@ namespace RuntimeInspectorNamespace
 			{
 				drawer.Skin = Skin;
 				drawer.SetContent( data );
-				drawer.IsSelected = m_currentSelection && m_currentSelection == data.BoundTransform;
+				drawer.IsSelected = data.BoundTransform && currentSelectionSet.Contains( data.BoundTransform.GetHashCode() );
+				drawer.MultiSelectionToggleVisible = m_multiSelectionToggleSelectionMode;
 				drawer.Refresh();
 
 				shouldRecalculateContentWidth = true;
@@ -622,69 +824,246 @@ namespace RuntimeInspectorNamespace
 		void IListViewAdapter.OnItemClicked( RecycledListItem item )
 		{
 			HierarchyField drawer = (HierarchyField) item;
-			if( !drawer )
+			if( OnItemDoubleClicked != null && drawer == lastClickedDrawer && Time.realtimeSinceStartup - lastClickTime <= m_doubleClickThreshold )
 			{
-				if( m_currentSelection )
-				{
-					for( int i = drawers.Count - 1; i >= 0; i-- )
-					{
-						if( drawers[i].gameObject.activeSelf && drawers[i].Data.BoundTransform == m_currentSelection )
-							drawers[i].IsSelected = false;
-					}
-
-					CurrentSelection = null;
-				}
-			}
-			else if( m_currentSelection == drawer.Data.BoundTransform )
-			{
-				if( OnItemDoubleClicked != null )
-				{
-					if( Time.realtimeSinceStartup - lastClickTime <= m_doubleClickThreshold )
-					{
-						lastClickTime = 0f;
-
-						if( m_currentSelection )
-							OnItemDoubleClicked( m_currentSelection );
-					}
-					else
-						lastClickTime = Time.realtimeSinceStartup;
-				}
+				lastClickTime = 0f;
+				OnItemDoubleClicked( lastClickedDrawer.Data );
 			}
 			else
 			{
+				lastClickTime = Time.realtimeSinceStartup;
+				lastClickedDrawer = drawer;
+
+				bool hasSelectionChanged = false;
 				Transform clickedTransform = drawer.Data.BoundTransform;
-				for( int i = drawers.Count - 1; i >= 0; i-- )
+				int clickedTransformInstanceID = clickedTransform ? clickedTransform.GetHashCode() : -1;
+
+#if UNITY_EDITOR || UNITY_STANDALONE || UNITY_WEBGL || UNITY_WSA || UNITY_WSA_10_0
+				// When Shift key is held, all items from the pivot item to the clicked item will be selected
+				int multiSelectionPivotIndex;
+#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
+				if( m_allowMultiSelection && FindMultiSelectionPivotAbsoluteIndex( out multiSelectionPivotIndex ) && Keyboard.current != null && Keyboard.current.shiftKey.isPressed )
+#else
+				if( m_allowMultiSelection && FindMultiSelectionPivotAbsoluteIndex( out multiSelectionPivotIndex ) && ( Input.GetKey( KeyCode.LeftShift ) || Input.GetKey( KeyCode.RightShift ) ) )
+#endif
 				{
-					if( drawers[i].gameObject.activeSelf )
+					newSelectionSet.Clear();
+
+					if( clickedTransform )
 					{
-						Transform drawerTransform = drawers[i].Data.BoundTransform;
-						if( drawerTransform == m_currentSelection )
-							drawers[i].IsSelected = false;
-						else if( drawerTransform == clickedTransform && clickedTransform )
-							drawers[i].IsSelected = true;
+						newSelectionSet.Add( clickedTransformInstanceID );
+
+						if( currentSelectionSet.Add( clickedTransformInstanceID ) )
+						{
+							m_currentSelection.Add( clickedTransform );
+							hasSelectionChanged = true;
+						}
+					}
+
+					// Add new Transforms to selection
+					for( int i = multiSelectionPivotIndex, endIndex = drawer.Position, increment = ( multiSelectionPivotIndex < endIndex ) ? 1 : -1; i != endIndex; i += increment )
+					{
+						Transform newSelection = GetDataAt( i ).BoundTransform;
+						if( !newSelection )
+							continue;
+
+						int selectionInstanceID = newSelection.GetHashCode();
+						newSelectionSet.Add( selectionInstanceID );
+
+						if( currentSelectionSet.Add( selectionInstanceID ) )
+						{
+							m_currentSelection.Add( newSelection );
+							hasSelectionChanged = true;
+						}
+					}
+
+					// Remove old Transforms from selection
+					for( int i = m_currentSelection.Count - 1; i >= 0; i-- )
+					{
+						Transform oldSelection = m_currentSelection[i];
+						if( !oldSelection )
+							continue;
+
+						int selectionInstanceID = oldSelection.GetHashCode();
+						if( !newSelectionSet.Contains( selectionInstanceID ) )
+						{
+							m_currentSelection.RemoveAt( i );
+							currentSelectionSet.Remove( selectionInstanceID );
+
+							hasSelectionChanged = true;
+						}
+					}
+				}
+				else
+#endif
+				{
+					multiSelectionPivotTransform = clickedTransform;
+					multiSelectionPivotSceneData = drawer.Data.Root;
+					drawer.Data.GetSiblingIndexTraversalList( multiSelectionPivotSiblingIndexTraversalList );
+
+					// When in toggle selection mode or Control key is held, individual items can be multi-selected
+#if UNITY_EDITOR || UNITY_STANDALONE || UNITY_WEBGL || UNITY_WSA || UNITY_WSA_10_0
+#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
+					if( m_allowMultiSelection && ( m_multiSelectionToggleSelectionMode || ( Keyboard.current != null && Keyboard.current.ctrlKey.isPressed ) ) )
+#else
+					if( m_allowMultiSelection && ( m_multiSelectionToggleSelectionMode || Input.GetKey( KeyCode.LeftControl ) || Input.GetKey( KeyCode.RightControl ) ) )
+#endif
+#else
+					if( m_allowMultiSelection && m_multiSelectionToggleSelectionMode )
+#endif
+					{
+						if( clickedTransform )
+						{
+							if( currentSelectionSet.Add( clickedTransformInstanceID ) )
+								m_currentSelection.Add( clickedTransform );
+							else
+							{
+								m_currentSelection.Remove( clickedTransform );
+								currentSelectionSet.Remove( clickedTransformInstanceID );
+
+								if( m_currentSelection.Count == 0 )
+									MultiSelectionToggleSelectionMode = false;
+							}
+
+							hasSelectionChanged = true;
+						}
+					}
+					else
+					{
+						if( clickedTransform )
+						{
+							if( m_currentSelection.Count != 1 || m_currentSelection[0] != clickedTransform )
+							{
+								m_currentSelection.Clear();
+								currentSelectionSet.Clear();
+
+								m_currentSelection.Add( clickedTransform );
+								currentSelectionSet.Add( clickedTransformInstanceID );
+
+								hasSelectionChanged = true;
+							}
+						}
+						else if( m_currentSelection.Count > 0 )
+						{
+							m_currentSelection.Clear();
+							currentSelectionSet.Clear();
+
+							hasSelectionChanged = true;
+						}
 					}
 				}
 
-				lastClickTime = Time.realtimeSinceStartup;
-				CurrentSelection = clickedTransform;
-
-				if( m_isInSearchMode && clickedTransform )
+				if( hasSelectionChanged )
 				{
-					// Fetch the object's path and show it in Hierarchy
-					System.Text.StringBuilder sb = RuntimeInspectorUtils.stringBuilder;
-					sb.Length = 0;
-
-					sb.AppendLine( "Path:" );
-					while( clickedTransform )
+					for( int i = drawers.Count - 1; i >= 0; i-- )
 					{
-						sb.Append( "  " ).AppendLine( clickedTransform.name );
-						clickedTransform = clickedTransform.parent;
+						if( drawers[i].gameObject.activeSelf )
+						{
+							Transform drawerTransform = drawers[i].Data.BoundTransform;
+							if( drawerTransform )
+							{
+								if( drawers[i].IsSelected != currentSelectionSet.Contains( drawerTransform.GetHashCode() ) )
+									drawers[i].IsSelected = !drawers[i].IsSelected;
+							}
+							else if( drawers[i].IsSelected )
+								drawers[i].IsSelected = false;
+						}
 					}
 
-					selectedPathText.text = sb.Append( "  " ).Append( drawer.Data.Root.Name ).ToString();
-					selectedPathBackground.gameObject.SetActive( true );
+					OnCurrentSelectionChanged();
+				}
+
+				if( m_isInSearchMode )
+				{
+					bool shouldShowSearchPathText = false;
+					for( int i = m_currentSelection.Count - 1; i >= 0; i-- )
+					{
+						Transform selection = m_currentSelection[i];
+						if( selection )
+						{
+							// Fetch the object's path and show it in Hierarchy
+							System.Text.StringBuilder sb = RuntimeInspectorUtils.stringBuilder;
+							sb.Length = 0;
+
+							sb.AppendLine( "Path:" );
+							while( selection )
+							{
+								sb.Append( "  " ).AppendLine( selection.name );
+								selection = selection.parent;
+							}
+
+							selectedPathText.text = sb.Append( "  " ).Append( drawer.Data.Root.Name ).ToString();
+							shouldShowSearchPathText = true;
+
+							break;
+						}
+					}
+
+					if( selectedPathBackground.gameObject.activeSelf != shouldShowSearchPathText )
+						selectedPathBackground.gameObject.SetActive( shouldShowSearchPathText );
 				}
 			}
+		}
+
+		private bool FindMultiSelectionPivotAbsoluteIndex( out int pivotAbsoluteIndex )
+		{
+			pivotAbsoluteIndex = 0;
+
+			if( multiSelectionPivotSceneData == null )
+				return false;
+
+			bool pivotSceneDataExists = false;
+			List<HierarchyDataRoot> sceneData = m_isInSearchMode ? searchSceneData : this.sceneData;
+			for( int i = 0; i < sceneData.Count; i++ )
+			{
+				if( sceneData[i] != multiSelectionPivotSceneData )
+					pivotAbsoluteIndex += sceneData[i].Height;
+				else
+				{
+					pivotSceneDataExists = true;
+					break;
+				}
+			}
+
+			if( !pivotSceneDataExists )
+				return false;
+
+			if( multiSelectionPivotSiblingIndexTraversalList.Count == 0 )
+				return true;
+
+			if( !multiSelectionPivotTransform )
+				return false;
+
+			// To find the pivot Transform, first try traversing its recorded sibling indices in the HierarchyDataRoot that contains it
+			HierarchyData multiSelectionPivotData = multiSelectionPivotSceneData.TraverseSiblingIndexList( multiSelectionPivotSiblingIndexTraversalList );
+			if( multiSelectionPivotData != null && multiSelectionPivotData.BoundTransform == multiSelectionPivotTransform )
+			{
+				pivotAbsoluteIndex += multiSelectionPivotData.AbsoluteIndex;
+				return true;
+			}
+
+			// Either HierarchyDataRoot no longer contains the pivot Transform, or the pivot Transform's sibling index have changed. Try finding
+			// the pivot Transform among all visible children of the HierarchyDataRoot (if it's a pseudo-scene in which a Transform can appear
+			// more than once, try finding the pivot Transform at the same depth as it was before)
+			multiSelectionPivotData = multiSelectionPivotSceneData.FindTransformInVisibleChildren( multiSelectionPivotTransform, ( multiSelectionPivotSceneData is HierarchyDataRootPseudoScene ) ? multiSelectionPivotSiblingIndexTraversalList.Count : -1 );
+			if( multiSelectionPivotData != null )
+			{
+				pivotAbsoluteIndex += multiSelectionPivotData.AbsoluteIndex;
+				return true;
+			}
+
+			// Try finding the pivot Transform at all among all visible children of the pseudo-scene
+			if( multiSelectionPivotSceneData is HierarchyDataRootPseudoScene )
+			{
+				multiSelectionPivotData = multiSelectionPivotSceneData.FindTransformInVisibleChildren( multiSelectionPivotTransform, -1 );
+				if( multiSelectionPivotData != null )
+				{
+					pivotAbsoluteIndex += multiSelectionPivotData.AbsoluteIndex;
+					return true;
+				}
+			}
+
+			return false;
 		}
 
 		internal HierarchyData GetDataAt( int index )
@@ -711,6 +1090,15 @@ namespace RuntimeInspectorNamespace
 				currentlyPressedDrawer = null;
 				pressedDrawerActivePointer = null;
 
+				// We have activated MultiSelectionToggleSelectionMode with this press; processing the click would result in
+				// deselecting the Transform that we've just selected with this press because its selected state would be toggled
+				// again inside OnItemClicked. Simply ignore the click to avoid this issue
+				if( justActivatedMultiSelectionToggleSelectionMode )
+				{
+					justActivatedMultiSelectionToggleSelectionMode = false;
+					eventData.eligibleForClick = false;
+				}
+
 #if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
 				// On new Input System, DraggedReferenceItems aren't tracked by the PointerEventDatas that initiated them. However, when a DraggedReferenceItem is
 				// created by holding a HierarchyField, the PointerEventData's dragged object will be set as the RuntimeHierarchy's ScrollRect. When it happens,
@@ -723,66 +1111,181 @@ namespace RuntimeInspectorNamespace
 				}
 #endif
 			}
-			else if( m_createDraggedReferenceOnHold )
+			else if( m_pointerLongPressAction != LongPressAction.None )
 			{
 				currentlyPressedDrawer = drawer;
 				pressedDrawerActivePointer = eventData;
-				pressedDrawerDraggedReferenceCreateTime = Time.realtimeSinceStartup + m_draggedReferenceHoldTime;
+				pressedDrawerDraggedReferenceCreateTime = Time.realtimeSinceStartup + m_pointerLongPressDuration;
 			}
 		}
 
-		public bool Select( Transform selection, bool forceSelection = false )
+		public bool Select( Transform selection, SelectOptions selectOptions = SelectOptions.None )
 		{
-			if( !selection )
+			singleTransformSelection[0] = selection;
+			return Select( singleTransformSelection, selectOptions );
+		}
+
+		public bool Select( IList<Transform> selection, SelectOptions selectOptions = SelectOptions.None )
+		{
+			return !m_isLocked && SelectInternal( selection, selectOptions );
+		}
+
+		internal bool SelectInternal( IList<Transform> selection, SelectOptions selectOptions = SelectOptions.None )
+		{
+			if( selectLock )
+				return false;
+
+			if( selection.IsEmpty() )
 			{
-				Deselect();
+				DeselectInternal( null );
 				return true;
 			}
-			else
+
+			Initialize();
+
+			bool additive = ( selectOptions & SelectOptions.Additive ) == SelectOptions.Additive;
+			if( !m_allowMultiSelection )
 			{
-				if( !forceSelection && selection == m_currentSelection )
-					return true;
+				additive = false;
 
-				CurrentSelection = selection;
-
-				// Make sure that the contents of the hierarchy are up-to-date
-				Refresh();
-				RefreshSearchResults();
-
-				Scene selectionScene = selection.gameObject.scene;
-				List<HierarchyDataRoot> sceneData = m_isInSearchMode ? searchSceneData : this.sceneData;
-
-				for( int i = 0; i < sceneData.Count; i++ )
+				if( selection.Count > 1 )
 				{
-					HierarchyDataRoot data = sceneData[i];
-					if( m_isInSearchMode || ( data is HierarchyDataRootPseudoScene ) || ( (HierarchyDataRootScene) data ).Scene == selectionScene )
+					// Assertion: At least one Transform isn't null because "selection.IsEmpty()" was false
+					for( int i = selection.Count - 1; i >= 0; i-- )
 					{
-						HierarchyDataTransform selectionItem = sceneData[i].FindTransform( selection );
-						if( selectionItem != null )
+						if( CanSelectTransform( selection[i] ) )
 						{
-							RefreshListView();
+							singleTransformSelection[0] = selection[i];
+							selection = singleTransformSelection;
 
-							// Focus on selected HierarchyItem
-							int itemIndex = selectionItem.AbsoluteIndex;
-							for( int j = 0; j < i; j++ )
-								itemIndex += sceneData[i].Height;
-
-							LayoutRebuilder.ForceRebuildLayoutImmediate( drawArea );
-
-							// Focus ScrollRect on selectionItem
-							// Credit: https://gist.github.com/yasirkula/75ca350fb83ddcc1558d33a8ecf1483f
-							float drawAreaHeight = drawArea.rect.height;
-							float viewportHeight = ( (RectTransform) drawArea.parent ).rect.height;
-							if( drawAreaHeight > viewportHeight )
-							{
-								float focusPoint = ( (float) itemIndex / totalItemCount ) * drawAreaHeight + Skin.LineHeight * 0.5f;
-								scrollView.verticalNormalizedPosition = 1f - Mathf.Clamp01( ( focusPoint - viewportHeight * 0.5f ) / ( drawAreaHeight - viewportHeight ) );
-							}
-
-							return true;
+							break;
 						}
 					}
 				}
+			}
+
+			bool hasSelectionChanged = false;
+			if( additive )
+			{
+				for( int i = 0; i < selection.Count; i++ )
+				{
+					Transform _selection = selection[i];
+					if( CanSelectTransform( _selection ) && currentSelectionSet.Add( _selection.GetHashCode() ) )
+					{
+						m_currentSelection.Add( _selection );
+						hasSelectionChanged = true;
+					}
+				}
+			}
+			else
+			{
+				newSelectionSet.Clear();
+
+				// Add new Transforms to selection
+				for( int i = 0; i < selection.Count; i++ )
+				{
+					Transform newSelection = selection[i];
+					if( !CanSelectTransform( newSelection ) )
+						continue;
+
+					int selectionInstanceID = newSelection.GetHashCode();
+					newSelectionSet.Add( selectionInstanceID );
+
+					if( currentSelectionSet.Add( selectionInstanceID ) )
+					{
+						m_currentSelection.Add( newSelection );
+						hasSelectionChanged = true;
+					}
+				}
+
+				// Remove old Transforms from selection
+				for( int i = m_currentSelection.Count - 1; i >= 0; i-- )
+				{
+					Transform oldSelection = m_currentSelection[i];
+					if( !oldSelection )
+						continue;
+
+					int selectionInstanceID = oldSelection.GetHashCode();
+					if( !newSelectionSet.Contains( selectionInstanceID ) )
+					{
+						m_currentSelection.RemoveAt( i );
+						currentSelectionSet.Remove( selectionInstanceID );
+
+						hasSelectionChanged = true;
+					}
+				}
+			}
+
+			if( !hasSelectionChanged && ( ( selectOptions & SelectOptions.ForceRevealSelection ) != SelectOptions.ForceRevealSelection ) )
+				return true;
+
+			if( hasSelectionChanged )
+				OnCurrentSelectionChanged();
+
+			// Make sure that the contents of the hierarchy are up-to-date
+			Refresh();
+			RefreshSearchResults();
+
+			HierarchyDataTransform itemToFocus = null;
+			int itemToFocusSceneDataIndex = 0;
+
+			// Expand the selected Transforms' parents if they are currently collapsed
+			List<HierarchyDataRoot> sceneData = m_isInSearchMode ? searchSceneData : this.sceneData;
+			for( int i = 0; i < m_currentSelection.Count; i++ )
+			{
+				Transform _selection = m_currentSelection[i];
+				if( !_selection )
+					continue;
+
+				Scene selectionScene = _selection.gameObject.scene;
+				for( int j = 0; j < sceneData.Count; j++ )
+				{
+					HierarchyDataRoot data = sceneData[j];
+					if( m_isInSearchMode || ( data is HierarchyDataRootPseudoScene ) || ( (HierarchyDataRootScene) data ).Scene == selectionScene )
+					{
+						HierarchyDataTransform selectionItem = data.FindTransform( _selection );
+						if( selectionItem != null )
+						{
+							itemToFocus = selectionItem;
+							itemToFocusSceneDataIndex = j;
+
+							// Transform may exist in multiple places (zero or one Unity scene and zero or more pseudo-scene(s)). After expanding the Transform's parent in
+							// one of these scenes, we can call it a day. This way, we'd use less CPU-cycles but the Transform's parent in other scene(s) may not be expanded.
+							// If performance is important and expanding the Transform's parent in a single scene is OK, then you can uncomment the line below
+							//break;
+						}
+					}
+				}
+			}
+
+			RefreshListView();
+
+			if( itemToFocus != null )
+			{
+				// Focus on the latest selected HierarchyItem
+				if( ( selectOptions & SelectOptions.FocusOnSelection ) == SelectOptions.FocusOnSelection )
+				{
+					int itemIndex = itemToFocus.AbsoluteIndex;
+					for( int i = 0; i < itemToFocusSceneDataIndex; i++ )
+						itemIndex += sceneData[i].Height;
+
+					// This isn't just the drawArea but rather the RuntimeHierarchy itself because in search mode, when SelectedSearchItemPath is visible,
+					// it will decrease the scroll view's height which may result in an incorrect viewportHeight value. This is especially obvious
+					// when calling Select immediately after exiting the search mode
+					LayoutRebuilder.ForceRebuildLayoutImmediate( (RectTransform) transform );
+
+					// Credit: https://gist.github.com/yasirkula/75ca350fb83ddcc1558d33a8ecf1483f
+					float drawAreaHeight = drawArea.rect.height;
+					float viewportHeight = ( (RectTransform) drawArea.parent ).rect.height;
+					if( drawAreaHeight > viewportHeight )
+					{
+						float focusPoint = ( (float) itemIndex / totalItemCount ) * drawAreaHeight + Skin.LineHeight * 0.5f;
+						scrollView.verticalNormalizedPosition = 1f - Mathf.Clamp01( ( focusPoint - viewportHeight * 0.5f ) / ( drawAreaHeight - viewportHeight ) );
+					}
+				}
+
+				// When itemToFocus isn't null, it also means that we were successfully able to expand the selection's parents in the hierarchy
+				return true;
 			}
 
 			return false;
@@ -790,7 +1293,145 @@ namespace RuntimeInspectorNamespace
 
 		public void Deselect()
 		{
-			( (IListViewAdapter) this ).OnItemClicked( null );
+			Deselect( (IList<Transform>) null );
+		}
+
+		public void Deselect( Transform deselection )
+		{
+			singleTransformSelection[0] = deselection;
+			Deselect( singleTransformSelection );
+		}
+
+		public void Deselect( IList<Transform> deselection )
+		{
+			if( !m_isLocked )
+				DeselectInternal( deselection );
+		}
+
+		internal void DeselectInternal( IList<Transform> deselection )
+		{
+			if( selectLock || m_currentSelection.Count == 0 )
+				return;
+
+			Initialize();
+
+			bool hasSelectionChanged = false;
+			if( deselection == null )
+			{
+				m_currentSelection.Clear();
+				currentSelectionSet.Clear();
+
+				hasSelectionChanged = true;
+			}
+			else
+			{
+				for( int i = deselection.Count - 1; i >= 0; i-- )
+				{
+					Transform deselect = deselection[i];
+					if( deselect && currentSelectionSet.Remove( deselect.GetHashCode() ) )
+					{
+						m_currentSelection.Remove( deselect );
+						hasSelectionChanged = true;
+					}
+				}
+			}
+
+			if( hasSelectionChanged )
+			{
+				for( int i = drawers.Count - 1; i >= 0; i-- )
+				{
+					if( drawers[i].gameObject.activeSelf && drawers[i].IsSelected )
+						drawers[i].IsSelected = false;
+				}
+
+				OnCurrentSelectionChanged();
+			}
+		}
+
+		public bool IsSelected( Transform transform )
+		{
+			return transform && currentSelectionSet.Contains( transform.GetHashCode() );
+		}
+
+		// Check if Transform is hidden from this RuntimeHierarchy
+		private bool CanSelectTransform( Transform transform )
+		{
+			if( !transform )
+				return false;
+
+			if( RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Contains( transform ) || ( m_gameObjectDelegate != null && !m_gameObjectDelegate( transform ) ) )
+				return false;
+
+			// When Transform passes the above checks, it doesn't necessarily mean that it is visible since one of its parents might also be hidden from this RuntimeHierarchy.
+			// We aren't just checking if all parents of the Transform are visible; imagine the scenario where there exist an A/B/C Transform hierarchy in which A is hidden from
+			// this RuntimeHierarchy and we're checking if C is visible. Logically, when A is hidden, its grandchild C would also be hidden implicitly. However, if there is a
+			// pseudo-scene with either B or C as a root object, then C would be visible in that pseudo-scene because neither B nor C are explicitly hidden from this RuntimeHierarchy
+			Transform nearestRoot = null;
+			for( int i = 0; i < sceneData.Count; i++ )
+			{
+				Transform parent = sceneData[i].GetNearestRootOf( transform );
+				if( parent && ( !nearestRoot || parent.IsChildOf( nearestRoot ) ) )
+					nearestRoot = parent;
+			}
+
+			if( !nearestRoot )
+				return false;
+
+			if( nearestRoot != transform )
+			{
+				// Check if B is explicitly hidden from this RuntimeHierarchy in the A/B/C example above
+				for( Transform _transform = transform.parent; _transform && _transform != nearestRoot; _transform = _transform.parent )
+				{
+					if( RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Contains( _transform ) || ( m_gameObjectDelegate != null && !m_gameObjectDelegate( _transform ) ) )
+						return false;
+				}
+			}
+
+			return true;
+		}
+
+		private void OnCurrentSelectionChanged()
+		{
+			selectLock = true;
+			try
+			{
+#if UNITY_EDITOR
+				if( syncSelectionWithEditorHierarchy )
+				{
+					List<GameObject> selection = new List<GameObject>( m_currentSelection.Count );
+					for( int i = 0; i < m_currentSelection.Count; i++ )
+					{
+						if( m_currentSelection[i] )
+							selection.Add( m_currentSelection[i].gameObject );
+					}
+
+					UnityEditor.Selection.objects = selection.ToArray();
+				}
+#endif
+
+				if( m_connectedInspector )
+				{
+					for( int i = m_currentSelection.Count - 1; i >= 0; i-- )
+					{
+						if( m_currentSelection[i] )
+						{
+							m_connectedInspector.Inspect( m_currentSelection[i].gameObject );
+							break;
+						}
+					}
+				}
+
+				if( OnSelectionChanged != null )
+					OnSelectionChanged( m_currentSelection.AsReadOnly() );
+			}
+			catch( System.Exception e )
+			{
+				Debug.LogException( e );
+			}
+			finally
+			{
+				selectLock = false;
+			}
 		}
 
 		private void OnSearchTermChanged( string search )
@@ -811,9 +1452,9 @@ namespace RuntimeInspectorNamespace
 					isListViewDirty = true;
 					m_isInSearchMode = false;
 
-					// Focus on currently selected object after exiting search mode
-					if( m_currentSelection )
-						Select( m_currentSelection, true );
+					// Focus on currently selected object(s) after exiting search mode
+					if( m_currentSelection.Count > 0 )
+						SelectInternal( m_currentSelection, SelectOptions.FocusOnSelection | SelectOptions.ForceRevealSelection );
 				}
 			}
 			else
@@ -838,7 +1479,7 @@ namespace RuntimeInspectorNamespace
 
 		private void OnSceneLoaded( Scene arg0, LoadSceneMode arg1 )
 		{
-			if( !ExposeUnityScenes || ( arg0.buildIndex >= 0 && exposedScenes != null && exposedScenes.Length > 0 && System.Array.IndexOf( exposedScenes, arg0.name ) == -1 ) )
+			if( !ExposeUnityScenes || ( arg0.buildIndex >= 0 && exposedUnityScenesSubset != null && exposedUnityScenesSubset.Length > 0 && System.Array.IndexOf( exposedUnityScenesSubset, arg0.name ) == -1 ) )
 				return;
 
 			if( !arg0.IsValid() )

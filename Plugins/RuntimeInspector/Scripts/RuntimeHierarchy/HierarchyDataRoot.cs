@@ -17,12 +17,18 @@ namespace RuntimeInspectorNamespace
 			PopChildrenList();
 		}
 
+		public abstract Transform GetNearestRootOf( Transform target );
 		public abstract void RefreshContent();
 
 		public override bool Refresh()
 		{
 			RefreshContent();
 			return base.Refresh();
+		}
+
+		public override HierarchyDataTransform FindTransformInVisibleChildren( Transform target, int targetDepth = -1 )
+		{
+			return ( m_depth >= 0 && IsExpanded ) ? base.FindTransformInVisibleChildren( target, targetDepth ) : null;
 		}
 
 		public void ResetCachedNames()

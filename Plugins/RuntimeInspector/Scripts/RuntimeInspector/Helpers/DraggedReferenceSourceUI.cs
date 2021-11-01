@@ -8,11 +8,11 @@ namespace RuntimeInspectorNamespace
 	{
 #pragma warning disable 0649
 		[SerializeField]
-		private Object m_reference;
-		public Object Reference
+		private Object[] m_references;
+		public Object[] References
 		{
-			get { return m_reference; }
-			set { m_reference = value; }
+			get { return m_references; }
+			set { m_references = value; }
 		}
 
 		[SerializeField]
@@ -29,7 +29,7 @@ namespace RuntimeInspectorNamespace
 			if( pointerHeldCoroutine != null )
 				return;
 
-			if( !m_reference )
+			if( m_references.IsEmpty() )
 				return;
 
 			pointerHeldCoroutine = CreateReferenceItemCoroutine( eventData );
@@ -61,8 +61,8 @@ namespace RuntimeInspectorNamespace
 
 			yield return new WaitForSecondsRealtime( holdTime );
 
-			if( m_reference && ( eventData.position - pressPosition ).sqrMagnitude < dragThreshold * dragThreshold )
-				RuntimeInspectorUtils.CreateDraggedReferenceItem( m_reference, eventData, draggedReferenceSkin, GetComponentInParent<Canvas>() );
+			if( !m_references.IsEmpty() && ( eventData.position - pressPosition ).sqrMagnitude < dragThreshold * dragThreshold )
+				RuntimeInspectorUtils.CreateDraggedReferenceItem( m_references, eventData, draggedReferenceSkin, GetComponentInParent<Canvas>() );
 		}
 	}
 }

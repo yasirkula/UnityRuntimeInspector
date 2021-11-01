@@ -175,22 +175,27 @@ namespace RuntimeInspectorNamespace
 
 		void IDropHandler.OnDrop( PointerEventData eventData )
 		{
-			Object assignableObject = RuntimeInspectorUtils.GetAssignableObjectFromDraggedReferenceItem( eventData, elementType );
-			if( assignableObject != null )
+			object[] assignableObjects = RuntimeInspectorUtils.GetAssignableObjectsFromDraggedReferenceItem( eventData, elementType );
+			if( assignableObjects != null && assignableObjects.Length > 0 )
 			{
-				if( !OnSizeChanged( null, ( Length + 1 ).ToString( RuntimeInspectorUtils.numberFormat ) ) )
+				int prevLength = Length;
+				if( !OnSizeChanged( null, ( prevLength + assignableObjects.Length ).ToString( RuntimeInspectorUtils.numberFormat ) ) )
 					return;
 
 				if( isArray )
 				{
 					Array _array = (Array) Value;
-					_array.SetValue( assignableObject, Length - 1 );
+					for( int i = 0; i < assignableObjects.Length; i++ )
+						_array.SetValue( assignableObjects[i], prevLength + i );
+
 					Value = _array;
 				}
 				else
 				{
 					IList _list = (IList) Value;
-					_list[Length - 1] = assignableObject;
+					for( int i = 0; i < assignableObjects.Length; i++ )
+						_list[prevLength + i] = assignableObjects[i];
+
 					Value = _list;
 				}
 

@@ -15,6 +15,8 @@ MonoBehaviour:
   m_fontSize: 12
   m_lineHeight: 30
   m_indentAmount: 12
+  m_labelWidthPercentage: 0.4
+  m_expandArrowSpacing: 10
   m_windowColor: {r: 0.6838235, g: 0.68885165, b: 0.68885165, a: 1}
   m_backgroundColor: {r: 0.7607844, g: 0.7607844, b: 0.7607844, a: 1}
   m_textColor: {r: 0.19607843, g: 0.19607843, b: 0.19607843, a: 1}

@@ -59,6 +59,20 @@ namespace RuntimeInspectorNamespace
 			return result;
 		}
 
+		public override HierarchyDataTransform FindTransformInVisibleChildren( Transform target, int targetDepth = -1 )
+		{
+			if( m_depth < 0 || targetDepth > 1 || !IsExpanded )
+				return null;
+
+			for( int i = children.Count - 1; i >= 0; i-- )
+			{
+				if( ReferenceEquals( children[i].BoundTransform, target ) )
+					return children[i];
+			}
+
+			return null;
+		}
+
 		private void SearchTransformRecursively( Transform obj )
 		{
 			for( int i = 0; i < obj.childCount; i++ )
@@ -77,6 +91,11 @@ namespace RuntimeInspectorNamespace
 		public override Transform GetChild( int index )
 		{
 			return searchResult[index];
+		}
+
+		public override Transform GetNearestRootOf( Transform target )
+		{
+			return searchResult.Contains( target ) ? target : null;
 		}
 	}
 }
