@@ -160,5 +160,13 @@ namespace RuntimeInspectorNamespace
 			if( valueIndex != -1 )
 				input.value = valueIndex;
 		}
+
+		protected override void OnIsInteractableChanged()
+		{
+			base.OnIsInteractableChanged();
+			input.interactable = IsInteractable;
+			input.captionText.color = this.GetTextColor();
+			dropdownArrow.color = this.GetTextColor();
+		}
 	}
 }

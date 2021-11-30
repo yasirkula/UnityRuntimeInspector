@@ -11,6 +11,8 @@ namespace RuntimeInspectorNamespace
 		public delegate object Getter();
 		public delegate void Setter( object value );
 
+		public delegate bool IsReadonlyGetter();
+
 #pragma warning disable 0649
 		[SerializeField]
 		protected LayoutElement layoutElement;
@@ -88,6 +90,43 @@ namespace RuntimeInspectorNamespace
 		private bool m_isVisible = true;
 		public bool IsVisible { get { return m_isVisible; } }
 
+		private bool m_isInteractableSelf = true;
+		private bool m_isInteractableInHierarchy = true;
+
+		public bool IsInteractable
+		{
+			get { return m_isInteractableInHierarchy && m_isInteractableSelf; }
+			set { IsInteractableInHierarchy = value; }
+		}
+
+		protected bool IsInteractableInHierarchy
+		{
+			get { return m_isInteractableInHierarchy; }
+			set
+			{
+				bool oldValue = IsInteractable;
+				m_isInteractableInHierarchy = value;
+				if (oldValue != IsInteractable)
+				{
+					OnIsInteractableChanged();
+				}
+			}
+		}
+
+		protected bool IsInteractableSelf
+		{
+			get { return m_isInteractableSelf; }
+			set
+			{
+				bool oldValue = IsInteractable;
+				m_isInteractableSelf = value;
+				if (oldValue != IsInteractable)
+				{
+					OnIsInteractableChanged();
+				}
+			}
+		}
+
 		public string Name
 		{
 			get { if( variableNameText ) return variableNameText.text; return string.Empty; }
@@ -109,6 +148,7 @@ namespace RuntimeInspectorNamespace
 
 		private Getter getter;
 		private Setter setter;
+		private IsReadonlyGetter isReadonlyGetter;
 
 		public virtual void Initialize()
 		{
@@ -174,6 +214,10 @@ namespace RuntimeInspectorNamespace
 
 			this.getter = getter;
 			this.setter = setter;
+
+			var attr = variable?.GetCustomAttribute<RuntimeInspectorReadonlyAttribute>();
+			if( attr != null )
+				isReadonlyGetter = attr.Getter;
 
 			OnBound( variable );
 		}
@@ -247,6 +291,17 @@ namespace RuntimeInspectorNamespace
 			RefreshValue();
 		}
 
+		protected virtual void OnIsInteractableChanged()
+		{
+			if( variableNameText )
+			{
+				if( IsInteractable )
+					variableNameText.color = Skin.TextColor;
+				else
+					variableNameText.color = Skin.InactiveTextColor;
+			}
+		}
+
 		private void RefreshValue()
 		{
 			try
@@ -263,6 +318,16 @@ namespace RuntimeInspectorNamespace
 					m_value = Activator.CreateInstance( BoundVariableType );
 				else
 					m_value = null;
+			}
+
+			if( isReadonlyGetter != null )
+			{
+				try
+				{
+					IsInteractableSelf = !isReadonlyGetter();
+				}
+				catch
+				{}
 			}
 		}
 	}
@@ -429,6 +494,13 @@ namespace RuntimeInspectorNamespace
 				elements[i].Depth = Depth + 1;
 		}
 
+		protected override void OnIsInteractableChanged()
+		{
+			base.OnIsInteractableChanged();
+			for( int i = 0; i < elements.Count; i++ )
+				elements[i].IsInteractable = IsInteractable;
+		}
+
 		protected void RegenerateElements()
 		{
 			if( elements.Count > 0 || exposedMethods.Count > 0 )
@@ -501,6 +573,7 @@ namespace RuntimeInspectorNamespace
 					variableName = component.GetType().Name + " component";
 
 				variableDrawer.BindTo( component.GetType(), string.Empty, () => component, ( value ) => { } );
+				variableDrawer.IsInteractable = IsInteractable;
 				variableDrawer.NameRaw = variableName;
 
 				elements.Add( variableDrawer );
@@ -531,6 +604,7 @@ namespace RuntimeInspectorNamespace
 			if( variableDrawer != null )
 			{
 				variableDrawer.BindTo( variableType, variableName == null ? null : string.Empty, getter, setter );
+				variableDrawer.IsInteractable = IsInteractable;
 				if( variableName != null )
 					variableDrawer.NameRaw = variableName;
 
