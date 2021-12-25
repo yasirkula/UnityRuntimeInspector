@@ -3,18 +3,20 @@ using System.Reflection;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 namespace RuntimeInspectorNamespace
 {
-	public class GameObjectField : ExpandableInspectorField
+	public class GameObjectField : ExpandableInspectorField<GameObject>
 	{
 		protected override int Length { get { return components.Count + 4; } } // 4: active, name, tag, layer
 
-		private string currentTag = null;
+		private Action<bool> isActiveSetter;
+		private Action<string> nameSetter;
+		private Action<string> tagSetter;
 
-		private Getter isActiveGetter, nameGetter, tagGetter;
-		private Setter isActiveSetter, nameSetter, tagSetter;
+		private Func<bool> isActiveGetter;
+		private Func<string> nameGetter;
+		private Func<string> tagGetter;
 		private PropertyInfo layerProp;
 
 		private readonly List<Component> components = new List<Component>( 8 );
@@ -29,42 +31,24 @@ namespace RuntimeInspectorNamespace
 		{
 			base.Initialize();
 
-			isActiveGetter = () => ( (GameObject) Value ).activeSelf;
-			isActiveSetter = ( value ) => ( (GameObject) Value ).SetActive( (bool) value );
+			isActiveGetter = () => Value.activeSelf;
+			isActiveSetter = value => Value.SetActive( value );
 
-			nameGetter = () => ( (GameObject) Value ).name;
-			nameSetter = ( value ) =>
+			nameGetter = () => Value.name;
+			nameSetter = value =>
 			{
-				( (GameObject) Value ).name = (string) value;
+				Value.name = value;
 				NameRaw = Value.GetNameWithType();
 
 				RuntimeHierarchy hierarchy = Inspector.ConnectedHierarchy;
 				if( hierarchy )
-					hierarchy.RefreshNameOf( ( (GameObject) Value ).transform );
+					hierarchy.RefreshNameOf( Value.transform );
 			};
 
-			tagGetter = () =>
-			{
-				GameObject go = (GameObject) Value;
-				if( !go.CompareTag( currentTag ) )
-					currentTag = go.tag;
-
-				return currentTag;
-			};
-			tagSetter = ( value ) => ( (GameObject) Value ).tag = (string) value;
+			tagGetter = () => Value.tag;
+			tagSetter = value => Value.tag = value;
 
 			layerProp = typeof( GameObject ).GetProperty( "layer" );
-		}
-
-		public override bool SupportsType( Type type )
-		{
-			return type == typeof( GameObject );
-		}
-
-		protected override void OnBound( MemberInfo variable )
-		{
-			base.OnBound( variable );
-			currentTag = ( (GameObject) Value ).tag;
 		}
 
 		protected override void OnUnbound()
@@ -81,8 +65,8 @@ namespace RuntimeInspectorNamespace
 			for( int i = 0; i < elements.Count; i++ )
 			{
 				// Don't keep track of non-expandable drawers' or destroyed components' expanded states
-				if( elements[i] is ExpandableInspectorField && ( elements[i].Value as Object ) )
-					componentsExpandedStates.Add( ( (ExpandableInspectorField) elements[i] ).IsExpanded );
+				if( elements[i] is IExpandableInspectorField )
+					componentsExpandedStates.Add( ( (IExpandableInspectorField) elements[i] ).IsExpanded );
 			}
 
 			base.ClearElements();
@@ -93,16 +77,16 @@ namespace RuntimeInspectorNamespace
 			if( components.Count == 0 )
 				return;
 
-			CreateDrawer( typeof( bool ), "Is Active", isActiveGetter, isActiveSetter );
-			StringField nameField = CreateDrawer( typeof( string ), "Name", nameGetter, nameSetter ) as StringField;
-			StringField tagField = CreateDrawer( typeof( string ), "Tag", tagGetter, tagSetter ) as StringField;
-			CreateDrawerForVariable( layerProp, "Layer" );
+			CreateDrawer<bool>( typeof( bool ), "Is Active", isActiveGetter, isActiveSetter );
+			StringField nameField = CreateDrawer<string>( typeof( string ), "Name", nameGetter, nameSetter ) as StringField;
+			StringField tagField = CreateDrawer<string>( typeof( string ), "Tag", tagGetter, tagSetter ) as StringField;
+			CreateDrawerForVariable<int>( layerProp, "Layer" );
 
 			for( int i = 0, j = 0; i < components.Count; i++ )
 			{
-				InspectorField componentDrawer = CreateDrawerForComponent( components[i] );
-				if( componentDrawer as ExpandableInspectorField && j < componentsExpandedStates.Count && componentsExpandedStates[j++] )
-					( (ExpandableInspectorField) componentDrawer ).IsExpanded = true;
+				InspectorField<Component> componentDrawer = CreateDrawerForComponent( components[i] );
+				if( componentDrawer is IExpandableInspectorField && j < componentsExpandedStates.Count && componentsExpandedStates[j++] )
+					( (IExpandableInspectorField) componentDrawer ).IsExpanded = true;
 			}
 
 			if( nameField )
@@ -216,12 +200,12 @@ namespace RuntimeInspectorNamespace
 		}
 
 		[UnityEngine.Scripting.Preserve] // This method is bound to removeComponentMethod
-		private static void RemoveComponentButtonClicked( ExpandableInspectorField componentDrawer )
+		private static void RemoveComponentButtonClicked( InspectorField<Component> componentDrawer )
 		{
 			if( !componentDrawer || !componentDrawer.Inspector )
 				return;
 
-			Component component = componentDrawer.Value as Component;
+			Component component = componentDrawer.Value;
 			if( component && !( component is Transform ) )
 				componentDrawer.StartCoroutine( RemoveComponentCoroutine( component, componentDrawer.Inspector ) );
 		}

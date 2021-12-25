@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
-	public class Vector2Field : InspectorField
+	public class Vector2Field : InspectorField<Vector2>
 	{
 #pragma warning disable 0649
 		[SerializeField]
@@ -57,55 +57,45 @@ namespace RuntimeInspectorNamespace
 			base.OnBound( variable );
 
 #if UNITY_2017_2_OR_NEWER
-			isVector2Int = BoundVariableType == typeof( Vector2Int );
+			isVector2Int = m_boundVariableType == typeof( Vector2Int );
 			if( isVector2Int )
 			{
-				Vector2Int val = (Vector2Int) Value;
-				inputX.Text = val.x.ToString( RuntimeInspectorUtils.numberFormat );
-				inputY.Text = val.y.ToString( RuntimeInspectorUtils.numberFormat );
+				inputX.Text = ( (int) Value.x ).ToString( RuntimeInspectorUtils.numberFormat );
+				inputY.Text = ( (int) Value.y ).ToString( RuntimeInspectorUtils.numberFormat );
 			}
 			else
 #endif
 			{
-				Vector2 val = (Vector2) Value;
-				inputX.Text = val.x.ToString( RuntimeInspectorUtils.numberFormat );
-				inputY.Text = val.y.ToString( RuntimeInspectorUtils.numberFormat );
+				inputX.Text = Value.x.ToString( RuntimeInspectorUtils.numberFormat );
+				inputY.Text = Value.y.ToString( RuntimeInspectorUtils.numberFormat );
 			}
 		}
 
 		private bool OnValueChanged( BoundInputField source, string input )
 		{
+			bool couldParse;
+			float value;
+
 #if UNITY_2017_2_OR_NEWER
 			if( isVector2Int )
 			{
-				int value;
-				if( int.TryParse( input, NumberStyles.Integer, RuntimeInspectorUtils.numberFormat, out value ) )
-				{
-					Vector2Int val = (Vector2Int) Value;
-					if( source == inputX )
-						val.x = value;
-					else
-						val.y = value;
-
-					Value = val;
-					return true;
-				}
+					couldParse = int.TryParse( input, NumberStyles.Integer, RuntimeInspectorUtils.numberFormat, out int intval );
+					value = intval;
 			}
 			else
 #endif
-			{
-				float value;
-				if( float.TryParse( input, NumberStyles.Float, RuntimeInspectorUtils.numberFormat, out value ) )
-				{
-					Vector2 val = (Vector2) Value;
-					if( source == inputX )
-						val.x = value;
-					else
-						val.y = value;
+			couldParse = float.TryParse( input, NumberStyles.Float, RuntimeInspectorUtils.numberFormat, out value );
 
-					Value = val;
-					return true;
-				}
+			if( couldParse )
+			{
+				Vector2 val = Value;
+				if( source == inputX )
+					val.x = value;
+				else
+					val.y = value;
+
+				Value = val;
+				return true;
 			}
 
 			return false;
@@ -140,29 +130,24 @@ namespace RuntimeInspectorNamespace
 
 		public override void Refresh()
 		{
+			Vector2 prevVal = Value;
+			base.Refresh();
+
 #if UNITY_2017_2_OR_NEWER
 			if( isVector2Int )
 			{
-				Vector2Int prevVal = (Vector2Int) Value;
-				base.Refresh();
-				Vector2Int val = (Vector2Int) Value;
-
-				if( val.x != prevVal.x )
-					inputX.Text = val.x.ToString( RuntimeInspectorUtils.numberFormat );
-				if( val.y != prevVal.y )
-					inputY.Text = val.y.ToString( RuntimeInspectorUtils.numberFormat );
+				if( Value.x != prevVal.x )
+					inputX.Text = ( (int) Value.x ).ToString( RuntimeInspectorUtils.numberFormat );
+				if( Value.y != prevVal.y )
+					inputY.Text = ( (int) Value.y ).ToString( RuntimeInspectorUtils.numberFormat );
 			}
 			else
 #endif
 			{
-				Vector2 prevVal = (Vector2) Value;
-				base.Refresh();
-				Vector2 val = (Vector2) Value;
-
-				if( val.x != prevVal.x )
-					inputX.Text = val.x.ToString( RuntimeInspectorUtils.numberFormat );
-				if( val.y != prevVal.y )
-					inputY.Text = val.y.ToString( RuntimeInspectorUtils.numberFormat );
+				if( Value.x != prevVal.x )
+					inputX.Text = Value.x.ToString( RuntimeInspectorUtils.numberFormat );
+				if( Value.y != prevVal.y )
+					inputY.Text = Value.y.ToString( RuntimeInspectorUtils.numberFormat );
 			}
 		}
 	}

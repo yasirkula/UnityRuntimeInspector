@@ -1,10 +1,9 @@
-﻿using System;
-using System.Reflection;
+﻿using System.Reflection;
 using UnityEngine;
 
 namespace RuntimeInspectorNamespace
 {
-	public class TransformField : ExpandableInspectorField
+    public class TransformField : ExpandableInspectorField<Transform>
 	{
 		protected override int Length { get { return 3; } } // localPosition, localEulerAngles, localScale
 
@@ -19,16 +18,11 @@ namespace RuntimeInspectorNamespace
 			scaleProp = typeof( Transform ).GetProperty( "localScale" );
 		}
 
-		public override bool SupportsType( Type type )
-		{
-			return type == typeof( Transform );
-		}
-
 		protected override void GenerateElements()
 		{
-			CreateDrawerForVariable( positionProp, "Position" );
-			CreateDrawerForVariable( rotationProp, "Rotation" );
-			CreateDrawerForVariable( scaleProp, "Scale" );
+			CreateDrawerForVariable<Vector3>( positionProp, "Position" );
+			CreateDrawerForVariable<Vector3>( rotationProp, "Rotation" );
+			CreateDrawerForVariable<Vector3>( scaleProp, "Scale" );
 		}
 	}
 }

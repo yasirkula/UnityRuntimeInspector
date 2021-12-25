@@ -1,11 +1,10 @@
-﻿using System;
-using System.Reflection;
+﻿using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
-	public class StringField : InspectorField
+	public class StringField : InspectorField<string>
 	{
 		public enum Mode { OnValueChange = 0, OnSubmit = 1 };
 
@@ -36,11 +35,6 @@ namespace RuntimeInspectorNamespace
 			input.OnValueChanged += OnValueChanged;
 			input.OnValueSubmitted += OnValueSubmitted;
 			input.DefaultEmptyValue = string.Empty;
-		}
-
-		public override bool SupportsType( Type type )
-		{
-			return type == typeof( string );
 		}
 
 		protected override void OnBound( MemberInfo variable )
@@ -110,7 +104,7 @@ namespace RuntimeInspectorNamespace
 			if( Value == null )
 				input.Text = string.Empty;
 			else
-				input.Text = (string) Value;
+				input.Text = Value;
 		}
 	}
 }

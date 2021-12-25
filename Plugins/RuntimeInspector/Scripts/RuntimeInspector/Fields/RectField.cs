@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
-	public class RectField : InspectorField
+	public class RectField : InspectorField<Rect>
 	{
 #pragma warning disable 0649
 		[SerializeField]
@@ -79,67 +79,44 @@ namespace RuntimeInspectorNamespace
 			base.OnBound( variable );
 
 #if UNITY_2017_2_OR_NEWER
-			isRectInt = BoundVariableType == typeof( RectInt );
-			if( isRectInt )
-			{
-				RectInt val = (RectInt) Value;
-				inputX.Text = val.x.ToString( RuntimeInspectorUtils.numberFormat );
-				inputY.Text = val.y.ToString( RuntimeInspectorUtils.numberFormat );
-				inputW.Text = val.width.ToString( RuntimeInspectorUtils.numberFormat );
-				inputH.Text = val.height.ToString( RuntimeInspectorUtils.numberFormat );
-			}
-			else
+			isRectInt = m_boundVariableType == typeof( RectInt );
 #endif
-			{
-				Rect val = (Rect) Value;
-				inputX.Text = val.x.ToString( RuntimeInspectorUtils.numberFormat );
-				inputY.Text = val.y.ToString( RuntimeInspectorUtils.numberFormat );
-				inputW.Text = val.width.ToString( RuntimeInspectorUtils.numberFormat );
-				inputH.Text = val.height.ToString( RuntimeInspectorUtils.numberFormat );
-			}
+
+			inputX.Text = Value.x.ToString( RuntimeInspectorUtils.numberFormat );
+			inputY.Text = Value.y.ToString( RuntimeInspectorUtils.numberFormat );
+			inputW.Text = Value.width.ToString( RuntimeInspectorUtils.numberFormat );
+			inputH.Text = Value.height.ToString( RuntimeInspectorUtils.numberFormat );
 		}
 
 		private bool OnValueChanged( BoundInputField source, string input )
 		{
+			bool success;
+			float value;
+
 #if UNITY_2017_2_OR_NEWER
 			if( isRectInt )
 			{
-				int value;
-				if( int.TryParse( input, NumberStyles.Integer, RuntimeInspectorUtils.numberFormat, out value ) )
-				{
-					RectInt val = (RectInt) Value;
-					if( source == inputX )
-						val.x = value;
-					else if( source == inputY )
-						val.y = value;
-					else if( source == inputW )
-						val.width = value;
-					else
-						val.height = value;
-
-					Value = val;
-					return true;
-				}
+					success = int.TryParse( input, NumberStyles.Integer, RuntimeInspectorUtils.numberFormat, out int intval );
+					value = intval;
 			}
 			else
 #endif
-			{
-				float value;
-				if( float.TryParse( input, NumberStyles.Float, RuntimeInspectorUtils.numberFormat, out value ) )
-				{
-					Rect val = (Rect) Value;
-					if( source == inputX )
-						val.x = value;
-					else if( source == inputY )
-						val.y = value;
-					else if( source == inputW )
-						val.width = value;
-					else
-						val.height = value;
+			success = float.TryParse( input, NumberStyles.Float, RuntimeInspectorUtils.numberFormat, out value );
 
-					Value = val;
-					return true;
-				}
+			if( success )
+			{
+				Rect val = Value;
+				if( source == inputX )
+					val.x = value;
+				else if( source == inputY )
+					val.y = value;
+				else if( source == inputW )
+					val.width = value;
+				else
+					val.height = value;
+
+				Value = val;
+				return true;
 			}
 
 			return false;
@@ -180,37 +157,32 @@ namespace RuntimeInspectorNamespace
 
 		public override void Refresh()
 		{
+				Rect prevVal = Value;
+				base.Refresh();
+
 #if UNITY_2017_2_OR_NEWER
 			if( isRectInt )
 			{
-				RectInt prevVal = (RectInt) Value;
-				base.Refresh();
-				RectInt val = (RectInt) Value;
-
-				if( val.x != prevVal.x )
-					inputX.Text = val.x.ToString( RuntimeInspectorUtils.numberFormat );
-				if( val.y != prevVal.y )
-					inputY.Text = val.y.ToString( RuntimeInspectorUtils.numberFormat );
-				if( val.width != prevVal.width )
-					inputW.Text = val.width.ToString( RuntimeInspectorUtils.numberFormat );
-				if( val.height != prevVal.height )
-					inputH.Text = val.height.ToString( RuntimeInspectorUtils.numberFormat );
+				if( Value.x != prevVal.x )
+					inputX.Text = ( (int) Value.x ).ToString( RuntimeInspectorUtils.numberFormat );
+				if( Value.y != prevVal.y )
+					inputY.Text = ( (int) Value.y ).ToString( RuntimeInspectorUtils.numberFormat );
+				if( Value.width != prevVal.width )
+					inputW.Text = ( (int) Value.width ).ToString( RuntimeInspectorUtils.numberFormat );
+				if( Value.height != prevVal.height )
+					inputH.Text = ( (int) Value.height ).ToString( RuntimeInspectorUtils.numberFormat );
 			}
 			else
 #endif
 			{
-				Rect prevVal = (Rect) Value;
-				base.Refresh();
-				Rect val = (Rect) Value;
-
-				if( val.x != prevVal.x )
-					inputX.Text = val.x.ToString( RuntimeInspectorUtils.numberFormat );
-				if( val.y != prevVal.y )
-					inputY.Text = val.y.ToString( RuntimeInspectorUtils.numberFormat );
-				if( val.width != prevVal.width )
-					inputW.Text = val.width.ToString( RuntimeInspectorUtils.numberFormat );
-				if( val.height != prevVal.height )
-					inputH.Text = val.height.ToString( RuntimeInspectorUtils.numberFormat );
+				if( Value.x != prevVal.x )
+					inputX.Text = Value.x.ToString( RuntimeInspectorUtils.numberFormat );
+				if( Value.y != prevVal.y )
+					inputY.Text = Value.y.ToString( RuntimeInspectorUtils.numberFormat );
+				if( Value.width != prevVal.width )
+					inputW.Text = Value.width.ToString( RuntimeInspectorUtils.numberFormat );
+				if( Value.height != prevVal.height )
+					inputH.Text = Value.height.ToString( RuntimeInspectorUtils.numberFormat );
 			}
 		}
 	}

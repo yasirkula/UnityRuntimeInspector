@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace RuntimeInspectorNamespace
 {
-	public class BoundsField : InspectorField
+	public class BoundsField : InspectorField<Bounds>
 	{
 #pragma warning disable 0649
 		[SerializeField]
@@ -13,12 +13,12 @@ namespace RuntimeInspectorNamespace
 		private Vector3Field inputExtents;
 #pragma warning restore 0649
 
-		private MemberInfo centerVariable;
-		private MemberInfo extentsVariable;
+		private PropertyInfo centerVariable;
+		private PropertyInfo extentsVariable;
 
 #if UNITY_2017_2_OR_NEWER
-		private MemberInfo intCenterVariable;
-		private MemberInfo intSizeVariable;
+		private PropertyInfo intCenterVariable;
+		private PropertyInfo intSizeVariable;
 #endif
 
 		protected override float HeightMultiplier { get { return 3f; } }
@@ -49,7 +49,7 @@ namespace RuntimeInspectorNamespace
 			base.OnBound( variable );
 
 #if UNITY_2017_2_OR_NEWER
-			if( BoundVariableType == typeof( BoundsInt ) )
+			if( m_boundVariableType == typeof( BoundsInt ) )
 			{
 				inputCenter.BindTo( this, intCenterVariable, "Center:" );
 				inputExtents.BindTo( this, intSizeVariable, "Size:" );
@@ -65,7 +65,6 @@ namespace RuntimeInspectorNamespace
 		protected override void OnInspectorChanged()
 		{
 			base.OnInspectorChanged();
-
 			inputCenter.Inspector = Inspector;
 			inputExtents.Inspector = Inspector;
 		}
@@ -73,7 +72,6 @@ namespace RuntimeInspectorNamespace
 		protected override void OnSkinChanged()
 		{
 			base.OnSkinChanged();
-
 			inputCenter.Skin = Skin;
 			inputExtents.Skin = Skin;
 		}
@@ -81,7 +79,6 @@ namespace RuntimeInspectorNamespace
 		protected override void OnDepthChanged()
 		{
 			base.OnDepthChanged();
-
 			inputCenter.Depth = Depth + 1;
 			inputExtents.Depth = Depth + 1;
 		}
@@ -89,7 +86,6 @@ namespace RuntimeInspectorNamespace
 		public override void Refresh()
 		{
 			base.Refresh();
-
 			inputCenter.Refresh();
 			inputExtents.Refresh();
 		}

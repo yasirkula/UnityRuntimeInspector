@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
-	public class ObjectField : ExpandableInspectorField
+	public class ObjectField : ExpandableInspectorField<object>
 	{
 #pragma warning disable 0649
 		[SerializeField]
@@ -45,11 +45,6 @@ namespace RuntimeInspectorNamespace
 		{
 			base.Initialize();
 			initializeObjectButton.onClick.AddListener( InitializeObject );
-		}
-
-		public override bool SupportsType( Type type )
-		{
-			return true;
 		}
 
 		protected override void OnBound( MemberInfo variable )
@@ -104,14 +99,16 @@ namespace RuntimeInspectorNamespace
 			if( variables == null || variables.Length == 0 )
 			{
 				foreach( MemberInfo variable in Inspector.GetExposedVariablesForType( Value.GetType() ) )
-					CreateDrawerForVariable( variable );
+				{
+						CreateDrawerForVariable<object>( variable );
+				}
 			}
 			else
 			{
 				foreach( MemberInfo variable in Inspector.GetExposedVariablesForType( Value.GetType() ) )
 				{
 					if( Array.IndexOf( variables, variable.Name ) >= 0 )
-						CreateDrawerForVariable( variable );
+						CreateDrawerForVariable<object>( variable );
 				}
 			}
 		}
@@ -121,14 +118,14 @@ namespace RuntimeInspectorNamespace
 			if( variablesToExclude == null || variablesToExclude.Length == 0 )
 			{
 				foreach( MemberInfo variable in Inspector.GetExposedVariablesForType( Value.GetType() ) )
-					CreateDrawerForVariable( variable );
+					CreateDrawerForVariable<object>( variable );
 			}
 			else
 			{
 				foreach( MemberInfo variable in Inspector.GetExposedVariablesForType( Value.GetType() ) )
 				{
 					if( Array.IndexOf( variablesToExclude, variable.Name ) < 0 )
-						CreateDrawerForVariable( variable );
+						CreateDrawerForVariable<object>( variable );
 				}
 			}
 		}
@@ -136,23 +133,23 @@ namespace RuntimeInspectorNamespace
 		private bool CanInitializeNewObject()
 		{
 #if UNITY_EDITOR || !NETFX_CORE
-			if( BoundVariableType.IsAbstract || BoundVariableType.IsInterface )
+			if( m_boundVariableType.IsAbstract || m_boundVariableType.IsInterface )
 #else
 			if( BoundVariableType.GetTypeInfo().IsAbstract || BoundVariableType.GetTypeInfo().IsInterface )
 #endif
 				return false;
 
-			if( typeof( ScriptableObject ).IsAssignableFrom( BoundVariableType ) )
+			if( typeof( ScriptableObject ).IsAssignableFrom( m_boundVariableType ) )
 				return true;
 
-			if( typeof( UnityEngine.Object ).IsAssignableFrom( BoundVariableType ) )
+			if( typeof( UnityEngine.Object ).IsAssignableFrom( m_boundVariableType ) )
 				return false;
 
-			if( BoundVariableType.IsArray )
+			if( m_boundVariableType.IsArray )
 				return false;
 
 #if UNITY_EDITOR || !NETFX_CORE
-			if( BoundVariableType.IsGenericType && BoundVariableType.GetGenericTypeDefinition() == typeof( List<> ) )
+			if( m_boundVariableType.IsGenericType && m_boundVariableType.GetGenericTypeDefinition() == typeof( List<> ) )
 #else
 			if( BoundVariableType.GetTypeInfo().IsGenericType && BoundVariableType.GetGenericTypeDefinition() == typeof( List<> ) )
 #endif
@@ -165,7 +162,7 @@ namespace RuntimeInspectorNamespace
 		{
 			if( CanInitializeNewObject() )
 			{
-				Value = BoundVariableType.Instantiate();
+				Value = m_boundVariableType.Instantiate();
 
 				RegenerateElements();
 				IsExpanded = true;

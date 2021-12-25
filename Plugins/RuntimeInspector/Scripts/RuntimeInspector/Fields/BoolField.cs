@@ -1,10 +1,9 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
-	public class BoolField : InspectorField
+    public class BoolField : InspectorField<bool>
 	{
 #pragma warning disable 0649
 		[SerializeField]
@@ -18,11 +17,6 @@ namespace RuntimeInspectorNamespace
 		{
 			base.Initialize();
 			input.onValueChanged.AddListener( OnValueChanged );
-		}
-
-		public override bool SupportsType( Type type )
-		{
-			return type == typeof( bool );
 		}
 
 		private void OnValueChanged( bool input )
@@ -46,7 +40,7 @@ namespace RuntimeInspectorNamespace
 		public override void Refresh()
 		{
 			base.Refresh();
-			input.isOn = (bool) Value;
+			input.isOn = Value;
 		}
 	}
 }

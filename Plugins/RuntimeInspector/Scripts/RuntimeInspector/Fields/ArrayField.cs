@@ -10,7 +10,7 @@ using Object = UnityEngine.Object;
 
 namespace RuntimeInspectorNamespace
 {
-	public class ArrayField : ExpandableInspectorField, IDropHandler
+	public class ArrayField : ExpandableInspectorField<IList>, IDropHandler
 	{
 #pragma warning disable 0649
 		[SerializeField]
@@ -32,20 +32,9 @@ namespace RuntimeInspectorNamespace
 		{
 			get
 			{
-				if( isArray )
-				{
-					Array array = (Array) Value;
-					if( array != null )
-						return array.Length;
-				}
-				else
-				{
-					IList list = (IList) Value;
-					if( list != null )
-						return list.Count;
-				}
-
-				return 0;
+				if( Value == null )
+						return 0;
+				return Value.Count;
 			}
 		}
 
@@ -74,8 +63,8 @@ namespace RuntimeInspectorNamespace
 		{
 			base.OnBound( variable );
 
-			isArray = BoundVariableType.IsArray;
-			elementType = isArray ? BoundVariableType.GetElementType() : BoundVariableType.GetGenericArguments()[0];
+			isArray = m_boundVariableType.IsArray;
+			elementType = isArray ? m_boundVariableType.GetElementType() : m_boundVariableType.GetGenericArguments()[0];
 		}
 
 		protected override void OnUnbound()
@@ -110,7 +99,7 @@ namespace RuntimeInspectorNamespace
 		{
 			elementsExpandedStates.Clear();
 			for( int i = 0; i < elements.Count; i++ )
-				elementsExpandedStates.Add( ( elements[i] is ExpandableInspectorField ) ? ( (ExpandableInspectorField) elements[i] ).IsExpanded : false );
+				elementsExpandedStates.Add( ( elements[i] is IExpandableInspectorField ) ? ( (IExpandableInspectorField) elements[i] ).IsExpanded : false );
 
 			base.ClearElements();
 		}
@@ -120,53 +109,26 @@ namespace RuntimeInspectorNamespace
 			if( Value == null )
 				return;
 
-			if( isArray )
+			for( int i = 0; i < Value.Count; i++ )
 			{
-				Array array = (Array) Value;
-				for( int i = 0; i < array.Length; i++ )
-				{
-					InspectorField elementDrawer = Inspector.CreateDrawerForType( elementType, drawArea, Depth + 1 );
-					if( elementDrawer == null )
-						break;
-
-					int j = i;
-					elementDrawer.BindTo( elementType, string.Empty, () => ( (Array) Value ).GetValue( j ), ( value ) =>
-					{
-						Array _array = (Array) Value;
-						_array.SetValue( value, j );
-						Value = _array;
-					} );
-
-					if( i < elementsExpandedStates.Count && elementsExpandedStates[i] && elementDrawer is ExpandableInspectorField )
-						( (ExpandableInspectorField) elementDrawer ).IsExpanded = true;
-
-					elementDrawer.NameRaw = Inspector.ArrayIndicesStartAtOne ? ( ( i + 1 ) + ":" ) : ( i + ":" );
-					elements.Add( elementDrawer );
-				}
-			}
-			else
-			{
-				IList list = (IList) Value;
-				for( int i = 0; i < list.Count; i++ )
-				{
-					InspectorField elementDrawer = Inspector.CreateDrawerForType( elementType, drawArea, Depth + 1 );
-					if( elementDrawer == null )
-						break;
+				InspectorField<object> elementDrawer = Inspector.CreateDrawerForType<object>( elementType, drawArea, Depth + 1 );
+				if( elementDrawer == null )
+					break;
 
 					int j = i;
 					string variableName = Inspector.ArrayIndicesStartAtOne ? ( ( i + 1 ) + ":" ) : ( i + ":" );
-					elementDrawer.BindTo( elementType, variableName, () => ( (IList) Value )[j], ( value ) =>
+					elementDrawer.BindTo( elementType, variableName, () => Value[j], ( value ) =>
 					{
-						IList _list = (IList) Value;
+						IList _list = Value;
 						_list[j] = value;
 						Value = _list;
 					} );
 
-					if( i < elementsExpandedStates.Count && elementsExpandedStates[i] && elementDrawer is ExpandableInspectorField )
-						( (ExpandableInspectorField) elementDrawer ).IsExpanded = true;
+				if( i < elementsExpandedStates.Count && elementsExpandedStates[i] && elementDrawer is IExpandableInspectorField )
+					( (IExpandableInspectorField) elementDrawer ).IsExpanded = true;
 
-					elements.Add( elementDrawer );
-				}
+				elementDrawer.NameRaw = Inspector.ArrayIndicesStartAtOne ? ( ( i + 1 ) + ":" ) : ( i + ":" );
+				elements.Add( elementDrawer );
 			}
 
 			sizeInput.Text = Length.ToString( RuntimeInspectorUtils.numberFormat );
@@ -182,22 +144,10 @@ namespace RuntimeInspectorNamespace
 				if( !OnSizeChanged( null, ( prevLength + assignableObjects.Length ).ToString( RuntimeInspectorUtils.numberFormat ) ) )
 					return;
 
-				if( isArray )
-				{
-					Array _array = (Array) Value;
-					for( int i = 0; i < assignableObjects.Length; i++ )
-						_array.SetValue( assignableObjects[i], prevLength + i );
-
-					Value = _array;
-				}
-				else
-				{
-					IList _list = (IList) Value;
-					for( int i = 0; i < assignableObjects.Length; i++ )
-						_list[prevLength + i] = assignableObjects[i];
-
-					Value = _list;
-				}
+				IList _list = Value;
+				for( int i = 0; i < assignableObjects.Length; i++ )
+					_list[prevLength + i] = assignableObjects[i];
+				Value = _list;
 
 				if( !IsExpanded )
 					IsExpanded = true;
@@ -224,7 +174,7 @@ namespace RuntimeInspectorNamespace
 					if( isArray )
 					{
 						Array array = (Array) Value;
-						Array newArray = Array.CreateInstance( BoundVariableType.GetElementType(), value );
+						Array newArray = Array.CreateInstance( m_boundVariableType.GetElementType(), value );
 						if( value > currLength )
 						{
 							if( array != null )
@@ -244,12 +194,12 @@ namespace RuntimeInspectorNamespace
 					}
 					else
 					{
-						IList list = (IList) Value;
+						IList list = Value;
 						int deltaLength = value - currLength;
 						if( deltaLength > 0 )
 						{
 							if( list == null )
-								list = (IList) Activator.CreateInstance( typeof( List<> ).MakeGenericType( BoundVariableType.GetGenericArguments()[0] ) );
+								list = (IList) Activator.CreateInstance( typeof( List<> ).MakeGenericType( m_boundVariableType.GetGenericArguments()[0] ) );
 
 							for( int i = 0; i < deltaLength; i++ )
 								list.Add( GetTemplateElement( list ) );
@@ -282,7 +232,7 @@ namespace RuntimeInspectorNamespace
 				list = (IList) value;
 
 			object template = null;
-			Type elementType = isArray ? BoundVariableType.GetElementType() : BoundVariableType.GetGenericArguments()[0];
+			Type elementType = isArray ? m_boundVariableType.GetElementType() : m_boundVariableType.GetGenericArguments()[0];
 #if UNITY_EDITOR || !NETFX_CORE
 			if( elementType.IsValueType )
 #else

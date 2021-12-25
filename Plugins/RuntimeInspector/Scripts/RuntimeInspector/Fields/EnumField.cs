@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
-	public class EnumField : InspectorField
+	public class EnumField : InspectorField<object>
 	{
 #pragma warning disable 0649
 		[SerializeField]
@@ -67,10 +67,10 @@ namespace RuntimeInspectorNamespace
 		{
 			base.OnBound( variable );
 
-			if( !enumNames.TryGetValue( BoundVariableType, out currEnumNames ) || !enumValues.TryGetValue( BoundVariableType, out currEnumValues ) )
+			if( !enumNames.TryGetValue( m_boundVariableType, out currEnumNames ) || !enumValues.TryGetValue( m_boundVariableType, out currEnumValues ) )
 			{
-				string[] names = Enum.GetNames( BoundVariableType );
-				Array values = Enum.GetValues( BoundVariableType );
+				string[] names = Enum.GetNames( m_boundVariableType );
+				Array values = Enum.GetValues( m_boundVariableType );
 
 				currEnumNames = new List<string>( names.Length );
 				currEnumValues = new List<object>( names.Length );
@@ -81,8 +81,8 @@ namespace RuntimeInspectorNamespace
 					currEnumValues.Add( values.GetValue( i ) );
 				}
 
-				enumNames[BoundVariableType] = currEnumNames;
-				enumValues[BoundVariableType] = currEnumValues;
+				enumNames[m_boundVariableType] = currEnumNames;
+				enumValues[m_boundVariableType] = currEnumValues;
 			}
 
 			input.ClearOptions();

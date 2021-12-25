@@ -6,11 +6,8 @@ using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
-	public abstract class InspectorField : MonoBehaviour, ITooltipContent
+	public abstract class IInspectorField : MonoBehaviour, ITooltipContent
 	{
-		public delegate object Getter();
-		public delegate void Setter( object value );
-
 #pragma warning disable 0649
 		[SerializeField]
 		protected LayoutElement layoutElement;
@@ -57,19 +54,7 @@ namespace RuntimeInspectorNamespace
 			}
 		}
 
-		private Type m_boundVariableType;
-		protected Type BoundVariableType { get { return m_boundVariableType; } }
-
-		private object m_value;
-		public object Value
-		{
-			get { return m_value; }
-			protected set
-			{
-				try { setter( value ); m_value = value; }
-				catch { }
-			}
-		}
+		protected Type m_boundVariableType;
 
 		private int m_depth = -1;
 		public int Depth
@@ -107,9 +92,6 @@ namespace RuntimeInspectorNamespace
 
 		protected virtual float HeightMultiplier { get { return 1f; } }
 
-		private Getter getter;
-		private Setter setter;
-
 		public virtual void Initialize()
 		{
 			if( visibleArea )
@@ -121,82 +103,6 @@ namespace RuntimeInspectorNamespace
 		public virtual bool CanBindTo( Type type, MemberInfo variable )
 		{
 			return true;
-		}
-
-		public void BindTo( InspectorField parent, MemberInfo variable, string variableName = null )
-		{
-			if( variable is FieldInfo )
-			{
-				FieldInfo field = (FieldInfo) variable;
-				if( variableName == null )
-					variableName = field.Name;
-
-#if UNITY_EDITOR || !NETFX_CORE
-				if( !parent.BoundVariableType.IsValueType )
-#else
-				if( !parent.BoundVariableType.GetTypeInfo().IsValueType )
-#endif
-					BindTo( field.FieldType, variableName, () => field.GetValue( parent.Value ), ( value ) => field.SetValue( parent.Value, value ), variable );
-				else
-					BindTo( field.FieldType, variableName, () => field.GetValue( parent.Value ), ( value ) =>
-					{
-						field.SetValue( parent.Value, value );
-						parent.Value = parent.Value;
-					}, variable );
-			}
-			else if( variable is PropertyInfo )
-			{
-				PropertyInfo property = (PropertyInfo) variable;
-				if( variableName == null )
-					variableName = property.Name;
-
-#if UNITY_EDITOR || !NETFX_CORE
-				if( !parent.BoundVariableType.IsValueType )
-#else
-				if( !parent.BoundVariableType.GetTypeInfo().IsValueType )
-#endif
-					BindTo( property.PropertyType, variableName, () => property.GetValue( parent.Value, null ), ( value ) => property.SetValue( parent.Value, value, null ), variable );
-				else
-					BindTo( property.PropertyType, variableName, () => property.GetValue( parent.Value, null ), ( value ) =>
-					{
-						property.SetValue( parent.Value, value, null );
-						parent.Value = parent.Value;
-					}, variable );
-			}
-			else
-				throw new ArgumentException( "Variable can either be a field or a property" );
-		}
-
-		public void BindTo( Type variableType, string variableName, Getter getter, Setter setter, MemberInfo variable = null )
-		{
-			m_boundVariableType = variableType;
-			Name = variableName;
-
-			this.getter = getter;
-			this.setter = setter;
-
-			OnBound( variable );
-		}
-
-		public void Unbind()
-		{
-			m_boundVariableType = null;
-
-			getter = null;
-			setter = null;
-
-			OnUnbound();
-			Inspector.PoolDrawer( this );
-		}
-
-		protected virtual void OnBound( MemberInfo variable )
-		{
-			RefreshValue();
-		}
-
-		protected virtual void OnUnbound()
-		{
-			m_value = null;
 		}
 
 		protected virtual void OnInspectorChanged()
@@ -242,7 +148,104 @@ namespace RuntimeInspectorNamespace
 				variableNameText.rectTransform.sizeDelta = new Vector2( -Skin.IndentAmount * Depth, 0f );
 		}
 
-		public virtual void Refresh()
+		public abstract void Refresh();
+		public abstract void Unbind();
+	}
+
+	public abstract class InspectorField<T> : IInspectorField
+	{
+		private T m_value;
+		public T Value
+		{
+			get { return m_value; }
+			protected set
+			{
+				// try { setter( value ); m_value = value; }
+				// catch { }
+				setter( value ); m_value = value;
+			}
+		}
+
+		private Func<T> getter;
+		private Action<T> setter;
+
+		public override bool SupportsType( Type type )
+		{
+			return typeof( T ).IsAssignableFrom( type );
+		}
+
+		public void BindTo<P>( InspectorField<P> parent, FieldInfo field, string variableName = null )
+		{
+			if( variableName == null )
+				variableName = field.Name;
+
+#if UNITY_EDITOR || !NETFX_CORE
+			if( !parent.m_boundVariableType.IsValueType )
+#else
+			if( !parent.BoundVariableType.GetTypeInfo().IsValueType )
+#endif
+				BindTo( field.FieldType, variableName, () => (T) field.GetValue(parent.Value), ( value ) => field.SetValue( parent.Value, value ), field );
+			else
+				BindTo( field.FieldType, variableName, () => (T) field.GetValue( parent.Value ), ( value ) =>
+				{
+					field.SetValue( parent.Value, value );
+					parent.Value = parent.Value;
+				}, field );
+		}
+
+		public void BindTo<P>( InspectorField<P> parent, PropertyInfo property, string variableName = null )
+		{
+			if( variableName == null )
+				variableName = property.Name;
+
+#if UNITY_EDITOR || !NETFX_CORE
+			if( !parent.m_boundVariableType.IsValueType )
+#else
+			if( !parent.BoundVariableType.GetTypeInfo().IsValueType )
+#endif
+				BindTo( property.PropertyType, variableName, () => (T) property.GetValue( parent.Value, null ), ( value ) => property.SetValue( parent.Value, value, null ), property );
+			else
+				BindTo( property.PropertyType, variableName, () => (T) property.GetValue( parent.Value, null ), ( value ) =>
+				{
+					property.SetValue( parent.Value, value, null );
+					parent.Value = parent.Value;
+				}, property );
+		}
+
+		public void BindTo( Type variableType, string variableName, Func<T> getter, Action<T> setter, MemberInfo variable = null )
+		{
+			m_boundVariableType = variableType;
+			Name = variableName;
+
+			this.getter = getter;
+			this.setter = setter;
+
+			OnBound( variable );
+		}
+
+		public override void Unbind()
+		{
+			m_boundVariableType = null;
+
+			getter = null;
+			setter = null;
+
+			OnUnbound();
+			Inspector.PoolDrawer( this );
+		}
+
+		protected virtual void OnBound( MemberInfo variable )
+		{
+			RefreshValue();
+		}
+
+		protected virtual void OnUnbound()
+		{
+			m_value = default(T);
+		}
+
+
+		public override void Refresh()
 		{
 			RefreshValue();
 		}
@@ -256,18 +259,24 @@ namespace RuntimeInspectorNamespace
 			catch
 			{
 #if UNITY_EDITOR || !NETFX_CORE
-				if( BoundVariableType.IsValueType )
+				if( m_boundVariableType.IsValueType )
 #else
-				if( BoundVariableType.GetTypeInfo().IsValueType )
+				if( m_boundVariableType.GetTypeInfo().IsValueType )
 #endif
-					m_value = Activator.CreateInstance( BoundVariableType );
+					m_value = (T) Activator.CreateInstance( m_boundVariableType );
 				else
-					m_value = null;
+					m_value = default(T);
 			}
 		}
 	}
 
-	public abstract class ExpandableInspectorField : InspectorField
+	public interface IExpandableInspectorField
+	{
+		public bool IsExpanded { get; set; }
+		public RuntimeInspector.HeaderVisibility HeaderVisibility { get; set; }
+	}
+
+	public abstract class ExpandableInspectorField<T> : InspectorField<T>, IExpandableInspectorField
 	{
 #pragma warning disable 0649
 		[SerializeField]
@@ -284,7 +293,7 @@ namespace RuntimeInspectorNamespace
 		private Image expandArrow; // Expand Arrow's sprite should look right at 0 rotation
 #pragma warning restore 0649
 
-		protected readonly List<InspectorField> elements = new List<InspectorField>( 8 );
+		protected readonly List<IInspectorField> elements = new List<IInspectorField>( 8 );
 		protected readonly List<ExposedMethodField> exposedMethods = new List<ExposedMethodField>();
 
 		protected virtual int Length { get { return elements.Count; } }
@@ -447,10 +456,10 @@ namespace RuntimeInspectorNamespace
 
 		private void GenerateExposedMethodButtons()
 		{
-			if( Inspector.ShowRemoveComponentButton && typeof( Component ).IsAssignableFrom( BoundVariableType ) && !typeof( Transform ).IsAssignableFrom( BoundVariableType ) )
+			if( Inspector.ShowRemoveComponentButton && typeof( Component ).IsAssignableFrom( m_boundVariableType ) && !typeof( Transform ).IsAssignableFrom( m_boundVariableType ) )
 				CreateExposedMethodButton( GameObjectField.removeComponentMethod, () => this, ( value ) => { } );
 
-			ExposedMethod[] methods = BoundVariableType.GetExposedMethods();
+			ExposedMethod[] methods = m_boundVariableType.GetExposedMethods();
 			if( methods != null )
 			{
 				bool isInitialized = Value != null && !Value.Equals( null );
@@ -458,7 +467,7 @@ namespace RuntimeInspectorNamespace
 				{
 					ExposedMethod method = methods[i];
 					if( ( isInitialized && method.VisibleWhenInitialized ) || ( !isInitialized && method.VisibleWhenUninitialized ) )
-						CreateExposedMethodButton( method, () => Value, ( value ) => Value = value );
+						CreateExposedMethodButton( method, () => Value, ( value ) => Value = (T) value );
 				}
 			}
 		}
@@ -492,9 +501,9 @@ namespace RuntimeInspectorNamespace
 			}
 		}
 
-		public InspectorField CreateDrawerForComponent( Component component, string variableName = null )
+		public InspectorField<Component> CreateDrawerForComponent( Component component, string variableName = null )
 		{
-			InspectorField variableDrawer = Inspector.CreateDrawerForType( component.GetType(), drawArea, Depth + 1, false );
+			InspectorField<Component> variableDrawer = Inspector.CreateDrawerForType<Component>( component.GetType(), drawArea, Depth + 1, false );
 			if( variableDrawer != null )
 			{
 				if( variableName == null )
@@ -509,10 +518,18 @@ namespace RuntimeInspectorNamespace
 			return variableDrawer;
 		}
 
-		public InspectorField CreateDrawerForVariable( MemberInfo variable, string variableName = null )
+		public InspectorField<U> CreateDrawerForVariable<U>( MemberInfo variable, string variableName = null )
 		{
-			Type variableType = variable is FieldInfo ? ( (FieldInfo) variable ).FieldType : ( (PropertyInfo) variable ).PropertyType;
-			InspectorField variableDrawer = Inspector.CreateDrawerForType( variableType, drawArea, Depth + 1, true, variable );
+				if( variable is FieldInfo field )
+						return CreateDrawerForVariable<U>( field, variableName );
+				if( variable is PropertyInfo property )
+						return CreateDrawerForVariable<U>( property, variableName );
+				throw new ArgumentException( "Variable can either be a field or a property" );
+		}
+
+		public InspectorField<U> CreateDrawerForVariable<U>( FieldInfo variable, string variableName = null )
+		{
+			InspectorField<U> variableDrawer = Inspector.CreateDrawerForType<U>( variable.FieldType, drawArea, Depth + 1, true, variable );
 			if( variableDrawer != null )
 			{
 				variableDrawer.BindTo( this, variable, variableName == null ? null : string.Empty );
@@ -525,9 +542,24 @@ namespace RuntimeInspectorNamespace
 			return variableDrawer;
 		}
 
-		public InspectorField CreateDrawer( Type variableType, string variableName, Getter getter, Setter setter, bool drawObjectsAsFields = true )
+		public InspectorField<U> CreateDrawerForVariable<U>( PropertyInfo variable, string variableName = null )
 		{
-			InspectorField variableDrawer = Inspector.CreateDrawerForType( variableType, drawArea, Depth + 1, drawObjectsAsFields );
+			InspectorField<U> variableDrawer = Inspector.CreateDrawerForType<U>( variable.PropertyType, drawArea, Depth + 1, true, variable );
+			if( variableDrawer != null )
+			{
+				variableDrawer.BindTo( this, variable, variableName == null ? null : string.Empty );
+				if( variableName != null )
+					variableDrawer.NameRaw = variableName;
+
+				elements.Add( variableDrawer );
+			}
+
+			return variableDrawer;
+		}
+
+		public InspectorField<U> CreateDrawer<U>( Type variableType, string variableName, Func<U> getter, Action<U> setter, bool drawObjectsAsFields = true )
+		{
+			InspectorField<U> variableDrawer = Inspector.CreateDrawerForType<U>( variableType, drawArea, Depth + 1, drawObjectsAsFields );
 			if( variableDrawer != null )
 			{
 				variableDrawer.BindTo( variableType, variableName == null ? null : string.Empty, getter, setter );
@@ -540,9 +572,9 @@ namespace RuntimeInspectorNamespace
 			return variableDrawer;
 		}
 
-		public ExposedMethodField CreateExposedMethodButton( ExposedMethod method, Getter getter, Setter setter )
+		public ExposedMethodField CreateExposedMethodButton( ExposedMethod method, Func<object> getter, Action<object> setter )
 		{
-			ExposedMethodField methodDrawer = (ExposedMethodField) Inspector.CreateDrawerForType( typeof( ExposedMethod ), drawArea, Depth + 1, false );
+			ExposedMethodField methodDrawer = (ExposedMethodField) Inspector.CreateDrawerForType<object>( typeof( ExposedMethod ), drawArea, Depth + 1, false );
 			if( methodDrawer != null )
 			{
 				methodDrawer.BindTo( typeof( ExposedMethod ), string.Empty, getter, setter );

@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
-	public class ExposedMethodField : InspectorField
+	public class ExposedMethodField : InspectorField<object>
 	{
 #pragma warning disable 0649
 		[SerializeField]

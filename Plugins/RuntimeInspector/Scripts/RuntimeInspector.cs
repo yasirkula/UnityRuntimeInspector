@@ -163,8 +163,8 @@ namespace RuntimeInspectorNamespace
 				{
 					m_inspectedObjectHeaderVisibility = value;
 
-					if( currentDrawer != null && currentDrawer is ExpandableInspectorField )
-						( (ExpandableInspectorField) currentDrawer ).HeaderVisibility = m_inspectedObjectHeaderVisibility;
+					if( currentDrawer != null && currentDrawer is IExpandableInspectorField )
+						( (IExpandableInspectorField) currentDrawer ).HeaderVisibility = m_inspectedObjectHeaderVisibility;
 				}
 			}
 		}
@@ -207,16 +207,16 @@ namespace RuntimeInspectorNamespace
 
 		private bool initialized = false;
 
-		private readonly Dictionary<Type, InspectorField[]> typeToDrawers = new Dictionary<Type, InspectorField[]>( 89 );
-		private readonly Dictionary<Type, InspectorField[]> typeToReferenceDrawers = new Dictionary<Type, InspectorField[]>( 89 );
-		private readonly List<InspectorField> eligibleDrawers = new List<InspectorField>( 4 );
+		private readonly Dictionary<Type, IInspectorField[]> typeToDrawers = new Dictionary<Type, IInspectorField[]>( 89 );
+		private readonly Dictionary<Type, IInspectorField[]> typeToReferenceDrawers = new Dictionary<Type, IInspectorField[]>( 89 );
+		private readonly List<IInspectorField> eligibleDrawers = new List<IInspectorField>( 4 );
 
-		private static readonly Dictionary<Type, List<InspectorField>> drawersPool = new Dictionary<Type, List<InspectorField>>();
+		private static readonly Dictionary<Type, List<IInspectorField>> drawersPool = new Dictionary<Type, List<IInspectorField>>();
 
 		private readonly List<VariableSet> hiddenVariables = new List<VariableSet>( 32 );
 		private readonly List<VariableSet> exposedVariables = new List<VariableSet>( 32 );
 
-		private InspectorField currentDrawer = null;
+		private IInspectorField currentDrawer = null;
 		private bool inspectLock = false;
 		private bool isDirty = false;
 
@@ -423,25 +423,31 @@ namespace RuntimeInspectorNamespace
 				currentDrawer.Skin = Skin;
 		}
 
-		public void Inspect( object obj )
+		public void Inspect<T>( T obj )
 		{
 			if( !m_isLocked )
 				InspectInternal( obj );
 		}
 
-		internal void InspectInternal( object obj )
+		internal void InspectInternal<T>( T obj )
 		{
-			if( inspectLock )
-				return;
+			if( inspectLock || object.Equals( m_inspectedObject, obj ) )
+					return;
 
 			isDirty = false;
 			Initialize();
 
 			if( OnInspectedObjectChanging != null )
-				obj = OnInspectedObjectChanging( m_inspectedObject, obj );
+			{
+					object changed = OnInspectedObjectChanging( m_inspectedObject, obj );
+					if( m_inspectedObject == changed )
+						return;
 
-			if( m_inspectedObject == obj )
-				return;
+					if( changed is T t )
+							obj = t;
+					else
+							return;
+			}
 
 			StopInspectInternal();
 
@@ -471,19 +477,19 @@ namespace RuntimeInspectorNamespace
 				//	return;
 				//}
 
-				InspectorField inspectedObjectDrawer = CreateDrawerForType( obj.GetType(), drawArea, 0, false );
+				InspectorField<T> inspectedObjectDrawer = CreateDrawerForType<T>( obj.GetType(), drawArea, 0, false );
 				if( inspectedObjectDrawer != null )
 				{
-					inspectedObjectDrawer.BindTo( obj.GetType(), string.Empty, () => m_inspectedObject, ( value ) => m_inspectedObject = value );
+					inspectedObjectDrawer.BindTo( obj.GetType(), string.Empty, () => (T) m_inspectedObject, ( value ) => m_inspectedObject = value );
 					inspectedObjectDrawer.NameRaw = obj.GetNameWithType();
 					inspectedObjectDrawer.Refresh();
 
-					if( inspectedObjectDrawer is ExpandableInspectorField )
-						( (ExpandableInspectorField) inspectedObjectDrawer ).IsExpanded = true;
+					if( inspectedObjectDrawer is IExpandableInspectorField )
+						( (IExpandableInspectorField) inspectedObjectDrawer ).IsExpanded = true;
 
 					currentDrawer = inspectedObjectDrawer;
-					if( currentDrawer is ExpandableInspectorField )
-						( (ExpandableInspectorField) currentDrawer ).HeaderVisibility = m_inspectedObjectHeaderVisibility;
+					if( currentDrawer is IExpandableInspectorField )
+						( (IExpandableInspectorField) currentDrawer ).HeaderVisibility = m_inspectedObjectHeaderVisibility;
 
 					GameObject go = m_inspectedObject as GameObject;
 					if( !go && m_inspectedObject as Component )
@@ -525,16 +531,38 @@ namespace RuntimeInspectorNamespace
 			ObjectReferencePicker.Instance.Close();
 		}
 
-		public InspectorField CreateDrawerForType( Type type, Transform drawerParent, int depth, bool drawObjectsAsFields = true, MemberInfo variable = null )
+		public InspectorField<T> CreateDrawerForType<T>( Type type, Transform drawerParent, int depth, bool drawObjectsAsFields = true, MemberInfo variable = null )
 		{
-			InspectorField[] variableDrawers = GetDrawersForType( type, drawObjectsAsFields );
+			IInspectorField[] variableDrawers = GetDrawersForType( type, drawObjectsAsFields );
 			if( variableDrawers != null )
 			{
 				for( int i = 0; i < variableDrawers.Length; i++ )
 				{
 					if( variableDrawers[i].CanBindTo( type, variable ) )
 					{
-						InspectorField drawer = InstantiateDrawer( variableDrawers[i], drawerParent );
+						IInspectorField drawer = InstantiateDrawer( variableDrawers[i], drawerParent );
+						drawer.Inspector = this;
+						drawer.Skin = Skin;
+						drawer.Depth = depth;
+
+						return (InspectorField<T>) drawer;
+					}
+				}
+			}
+
+			return null;
+		}
+
+		public IInspectorField CreateDrawerForType( Type type, Transform drawerParent, int depth, bool drawObjectsAsFields = true, MemberInfo variable = null )
+		{
+			IInspectorField[] variableDrawers = GetDrawersForType( type, drawObjectsAsFields );
+			if( variableDrawers != null )
+			{
+				for( int i = 0; i < variableDrawers.Length; i++ )
+				{
+					if( variableDrawers[i].CanBindTo( type, variable ) )
+					{
+						IInspectorField drawer = InstantiateDrawer( variableDrawers[i], drawerParent );
 						drawer.Inspector = this;
 						drawer.Skin = Skin;
 						drawer.Depth = depth;
@@ -547,14 +575,39 @@ namespace RuntimeInspectorNamespace
 			return null;
 		}
 
-		private InspectorField InstantiateDrawer( InspectorField drawer, Transform drawerParent )
+// 		private InspectorField<T> InstantiateDrawer<T>( InspectorField<T> drawer, Transform drawerParent )
+// 		{
+// 			List<IInspectorField> drawerPool;
+// 			if( drawersPool.TryGetValue( drawer.GetType(), out drawerPool ) )
+// 			{
+// 				for( int i = drawerPool.Count - 1; i >= 0; i-- )
+// 				{
+// 					IInspectorField instance = drawerPool[i];
+// 					drawerPool.RemoveAt( i );
+
+// 					if( instance )
+// 					{
+// 						instance.transform.SetParent( drawerParent, false );
+// 						instance.gameObject.SetActive( true );
+
+// 						return (InspectorField<T>) instance;
+// 					}
+// 				}
+// 			}
+
+// 			var newDrawer = (InspectorField<T>) Instantiate( drawer, drawerParent, false );
+// 			newDrawer.Initialize();
+// 			return newDrawer;
+// 		}
+
+		private IInspectorField InstantiateDrawer( IInspectorField drawer, Transform drawerParent )
 		{
-			List<InspectorField> drawerPool;
+			List<IInspectorField> drawerPool;
 			if( drawersPool.TryGetValue( drawer.GetType(), out drawerPool ) )
 			{
 				for( int i = drawerPool.Count - 1; i >= 0; i-- )
 				{
-					InspectorField instance = drawerPool[i];
+					IInspectorField instance = drawerPool[i];
 					drawerPool.RemoveAt( i );
 
 					if( instance )
@@ -567,26 +620,32 @@ namespace RuntimeInspectorNamespace
 				}
 			}
 
-			InspectorField newDrawer = (InspectorField) Instantiate( drawer, drawerParent, false );
+			IInspectorField newDrawer = (IInspectorField) Instantiate( drawer, drawerParent, false );
 			newDrawer.Initialize();
 			return newDrawer;
 		}
 
-		private InspectorField[] GetDrawersForType( Type type, bool drawObjectsAsFields )
+		// private InspectorField<T>[] GetDrawersForType<T>( Type type, bool drawObjectsAsFields )
+		// {
+		// 		var a = GetDrawersForType( type, drawObjectsAsFields );
+		// 		return (InspectorField<T>[]) a;
+		// }
+
+		private IInspectorField[] GetDrawersForType( Type type, bool drawObjectsAsFields )
 		{
 			bool searchReferenceFields = drawObjectsAsFields && typeof( Object ).IsAssignableFrom( type );
 
-			InspectorField[] cachedResult;
+			IInspectorField[] cachedResult;
 			if( ( searchReferenceFields && typeToReferenceDrawers.TryGetValue( type, out cachedResult ) ) ||
 				( !searchReferenceFields && typeToDrawers.TryGetValue( type, out cachedResult ) ) )
 				return cachedResult;
 
-			Dictionary<Type, InspectorField[]> drawersDict = searchReferenceFields ? typeToReferenceDrawers : typeToDrawers;
+			var drawersDict = searchReferenceFields ? typeToReferenceDrawers : typeToDrawers;
 
 			eligibleDrawers.Clear();
 			for( int i = settings.Length - 1; i >= 0; i-- )
 			{
-				InspectorField[] drawers = searchReferenceFields ? settings[i].ReferenceDrawers : settings[i].StandardDrawers;
+				IInspectorField[] drawers = searchReferenceFields ? settings[i].ReferenceDrawers : settings[i].StandardDrawers;
 				for( int j = drawers.Length - 1; j >= 0; j-- )
 				{
 					if( drawers[j].SupportsType( type ) )
@@ -600,12 +659,12 @@ namespace RuntimeInspectorNamespace
 			return cachedResult;
 		}
 
-		internal void PoolDrawer( InspectorField drawer )
+		internal void PoolDrawer( IInspectorField drawer )
 		{
-			List<InspectorField> drawerPool;
+			List<IInspectorField> drawerPool;
 			if( !drawersPool.TryGetValue( drawer.GetType(), out drawerPool ) )
 			{
-				drawerPool = new List<InspectorField>( poolCapacity );
+				drawerPool = new List<IInspectorField>( poolCapacity );
 				drawersPool[drawer.GetType()] = drawerPool;
 			}
 

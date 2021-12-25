@@ -7,12 +7,12 @@ namespace RuntimeInspectorNamespace
 	{
 #pragma warning disable 0649
 		[SerializeField]
-		private InspectorField[] m_standardDrawers;
-		public InspectorField[] StandardDrawers { get { return m_standardDrawers; } }
+		private IInspectorField[] m_standardDrawers;
+		public IInspectorField[] StandardDrawers { get { return m_standardDrawers; } }
 
 		[SerializeField]
-		private InspectorField[] m_referenceDrawers;
-		public InspectorField[] ReferenceDrawers { get { return m_referenceDrawers; } }
+		private IInspectorField[] m_referenceDrawers;
+		public IInspectorField[] ReferenceDrawers { get { return m_referenceDrawers; } }
 
 		[SerializeField]
 		private VariableSet[] m_hiddenVariables;

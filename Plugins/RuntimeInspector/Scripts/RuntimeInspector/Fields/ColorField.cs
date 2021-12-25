@@ -1,12 +1,11 @@
 ﻿using System;
-using System.Reflection;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
-	public class ColorField : InspectorField
+    public class ColorField : InspectorField<Color>
 	{
 #pragma warning disable 0649
 		[SerializeField]
@@ -16,8 +15,6 @@ namespace RuntimeInspectorNamespace
 		private PointerEventListener inputColor;
 		private Image colorImg;
 #pragma warning restore 0649
-
-		private bool isColor32;
 
 		public override void Initialize()
 		{
@@ -32,28 +29,16 @@ namespace RuntimeInspectorNamespace
 			return type == typeof( Color ) || type == typeof( Color32 );
 		}
 
-		protected override void OnBound( MemberInfo variable )
-		{
-			base.OnBound( variable );
-			isColor32 = BoundVariableType == typeof( Color32 );
-		}
-
 		private void ShowColorPicker( PointerEventData eventData )
 		{
-			Color value = isColor32 ? (Color) (Color32) Value : (Color) Value;
-
 			ColorPicker.Instance.Skin = Inspector.Skin;
-			ColorPicker.Instance.Show( OnColorChanged, null, value, Inspector.Canvas );
+			ColorPicker.Instance.Show( OnColorChanged, null, Value, Inspector.Canvas );
 		}
 
 		private void OnColorChanged( Color32 color )
 		{
 			colorImg.color = color;
-
-			if( isColor32 )
-				Value = color;
-			else
-				Value = (Color) color;
+			Value = color;
 		}
 
 		protected override void OnSkinChanged()
@@ -68,11 +53,7 @@ namespace RuntimeInspectorNamespace
 		public override void Refresh()
 		{
 			base.Refresh();
-
-			if( isColor32 )
-				colorImg.color = (Color32) Value;
-			else
-				colorImg.color = (Color) Value;
+			colorImg.color = Value;
 		}
 	}
 }

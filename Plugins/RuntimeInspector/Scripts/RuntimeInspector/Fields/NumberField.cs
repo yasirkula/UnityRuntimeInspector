@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
-	public class NumberField : InspectorField
+    public class NumberField : InspectorField<IConvertible>
 	{
 		private static readonly HashSet<Type> supportedTypes = new HashSet<Type>()
 		{
@@ -32,33 +32,26 @@ namespace RuntimeInspectorNamespace
 			input.DefaultEmptyValue = "0";
 		}
 
-		public override bool SupportsType( Type type )
-		{
-			return supportedTypes.Contains( type );
-		}
-
 		protected override void OnBound( MemberInfo variable )
 		{
 			base.OnBound( variable );
 
-			if( BoundVariableType == typeof( float ) || BoundVariableType == typeof( double ) || BoundVariableType == typeof( decimal ) )
+			if( m_boundVariableType == typeof( float ) || m_boundVariableType == typeof( double ) || m_boundVariableType == typeof( decimal ) )
 				input.BackingField.contentType = InputField.ContentType.DecimalNumber;
 			else
 				input.BackingField.contentType = InputField.ContentType.IntegerNumber;
 
-			numberHandler = NumberHandlers.Get( BoundVariableType );
-			input.Text = numberHandler.ToString( Value );
+			numberHandler = NumberHandlers.Get( m_boundVariableType );
+			input.Text = Value.ToString( RuntimeInspectorUtils.numberFormat );
 		}
 
 		protected virtual bool OnValueChanged( BoundInputField source, string input )
 		{
-			object value;
-			if( numberHandler.TryParse( input, out value ) )
+			if( numberHandler.TryParse( input, out IConvertible value ) )
 			{
 				Value = value;
 				return true;
 			}
-
 			return false;
 		}
 
@@ -80,11 +73,11 @@ namespace RuntimeInspectorNamespace
 
 		public override void Refresh()
 		{
-			object prevVal = Value;
+			var prevVal = Value;
 			base.Refresh();
 
-			if( !numberHandler.ValuesAreEqual( Value, prevVal ) )
-				input.Text = numberHandler.ToString( Value );
+			if( !Value.Equals( prevVal ) )
+				input.Text = Value.ToString( RuntimeInspectorUtils.numberFormat );
 		}
 	}
 }

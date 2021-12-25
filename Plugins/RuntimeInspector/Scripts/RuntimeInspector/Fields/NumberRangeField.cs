@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Reflection;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
@@ -29,13 +28,12 @@ namespace RuntimeInspectorNamespace
 
 			RangeAttribute rangeAttribute = variable.GetAttribute<RangeAttribute>();
 			slider.SetRange( Mathf.Max( rangeAttribute.min, numberHandler.MinValue ), Mathf.Min( rangeAttribute.max, numberHandler.MaxValue ) );
-			slider.BackingField.wholeNumbers = BoundVariableType != typeof( float ) && BoundVariableType != typeof( double ) && BoundVariableType != typeof( decimal );
+			slider.BackingField.wholeNumbers = m_boundVariableType != typeof( float ) && m_boundVariableType != typeof( double ) && m_boundVariableType != typeof( decimal );
 		}
 
 		protected override bool OnValueChanged( BoundInputField source, string input )
 		{
-			object value;
-			if( numberHandler.TryParse( input, out value ) )
+			if( numberHandler.TryParse( input, out IConvertible value ) )
 			{
 				float fvalue = numberHandler.ConvertToFloat( value );
 				if( fvalue >= slider.BackingField.minValue && fvalue <= slider.BackingField.maxValue )
@@ -54,7 +52,7 @@ namespace RuntimeInspectorNamespace
 				return;
 
 			Value = numberHandler.ConvertFromFloat( value );
-			input.Text = numberHandler.ToString( Value );
+			input.Text = Value.ToString( RuntimeInspectorUtils.numberFormat );
 			Inspector.RefreshDelayed();
 		}
 
