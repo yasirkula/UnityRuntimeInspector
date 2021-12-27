@@ -20,9 +20,9 @@ namespace RuntimeInspectorNamespace
 
 		protected override void GenerateElements()
 		{
-			CreateDrawerForVariable<Vector3>( positionProp, "Position" );
-			CreateDrawerForVariable<Vector3>( rotationProp, "Rotation" );
-			CreateDrawerForVariable<Vector3>( scaleProp, "Scale" );
+			CreateDrawerForVariable( positionProp, "Position" );
+			CreateDrawerForVariable( rotationProp, "Rotation" );
+			CreateDrawerForVariable( scaleProp, "Scale" );
 		}
 	}
 }

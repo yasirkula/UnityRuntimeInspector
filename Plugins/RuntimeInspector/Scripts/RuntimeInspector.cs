@@ -207,16 +207,16 @@ namespace RuntimeInspectorNamespace
 
 		private bool initialized = false;
 
-		private readonly Dictionary<Type, IInspectorField[]> typeToDrawers = new Dictionary<Type, IInspectorField[]>( 89 );
-		private readonly Dictionary<Type, IInspectorField[]> typeToReferenceDrawers = new Dictionary<Type, IInspectorField[]>( 89 );
-		private readonly List<IInspectorField> eligibleDrawers = new List<IInspectorField>( 4 );
+		private readonly Dictionary<Type, InspectorField[]> typeToDrawers = new Dictionary<Type, InspectorField[]>( 89 );
+		private readonly Dictionary<Type, InspectorField[]> typeToReferenceDrawers = new Dictionary<Type, InspectorField[]>( 89 );
+		private readonly List<InspectorField> eligibleDrawers = new List<InspectorField>( 4 );
 
-		private static readonly Dictionary<Type, List<IInspectorField>> drawersPool = new Dictionary<Type, List<IInspectorField>>();
+		private static readonly Dictionary<Type, List<InspectorField>> drawersPool = new Dictionary<Type, List<InspectorField>>();
 
 		private readonly List<VariableSet> hiddenVariables = new List<VariableSet>( 32 );
 		private readonly List<VariableSet> exposedVariables = new List<VariableSet>( 32 );
 
-		private IInspectorField currentDrawer = null;
+		private InspectorField currentDrawer = null;
 		private bool inspectLock = false;
 		private bool isDirty = false;
 
@@ -423,13 +423,13 @@ namespace RuntimeInspectorNamespace
 				currentDrawer.Skin = Skin;
 		}
 
-		public void Inspect<T>( T obj )
+		public void Inspect<T>( T obj ) where T : class
 		{
 			if( !m_isLocked )
 				InspectInternal( obj );
 		}
 
-		internal void InspectInternal<T>( T obj )
+		internal void InspectInternal<T>( T obj ) where T : class
 		{
 			if( inspectLock || object.Equals( m_inspectedObject, obj ) )
 					return;
@@ -443,8 +443,8 @@ namespace RuntimeInspectorNamespace
 					if( m_inspectedObject == changed )
 						return;
 
-					if( changed is T t )
-							obj = t;
+					if( changed is T changedT )
+							obj = changedT;
 					else
 							return;
 			}
@@ -459,28 +459,10 @@ namespace RuntimeInspectorNamespace
 				if( obj.IsNull() )
 					return;
 
-#if UNITY_EDITOR || !NETFX_CORE
-				if( obj.GetType().IsValueType )
-#else
-				if( obj.GetType().GetTypeInfo().IsValueType )
-#endif
-				{
-					m_inspectedObject = null;
-					Debug.LogError( "Can't inspect a value type!" );
-					return;
-				}
-
-				//if( !gameObject.activeSelf )
-				//{
-				//	m_inspectedObject = null;
-				//	Debug.LogError( "Can't inspect while Inspector is inactive!" );
-				//	return;
-				//}
-
-				InspectorField<T> inspectedObjectDrawer = CreateDrawerForType<T>( obj.GetType(), drawArea, 0, false );
+				InspectorField inspectedObjectDrawer = CreateDrawerForType( obj.GetType(), drawArea, 0, false );
 				if( inspectedObjectDrawer != null )
 				{
-					inspectedObjectDrawer.BindTo( obj.GetType(), string.Empty, () => (T) m_inspectedObject, ( value ) => m_inspectedObject = value );
+					inspectedObjectDrawer.BindTo( obj.GetType(), string.Empty, () => m_inspectedObject, ( value ) => m_inspectedObject = value );
 					inspectedObjectDrawer.NameRaw = obj.GetNameWithType();
 					inspectedObjectDrawer.Refresh();
 
@@ -531,38 +513,16 @@ namespace RuntimeInspectorNamespace
 			ObjectReferencePicker.Instance.Close();
 		}
 
-		public InspectorField<T> CreateDrawerForType<T>( Type type, Transform drawerParent, int depth, bool drawObjectsAsFields = true, MemberInfo variable = null )
+		public InspectorField CreateDrawerForType( Type type, Transform drawerParent, int depth, bool drawObjectsAsFields = true, MemberInfo variable = null )
 		{
-			IInspectorField[] variableDrawers = GetDrawersForType( type, drawObjectsAsFields );
+			InspectorField[] variableDrawers = GetDrawersForType( type, drawObjectsAsFields );
 			if( variableDrawers != null )
 			{
 				for( int i = 0; i < variableDrawers.Length; i++ )
 				{
 					if( variableDrawers[i].CanBindTo( type, variable ) )
 					{
-						IInspectorField drawer = InstantiateDrawer( variableDrawers[i], drawerParent );
-						drawer.Inspector = this;
-						drawer.Skin = Skin;
-						drawer.Depth = depth;
-
-						return (InspectorField<T>) drawer;
-					}
-				}
-			}
-
-			return null;
-		}
-
-		public IInspectorField CreateDrawerForType( Type type, Transform drawerParent, int depth, bool drawObjectsAsFields = true, MemberInfo variable = null )
-		{
-			IInspectorField[] variableDrawers = GetDrawersForType( type, drawObjectsAsFields );
-			if( variableDrawers != null )
-			{
-				for( int i = 0; i < variableDrawers.Length; i++ )
-				{
-					if( variableDrawers[i].CanBindTo( type, variable ) )
-					{
-						IInspectorField drawer = InstantiateDrawer( variableDrawers[i], drawerParent );
+						InspectorField drawer = InstantiateDrawer( variableDrawers[i], drawerParent );
 						drawer.Inspector = this;
 						drawer.Skin = Skin;
 						drawer.Depth = depth;
@@ -575,39 +535,14 @@ namespace RuntimeInspectorNamespace
 			return null;
 		}
 
-// 		private InspectorField<T> InstantiateDrawer<T>( InspectorField<T> drawer, Transform drawerParent )
-// 		{
-// 			List<IInspectorField> drawerPool;
-// 			if( drawersPool.TryGetValue( drawer.GetType(), out drawerPool ) )
-// 			{
-// 				for( int i = drawerPool.Count - 1; i >= 0; i-- )
-// 				{
-// 					IInspectorField instance = drawerPool[i];
-// 					drawerPool.RemoveAt( i );
-
-// 					if( instance )
-// 					{
-// 						instance.transform.SetParent( drawerParent, false );
-// 						instance.gameObject.SetActive( true );
-
-// 						return (InspectorField<T>) instance;
-// 					}
-// 				}
-// 			}
-
-// 			var newDrawer = (InspectorField<T>) Instantiate( drawer, drawerParent, false );
-// 			newDrawer.Initialize();
-// 			return newDrawer;
-// 		}
-
-		private IInspectorField InstantiateDrawer( IInspectorField drawer, Transform drawerParent )
+		private InspectorField InstantiateDrawer( InspectorField drawer, Transform drawerParent )
 		{
-			List<IInspectorField> drawerPool;
+			List<InspectorField> drawerPool;
 			if( drawersPool.TryGetValue( drawer.GetType(), out drawerPool ) )
 			{
 				for( int i = drawerPool.Count - 1; i >= 0; i-- )
 				{
-					IInspectorField instance = drawerPool[i];
+					InspectorField instance = drawerPool[i];
 					drawerPool.RemoveAt( i );
 
 					if( instance )
@@ -620,7 +555,7 @@ namespace RuntimeInspectorNamespace
 				}
 			}
 
-			IInspectorField newDrawer = (IInspectorField) Instantiate( drawer, drawerParent, false );
+			InspectorField newDrawer = Instantiate( drawer, drawerParent, false );
 			newDrawer.Initialize();
 			return newDrawer;
 		}
@@ -631,11 +566,11 @@ namespace RuntimeInspectorNamespace
 		// 		return (InspectorField<T>[]) a;
 		// }
 
-		private IInspectorField[] GetDrawersForType( Type type, bool drawObjectsAsFields )
+		private InspectorField[] GetDrawersForType( Type type, bool drawObjectsAsFields )
 		{
 			bool searchReferenceFields = drawObjectsAsFields && typeof( Object ).IsAssignableFrom( type );
 
-			IInspectorField[] cachedResult;
+			InspectorField[] cachedResult;
 			if( ( searchReferenceFields && typeToReferenceDrawers.TryGetValue( type, out cachedResult ) ) ||
 				( !searchReferenceFields && typeToDrawers.TryGetValue( type, out cachedResult ) ) )
 				return cachedResult;
@@ -645,7 +580,7 @@ namespace RuntimeInspectorNamespace
 			eligibleDrawers.Clear();
 			for( int i = settings.Length - 1; i >= 0; i-- )
 			{
-				IInspectorField[] drawers = searchReferenceFields ? settings[i].ReferenceDrawers : settings[i].StandardDrawers;
+				InspectorField[] drawers = searchReferenceFields ? settings[i].ReferenceDrawers : settings[i].StandardDrawers;
 				for( int j = drawers.Length - 1; j >= 0; j-- )
 				{
 					if( drawers[j].SupportsType( type ) )
@@ -659,12 +594,12 @@ namespace RuntimeInspectorNamespace
 			return cachedResult;
 		}
 
-		internal void PoolDrawer( IInspectorField drawer )
+		internal void PoolDrawer( InspectorField drawer )
 		{
-			List<IInspectorField> drawerPool;
+			List<InspectorField> drawerPool;
 			if( !drawersPool.TryGetValue( drawer.GetType(), out drawerPool ) )
 			{
-				drawerPool = new List<IInspectorField>( poolCapacity );
+				drawerPool = new List<InspectorField>( poolCapacity );
 				drawersPool[drawer.GetType()] = drawerPool;
 			}
 

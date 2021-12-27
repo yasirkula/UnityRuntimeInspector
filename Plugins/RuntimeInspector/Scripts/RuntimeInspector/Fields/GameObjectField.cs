@@ -77,14 +77,14 @@ namespace RuntimeInspectorNamespace
 			if( components.Count == 0 )
 				return;
 
-			CreateDrawer<bool>( typeof( bool ), "Is Active", isActiveGetter, isActiveSetter );
-			StringField nameField = CreateDrawer<string>( typeof( string ), "Name", nameGetter, nameSetter ) as StringField;
-			StringField tagField = CreateDrawer<string>( typeof( string ), "Tag", tagGetter, tagSetter ) as StringField;
-			CreateDrawerForVariable<int>( layerProp, "Layer" );
+			CreateDrawer<bool>( "Is Active", isActiveGetter, isActiveSetter );
+			StringField nameField = CreateDrawer<string>( "Name", nameGetter, nameSetter ) as StringField;
+			StringField tagField = CreateDrawer<string>( "Tag", tagGetter, tagSetter ) as StringField;
+			CreateDrawerForVariable( layerProp, "Layer" );
 
 			for( int i = 0, j = 0; i < components.Count; i++ )
 			{
-				InspectorField<Component> componentDrawer = CreateDrawerForComponent( components[i] );
+				InspectorField componentDrawer = CreateDrawerForComponent( components[i] );
 				if( componentDrawer is IExpandableInspectorField && j < componentsExpandedStates.Count && componentsExpandedStates[j++] )
 					( (IExpandableInspectorField) componentDrawer ).IsExpanded = true;
 			}

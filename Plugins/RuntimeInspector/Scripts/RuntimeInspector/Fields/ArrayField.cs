@@ -111,7 +111,7 @@ namespace RuntimeInspectorNamespace
 
 			for( int i = 0; i < Value.Count; i++ )
 			{
-				InspectorField<object> elementDrawer = Inspector.CreateDrawerForType<object>( elementType, drawArea, Depth + 1 );
+				InspectorField elementDrawer = Inspector.CreateDrawerForType( elementType, drawArea, Depth + 1 );
 				if( elementDrawer == null )
 					break;
 

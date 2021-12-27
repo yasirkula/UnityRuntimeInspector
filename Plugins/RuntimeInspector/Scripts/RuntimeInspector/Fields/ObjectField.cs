@@ -100,7 +100,7 @@ namespace RuntimeInspectorNamespace
 			{
 				foreach( MemberInfo variable in Inspector.GetExposedVariablesForType( Value.GetType() ) )
 				{
-						CreateDrawerForVariable<object>( variable );
+						CreateDrawerForVariable( variable );
 				}
 			}
 			else
@@ -108,7 +108,7 @@ namespace RuntimeInspectorNamespace
 				foreach( MemberInfo variable in Inspector.GetExposedVariablesForType( Value.GetType() ) )
 				{
 					if( Array.IndexOf( variables, variable.Name ) >= 0 )
-						CreateDrawerForVariable<object>( variable );
+						CreateDrawerForVariable( variable );
 				}
 			}
 		}
@@ -118,16 +118,25 @@ namespace RuntimeInspectorNamespace
 			if( variablesToExclude == null || variablesToExclude.Length == 0 )
 			{
 				foreach( MemberInfo variable in Inspector.GetExposedVariablesForType( Value.GetType() ) )
-					CreateDrawerForVariable<object>( variable );
+					CreateDrawerForVariable( variable );
 			}
 			else
 			{
 				foreach( MemberInfo variable in Inspector.GetExposedVariablesForType( Value.GetType() ) )
 				{
 					if( Array.IndexOf( variablesToExclude, variable.Name ) < 0 )
-						CreateDrawerForVariable<object>( variable );
+						CreateDrawerForVariable( variable );
 				}
 			}
+		}
+
+		private InspectorField CreateDrawerForVariable( MemberInfo variable )
+		{
+				if( variable is FieldInfo field )
+						return base.CreateDrawerForVariable( field );
+				if( variable is PropertyInfo property )
+						return base.CreateDrawerForVariable( property );
+				throw new ArgumentException( "Variable can either be a field or a property" );
 		}
 
 		private bool CanInitializeNewObject()
