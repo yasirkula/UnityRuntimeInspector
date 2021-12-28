@@ -42,14 +42,14 @@ namespace RuntimeInspectorNamespace
 				input.BackingField.contentType = InputField.ContentType.IntegerNumber;
 
 			numberHandler = NumberHandlers.Get( m_boundVariableType );
-			input.Text = Value.ToString( RuntimeInspectorUtils.numberFormat );
+			input.Text = BoundValues.ToString( RuntimeInspectorUtils.numberFormat );
 		}
 
 		protected virtual bool OnValueChanged( BoundInputField source, string input )
 		{
 			if( numberHandler.TryParse( input, out IConvertible value ) )
 			{
-				Value = value;
+				BoundValues = value;
 				return true;
 			}
 			return false;
@@ -73,11 +73,11 @@ namespace RuntimeInspectorNamespace
 
 		public override void Refresh()
 		{
-			var prevVal = Value;
+			var prevVal = BoundValues;
 			base.Refresh();
 
-			if( !Value.Equals( prevVal ) )
-				input.Text = Value.ToString( RuntimeInspectorUtils.numberFormat );
+			if( !BoundValues.Equals( prevVal ) )
+				input.Text = BoundValues.ToString( RuntimeInspectorUtils.numberFormat );
 		}
 	}
 }

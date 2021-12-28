@@ -54,6 +54,7 @@ namespace RuntimeInspectorNamespace
 		private int pointerId = -98765;
 
 		public delegate void OnColorChangedDelegate( Color32 color );
+		public delegate void OnColorCanceledDelegate();
 		public event OnColorChangedDelegate OnColorChanged;
 
 		private void Awake()

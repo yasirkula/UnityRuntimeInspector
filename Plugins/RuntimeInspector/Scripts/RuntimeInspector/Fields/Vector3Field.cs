@@ -70,16 +70,16 @@ namespace RuntimeInspectorNamespace
 			isVector3Int = m_boundVariableType == typeof( Vector3Int );
 			if( isVector3Int )
 			{
-				inputX.Text = ( (int) Value.x ).ToString( RuntimeInspectorUtils.numberFormat );
-				inputY.Text = ( (int) Value.y ).ToString( RuntimeInspectorUtils.numberFormat );
-				inputZ.Text = ( (int) Value.z ).ToString( RuntimeInspectorUtils.numberFormat );
+				inputX.Text = ( (int) BoundValues.x ).ToString( RuntimeInspectorUtils.numberFormat );
+				inputY.Text = ( (int) BoundValues.y ).ToString( RuntimeInspectorUtils.numberFormat );
+				inputZ.Text = ( (int) BoundValues.z ).ToString( RuntimeInspectorUtils.numberFormat );
 			}
 			else
 #endif
 			{
-				inputX.Text = Value.x.ToString( RuntimeInspectorUtils.numberFormat );
-				inputY.Text = Value.y.ToString( RuntimeInspectorUtils.numberFormat );
-				inputZ.Text = Value.z.ToString( RuntimeInspectorUtils.numberFormat );
+				inputX.Text = BoundValues.x.ToString( RuntimeInspectorUtils.numberFormat );
+				inputY.Text = BoundValues.y.ToString( RuntimeInspectorUtils.numberFormat );
+				inputZ.Text = BoundValues.z.ToString( RuntimeInspectorUtils.numberFormat );
 			}
 		}
 
@@ -100,7 +100,7 @@ namespace RuntimeInspectorNamespace
 
 			if( success )
 			{
-				Vector3 val = Value;
+				Vector3 val = BoundValues;
 				if( source == inputX )
 					val.x = value;
 				else if( source == inputY )
@@ -108,7 +108,7 @@ namespace RuntimeInspectorNamespace
 				else
 					val.z = value;
 
-				Value = val;
+				BoundValues = val;
 				return true;
 			}
 
@@ -150,28 +150,28 @@ namespace RuntimeInspectorNamespace
 
 		public override void Refresh()
 		{
-				Vector3 prevVal = Value;
+				Vector3 prevVal = BoundValues;
 				base.Refresh();
 
 #if UNITY_2017_2_OR_NEWER
 			if( isVector3Int )
 			{
-				if( Value.x != prevVal.x )
-					inputX.Text = ( (int) Value.x ).ToString( RuntimeInspectorUtils.numberFormat );
-				if( Value.y != prevVal.y )
-					inputY.Text = ( (int) Value.y ).ToString( RuntimeInspectorUtils.numberFormat );
-				if( Value.z != prevVal.z )
-					inputZ.Text = ( (int) Value.z ).ToString( RuntimeInspectorUtils.numberFormat );
+				if( BoundValues.x != prevVal.x )
+					inputX.Text = ( (int) BoundValues.x ).ToString( RuntimeInspectorUtils.numberFormat );
+				if( BoundValues.y != prevVal.y )
+					inputY.Text = ( (int) BoundValues.y ).ToString( RuntimeInspectorUtils.numberFormat );
+				if( BoundValues.z != prevVal.z )
+					inputZ.Text = ( (int) BoundValues.z ).ToString( RuntimeInspectorUtils.numberFormat );
 			}
 			else
 #endif
 			{
-				if( Value.x != prevVal.x )
-					inputX.Text = Value.x.ToString( RuntimeInspectorUtils.numberFormat );
-				if( Value.y != prevVal.y )
-					inputY.Text = Value.y.ToString( RuntimeInspectorUtils.numberFormat );
-				if( Value.z != prevVal.z )
-					inputZ.Text = Value.z.ToString( RuntimeInspectorUtils.numberFormat );
+				if( BoundValues.x != prevVal.x )
+					inputX.Text = BoundValues.x.ToString( RuntimeInspectorUtils.numberFormat );
+				if( BoundValues.y != prevVal.y )
+					inputY.Text = BoundValues.y.ToString( RuntimeInspectorUtils.numberFormat );
+				if( BoundValues.z != prevVal.z )
+					inputZ.Text = BoundValues.z.ToString( RuntimeInspectorUtils.numberFormat );
 			}
 		}
 	}

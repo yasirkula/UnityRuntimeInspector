@@ -38,7 +38,7 @@ namespace RuntimeInspectorNamespace
 				float fvalue = numberHandler.ConvertToFloat( value );
 				if( fvalue >= slider.BackingField.minValue && fvalue <= slider.BackingField.maxValue )
 				{
-					Value = value;
+					BoundValues = value;
 					return true;
 				}
 			}
@@ -51,8 +51,8 @@ namespace RuntimeInspectorNamespace
 			if( input.BackingField.isFocused )
 				return;
 
-			Value = numberHandler.ConvertFromFloat( value );
-			input.Text = Value.ToString( RuntimeInspectorUtils.numberFormat );
+			BoundValues = numberHandler.ConvertFromFloat( value );
+			input.Text = BoundValues.ToString( RuntimeInspectorUtils.numberFormat );
 			Inspector.RefreshDelayed();
 		}
 
@@ -72,7 +72,7 @@ namespace RuntimeInspectorNamespace
 		public override void Refresh()
 		{
 			base.Refresh();
-			slider.Value = numberHandler.ConvertToFloat( Value );
+			slider.Value = numberHandler.ConvertToFloat( BoundValues );
 		}
 	}
 }

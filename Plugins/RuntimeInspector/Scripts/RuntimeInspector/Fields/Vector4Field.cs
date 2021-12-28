@@ -69,10 +69,10 @@ namespace RuntimeInspectorNamespace
 		protected override void OnBound( MemberInfo variable )
 		{
 			base.OnBound( variable );
-			inputX.Text = Value.x.ToString( RuntimeInspectorUtils.numberFormat );
-			inputY.Text = Value.y.ToString( RuntimeInspectorUtils.numberFormat );
-			inputZ.Text = Value.z.ToString( RuntimeInspectorUtils.numberFormat );
-			inputW.Text = Value.w.ToString( RuntimeInspectorUtils.numberFormat );
+			inputX.Text = BoundValues.x.ToString( RuntimeInspectorUtils.numberFormat );
+			inputY.Text = BoundValues.y.ToString( RuntimeInspectorUtils.numberFormat );
+			inputZ.Text = BoundValues.z.ToString( RuntimeInspectorUtils.numberFormat );
+			inputW.Text = BoundValues.w.ToString( RuntimeInspectorUtils.numberFormat );
 		}
 
 		private bool OnValueChanged( BoundInputField source, string input )
@@ -80,7 +80,7 @@ namespace RuntimeInspectorNamespace
 			float value;
 			if( float.TryParse( input, NumberStyles.Float, RuntimeInspectorUtils.numberFormat, out value ) )
 			{
-				Vector4 val = Value;
+				Vector4 val = BoundValues;
 				if( source == inputX )
 					val.x = value;
 				else if( source == inputY )
@@ -90,7 +90,7 @@ namespace RuntimeInspectorNamespace
 				else
 					val.w = value;
 
-				Value = val;
+				BoundValues = val;
 				return true;
 			}
 
@@ -132,17 +132,17 @@ namespace RuntimeInspectorNamespace
 
 		public override void Refresh()
 		{
-			Vector4 prevVal = Value;
+			Vector4 prevVal = BoundValues;
 			base.Refresh();
 
-			if( Value.x != prevVal.x )
-				inputX.Text = Value.x.ToString( RuntimeInspectorUtils.numberFormat );
-			if( Value.y != prevVal.y )
-				inputY.Text = Value.y.ToString( RuntimeInspectorUtils.numberFormat );
-			if( Value.z != prevVal.z )
-				inputZ.Text = Value.z.ToString( RuntimeInspectorUtils.numberFormat );
-			if( Value.w != prevVal.w )
-				inputW.Text = Value.w.ToString( RuntimeInspectorUtils.numberFormat );
+			if( BoundValues.x != prevVal.x )
+				inputX.Text = BoundValues.x.ToString( RuntimeInspectorUtils.numberFormat );
+			if( BoundValues.y != prevVal.y )
+				inputY.Text = BoundValues.y.ToString( RuntimeInspectorUtils.numberFormat );
+			if( BoundValues.z != prevVal.z )
+				inputZ.Text = BoundValues.z.ToString( RuntimeInspectorUtils.numberFormat );
+			if( BoundValues.w != prevVal.w )
+				inputW.Text = BoundValues.w.ToString( RuntimeInspectorUtils.numberFormat );
 		}
 	}
 }

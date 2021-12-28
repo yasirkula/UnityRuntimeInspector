@@ -108,7 +108,7 @@ namespace RuntimeInspectorNamespace
 
 		private void OnValueChanged( int input )
 		{
-			Value = currEnumValues[input];
+			BoundValues = currEnumValues[input];
 			Inspector.RefreshDelayed();
 		}
 
@@ -156,7 +156,7 @@ namespace RuntimeInspectorNamespace
 		{
 			base.Refresh();
 
-			int valueIndex = currEnumValues.IndexOf( Value );
+			int valueIndex = currEnumValues.IndexOf( BoundValues );
 			if( valueIndex != -1 )
 				input.value = valueIndex;
 		}

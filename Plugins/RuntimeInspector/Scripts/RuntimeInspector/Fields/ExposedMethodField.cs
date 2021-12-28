@@ -47,9 +47,9 @@ namespace RuntimeInspectorNamespace
 			Refresh();
 
 			if( boundMethod.IsInitializer )
-				Value = boundMethod.CallAndReturnValue( Value );
+				BoundValues = boundMethod.CallAndReturnValue( BoundValues );
 			else
-				boundMethod.Call( Value );
+				boundMethod.Call( BoundValues );
 		}
 	}
 }

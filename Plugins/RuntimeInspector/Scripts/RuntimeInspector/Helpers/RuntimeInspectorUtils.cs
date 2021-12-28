@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
@@ -91,6 +92,61 @@ namespace RuntimeInspectorNamespace
 			}
 
 			return true;
+		}
+
+		// Get first entry if all entries in given sequence are equal, null
+		// otherwise
+		public static T GetSingle<T>( this IEnumerable<T> e ) where T : class
+		{
+			if( e == null || !e.Any() )
+				return null;
+
+			T first = e.First();
+			return e.All( x => x == first ) ? first : null;
+		}
+
+		// Get first entry if all entries in given sequence are equal, null
+		// otherwise
+		public static T? GetSingleValue<T>( this IEnumerable<T> e ) where T : struct, IEquatable<T>
+		{
+			if( e == null || !e.Any() )
+				return null;
+
+			T first = e.First();
+			if( e.All( x => x.Equals( first ) ) )
+				return first;
+			return null;
+		}
+
+		public static ( F, S ) MakeTuple<F,S>( F first, S second ) => ( first, second );
+
+		// Call given function with each 'zipped' pair built from entries in
+		// given sequences.
+		// If one of the sequences only has one entry, it is
+		// passed together with every entry in the other sequence.
+		// If both pairs have no or at least two entries, IEnumerable.Zip is used.
+		public static void PassZipped<TFirst, TSecond>(
+				this IEnumerable<TFirst> first,
+				IEnumerable<TSecond> second,
+				Action<TFirst, TSecond> sink)
+		{
+			if( first.Count() == 1 )
+			{
+				TFirst f = first.Single();
+				foreach( TSecond s in second )
+					sink( f, s );
+			}
+			else if( second.Count() == 1 )
+			{
+				TSecond s = second.Single();
+				foreach( TFirst f in first )
+					sink( f, s );
+			}
+			else
+			{
+				foreach( var ( f, s ) in first.Zip( second, MakeTuple ) )
+					sink( f, s );
+			}
 		}
 
 		public static string ToTitleCase( this string str )

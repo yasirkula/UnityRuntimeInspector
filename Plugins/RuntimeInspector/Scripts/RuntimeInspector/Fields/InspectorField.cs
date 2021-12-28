@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
@@ -8,6 +9,9 @@ namespace RuntimeInspectorNamespace
 {
 	public abstract class InspectorField : MonoBehaviour, ITooltipContent
 	{
+		public delegate IEnumerable<T> Getter<out T>();
+		public delegate void Setter<in T>( IEnumerable<T> value );
+
 #pragma warning disable 0649
 		[SerializeField]
 		protected LayoutElement layoutElement;
@@ -148,84 +152,100 @@ namespace RuntimeInspectorNamespace
 				variableNameText.rectTransform.sizeDelta = new Vector2( -Skin.IndentAmount * Depth, 0f );
 		}
 
-		public void BindTo<P>( InspectorField<P> parent, FieldInfo field, string variableName = null )
+		public void BindTo<TParent>( IBound<TParent> parent, FieldInfo field, string variableName = null )
 		{
 			if( variableName == null )
 				variableName = field.Name;
 			BindTo(
 				field.FieldType,
 				variableName,
-				() => field.GetValue( parent.Value ),
-				value => field.SetValue( parent.Value, value ),
+				() => parent.BoundValues.Cast<object>().Select( field.GetValue ),
+				newValues => parent.BoundValues.Cast<object>().PassZipped( newValues, field.SetValue ),
 				field);
 		}
 
-		public void BindTo<P>( InspectorField<P> parent, PropertyInfo property, string variableName = null )
+		public void BindTo<TParent>( IBound<TParent> parent, PropertyInfo property, string variableName = null )
 		{
 			if( variableName == null )
 				variableName = property.Name;
 			BindTo(
 				property.PropertyType,
 				variableName,
-				() => property.GetValue( parent.Value ),
-				value => property.SetValue( parent.Value, value ),
+				() => parent.BoundValues.Cast<object>().Select( property.GetValue ),
+				newValues => parent.BoundValues.Cast<object>().PassZipped( newValues, property.SetValue ),
 				property);
 		}
 
-		public abstract void BindTo(
-				Type variableType,
-				string variableName,
-				Func<object> getter,
-				Action<object> setter,
-				MemberInfo variable = null);
+		public abstract void BindTo<TParent>(
+			Type variableType,
+			string variableName,
+			Getter<TParent> getter,
+			Setter<TParent> setter,
+			MemberInfo variable = null);
 
 		public abstract void Refresh();
 		public abstract void Unbind();
 	}
 
-	public abstract class InspectorField<T> : InspectorField
+	public interface IBound<out T>
 	{
-		private T m_value;
-		public T Value
+		IEnumerable<T> BoundValues { get; }
+	}
+
+	public interface ISupportsType<in T>
+	{
+		IEnumerable<D> GetBoundOfType<D>() where D : T;
+	}
+
+	public abstract class InspectorField<T> : InspectorField, ISupportsType<T>, IBound<T>
+	{
+		private IEnumerable<T> m_boundObjects = new T[0];
+		public IEnumerable<T> BoundValues
 		{
-			get { return m_value; }
+			get { return m_boundObjects; }
 			protected set
 			{
-				// try { setter( value ); m_value = value; }
-				// catch { }
-				setter( value ); m_value = value;
+				setter( value );
+				m_boundObjects = value;
 			}
 		}
 
-		private Func<T> getter;
-		private Action<T> setter;
+		public IEnumerable<D> GetBoundOfType<D>() where D : T
+		{
+			foreach( T obj in m_boundObjects )
+				if( typeof( D ).IsAssignableFrom( obj.GetType() ) )
+					yield return (D) obj;
+		}
+
+		private Getter<T> getter;
+		private Setter<T> setter;
 
 		public override bool SupportsType( Type type )
 		{
 			return typeof( T ).IsAssignableFrom( type );
 		}
 
-		public override void BindTo(
-				Type variableType,
-				string variableName,
-				Func<object> getter,
-				Action<object> setter,
-				MemberInfo variable = null)
+		public override void BindTo<P>(
+			Type variableType,
+			string variableName,
+			Getter<P> getter,
+			Setter<P> setter,
+			MemberInfo variable = null)
 		{
 			BindTo(
-					variableType,
-					variableName,
-					() => (T) getter(),
-					o => setter( (T) o ),
-					variable);
+				variableType,
+				variableName,
+				() => getter().Cast<T>(),
+				o => setter( o.Cast<P>() ),
+				variable);
 		}
 
 		public void BindTo(
-				Type variableType,
-				string variableName,
-				Func<T> getter,
-				Action<T> setter,
-				MemberInfo variable = null)
+			Type variableType,
+			string variableName,
+			Getter<T> getter,
+			Setter<T> setter,
+			MemberInfo variable = null)
 		{
 			m_boundVariableType = variableType;
 			Name = variableName;
@@ -254,9 +274,8 @@ namespace RuntimeInspectorNamespace
 
 		protected virtual void OnUnbound()
 		{
-			m_value = default(T);
+			m_boundObjects = new T[0];
 		}
-
 
 		public override void Refresh()
 		{
@@ -267,7 +286,7 @@ namespace RuntimeInspectorNamespace
 		{
 			try
 			{
-				m_value = getter();
+				m_boundObjects = getter();
 			}
 			catch
 			{
@@ -276,9 +295,9 @@ namespace RuntimeInspectorNamespace
 #else
 				if( m_boundVariableType.GetTypeInfo().IsValueType )
 #endif
-					m_value = (T) Activator.CreateInstance( m_boundVariableType );
+					m_boundObjects = new T[1] { (T) Activator.CreateInstance( m_boundVariableType ) };
 				else
-					m_value = default(T);
+					m_boundObjects = new T[0];
 			}
 		}
 	}
@@ -470,17 +489,23 @@ namespace RuntimeInspectorNamespace
 		private void GenerateExposedMethodButtons()
 		{
 			if( Inspector.ShowRemoveComponentButton && typeof( Component ).IsAssignableFrom( m_boundVariableType ) && !typeof( Transform ).IsAssignableFrom( m_boundVariableType ) )
-				CreateExposedMethodButton( GameObjectField.removeComponentMethod, () => this, ( value ) => { } );
+				CreateExposedMethodButton(
+						GameObjectField.removeComponentMethod,
+						() => new ExpandableInspectorField<T>[] { this },
+						value => { } );
 
 			ExposedMethod[] methods = m_boundVariableType.GetExposedMethods();
 			if( methods != null )
 			{
-				bool isInitialized = Value != null && !Value.Equals( null );
+				bool isInitialized = BoundValues != null && !BoundValues.Equals( null );
 				for( int i = 0; i < methods.Length; i++ )
 				{
 					ExposedMethod method = methods[i];
 					if( ( isInitialized && method.VisibleWhenInitialized ) || ( !isInitialized && method.VisibleWhenUninitialized ) )
-						CreateExposedMethodButton( method, () => Value, ( value ) => Value = (T) value );
+						CreateExposedMethodButton(
+							method,
+							() => (IEnumerable<object>) BoundValues,
+							value => BoundValues = value.Cast<T>() );
 				}
 			}
 		}
@@ -514,15 +539,16 @@ namespace RuntimeInspectorNamespace
 			}
 		}
 
-		public InspectorField CreateDrawerForComponent( Component component, string variableName = null )
+		public InspectorField CreateDrawerForComponents( IEnumerable<Component> components, string variableName = null )
 		{
-			InspectorField variableDrawer = Inspector.CreateDrawerForType( component.GetType(), drawArea, Depth + 1, false );
+			Type componentType = components.First().GetType();
+			InspectorField variableDrawer = Inspector.CreateDrawerForType( componentType, drawArea, Depth + 1, false );
 			if( variableDrawer != null )
 			{
 				if( variableName == null )
-					variableName = component.GetType().Name + " component";
+					variableName = componentType.Name + " component";
 
-				variableDrawer.BindTo( component.GetType(), string.Empty, () => component, ( value ) => { } );
+				variableDrawer.BindTo( componentType, string.Empty, () => components, ( value ) => { } );
 				variableDrawer.NameRaw = variableName;
 
 				elements.Add( variableDrawer );
@@ -561,7 +587,21 @@ namespace RuntimeInspectorNamespace
 			return variableDrawer;
 		}
 
-		public InspectorField<U> CreateDrawer<U>( string variableName, Func<U> getter, Action<U> setter, bool drawObjectsAsFields = true )
+		public InspectorField<U> CreateDrawer<U>( string variableName, Func<T, U> getter, Action<T, U> setter, bool drawObjectsAsFields = true )
+		{
+				return CreateDrawer<U>(
+					variableName,
+					() => BoundValues.Select( getter ),
+					newChildObjs =>
+					{
+						foreach( T o in BoundValues )
+							foreach( U v in newChildObjs )
+									setter( o, v );
+					},
+					drawObjectsAsFields);
+		}
+
+		public InspectorField<U> CreateDrawer<U>( string variableName, Getter<U> getter, Setter<U> setter, bool drawObjectsAsFields = true )
 		{
 			  InspectorField<U> variableDrawer = Inspector.CreateDrawerForType( typeof(U), drawArea, Depth + 1, drawObjectsAsFields ) as InspectorField<U>;
 				if( variableDrawer != null )
@@ -576,7 +616,7 @@ namespace RuntimeInspectorNamespace
 				return variableDrawer;
 		}
 
-		public InspectorField CreateDrawer( Type variableType, string variableName, Func<object> getter, Action<object> setter, bool drawObjectsAsFields = true )
+		public InspectorField CreateDrawer( Type variableType, string variableName, Getter<object> getter, Setter<object> setter, bool drawObjectsAsFields = true )
 		{
 			InspectorField variableDrawer = Inspector.CreateDrawerForType( variableType, drawArea, Depth + 1, drawObjectsAsFields );
 			if( variableDrawer != null )
@@ -591,7 +631,7 @@ namespace RuntimeInspectorNamespace
 			return variableDrawer;
 		}
 
-		public ExposedMethodField CreateExposedMethodButton( ExposedMethod method, Func<object> getter, Action<object> setter )
+		public ExposedMethodField CreateExposedMethodButton( ExposedMethod method, Getter<object> getter, Setter<object> setter )
 		{
 			ExposedMethodField methodDrawer = (ExposedMethodField) Inspector.CreateDrawerForType( typeof( ExposedMethod ), drawArea, Depth + 1, false );
 			if( methodDrawer != null )

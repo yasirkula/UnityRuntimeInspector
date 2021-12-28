@@ -60,14 +60,14 @@ namespace RuntimeInspectorNamespace
 			isVector2Int = m_boundVariableType == typeof( Vector2Int );
 			if( isVector2Int )
 			{
-				inputX.Text = ( (int) Value.x ).ToString( RuntimeInspectorUtils.numberFormat );
-				inputY.Text = ( (int) Value.y ).ToString( RuntimeInspectorUtils.numberFormat );
+				inputX.Text = ( (int) BoundValues.x ).ToString( RuntimeInspectorUtils.numberFormat );
+				inputY.Text = ( (int) BoundValues.y ).ToString( RuntimeInspectorUtils.numberFormat );
 			}
 			else
 #endif
 			{
-				inputX.Text = Value.x.ToString( RuntimeInspectorUtils.numberFormat );
-				inputY.Text = Value.y.ToString( RuntimeInspectorUtils.numberFormat );
+				inputX.Text = BoundValues.x.ToString( RuntimeInspectorUtils.numberFormat );
+				inputY.Text = BoundValues.y.ToString( RuntimeInspectorUtils.numberFormat );
 			}
 		}
 
@@ -88,13 +88,13 @@ namespace RuntimeInspectorNamespace
 
 			if( couldParse )
 			{
-				Vector2 val = Value;
+				Vector2 val = BoundValues;
 				if( source == inputX )
 					val.x = value;
 				else
 					val.y = value;
 
-				Value = val;
+				BoundValues = val;
 				return true;
 			}
 
@@ -130,24 +130,24 @@ namespace RuntimeInspectorNamespace
 
 		public override void Refresh()
 		{
-			Vector2 prevVal = Value;
+			Vector2 prevVal = BoundValues;
 			base.Refresh();
 
 #if UNITY_2017_2_OR_NEWER
 			if( isVector2Int )
 			{
-				if( Value.x != prevVal.x )
-					inputX.Text = ( (int) Value.x ).ToString( RuntimeInspectorUtils.numberFormat );
-				if( Value.y != prevVal.y )
-					inputY.Text = ( (int) Value.y ).ToString( RuntimeInspectorUtils.numberFormat );
+				if( BoundValues.x != prevVal.x )
+					inputX.Text = ( (int) BoundValues.x ).ToString( RuntimeInspectorUtils.numberFormat );
+				if( BoundValues.y != prevVal.y )
+					inputY.Text = ( (int) BoundValues.y ).ToString( RuntimeInspectorUtils.numberFormat );
 			}
 			else
 #endif
 			{
-				if( Value.x != prevVal.x )
-					inputX.Text = Value.x.ToString( RuntimeInspectorUtils.numberFormat );
-				if( Value.y != prevVal.y )
-					inputY.Text = Value.y.ToString( RuntimeInspectorUtils.numberFormat );
+				if( BoundValues.x != prevVal.x )
+					inputX.Text = BoundValues.x.ToString( RuntimeInspectorUtils.numberFormat );
+				if( BoundValues.y != prevVal.y )
+					inputY.Text = BoundValues.y.ToString( RuntimeInspectorUtils.numberFormat );
 			}
 		}
 	}

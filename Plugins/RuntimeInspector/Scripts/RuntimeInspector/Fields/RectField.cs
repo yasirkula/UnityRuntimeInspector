@@ -82,10 +82,10 @@ namespace RuntimeInspectorNamespace
 			isRectInt = m_boundVariableType == typeof( RectInt );
 #endif
 
-			inputX.Text = Value.x.ToString( RuntimeInspectorUtils.numberFormat );
-			inputY.Text = Value.y.ToString( RuntimeInspectorUtils.numberFormat );
-			inputW.Text = Value.width.ToString( RuntimeInspectorUtils.numberFormat );
-			inputH.Text = Value.height.ToString( RuntimeInspectorUtils.numberFormat );
+			inputX.Text = BoundValues.x.ToString( RuntimeInspectorUtils.numberFormat );
+			inputY.Text = BoundValues.y.ToString( RuntimeInspectorUtils.numberFormat );
+			inputW.Text = BoundValues.width.ToString( RuntimeInspectorUtils.numberFormat );
+			inputH.Text = BoundValues.height.ToString( RuntimeInspectorUtils.numberFormat );
 		}
 
 		private bool OnValueChanged( BoundInputField source, string input )
@@ -105,7 +105,7 @@ namespace RuntimeInspectorNamespace
 
 			if( success )
 			{
-				Rect val = Value;
+				Rect val = BoundValues;
 				if( source == inputX )
 					val.x = value;
 				else if( source == inputY )
@@ -115,7 +115,7 @@ namespace RuntimeInspectorNamespace
 				else
 					val.height = value;
 
-				Value = val;
+				BoundValues = val;
 				return true;
 			}
 
@@ -157,32 +157,32 @@ namespace RuntimeInspectorNamespace
 
 		public override void Refresh()
 		{
-				Rect prevVal = Value;
+				Rect prevVal = BoundValues;
 				base.Refresh();
 
 #if UNITY_2017_2_OR_NEWER
 			if( isRectInt )
 			{
-				if( Value.x != prevVal.x )
-					inputX.Text = ( (int) Value.x ).ToString( RuntimeInspectorUtils.numberFormat );
-				if( Value.y != prevVal.y )
-					inputY.Text = ( (int) Value.y ).ToString( RuntimeInspectorUtils.numberFormat );
-				if( Value.width != prevVal.width )
-					inputW.Text = ( (int) Value.width ).ToString( RuntimeInspectorUtils.numberFormat );
-				if( Value.height != prevVal.height )
-					inputH.Text = ( (int) Value.height ).ToString( RuntimeInspectorUtils.numberFormat );
+				if( BoundValues.x != prevVal.x )
+					inputX.Text = ( (int) BoundValues.x ).ToString( RuntimeInspectorUtils.numberFormat );
+				if( BoundValues.y != prevVal.y )
+					inputY.Text = ( (int) BoundValues.y ).ToString( RuntimeInspectorUtils.numberFormat );
+				if( BoundValues.width != prevVal.width )
+					inputW.Text = ( (int) BoundValues.width ).ToString( RuntimeInspectorUtils.numberFormat );
+				if( BoundValues.height != prevVal.height )
+					inputH.Text = ( (int) BoundValues.height ).ToString( RuntimeInspectorUtils.numberFormat );
 			}
 			else
 #endif
 			{
-				if( Value.x != prevVal.x )
-					inputX.Text = Value.x.ToString( RuntimeInspectorUtils.numberFormat );
-				if( Value.y != prevVal.y )
-					inputY.Text = Value.y.ToString( RuntimeInspectorUtils.numberFormat );
-				if( Value.width != prevVal.width )
-					inputW.Text = Value.width.ToString( RuntimeInspectorUtils.numberFormat );
-				if( Value.height != prevVal.height )
-					inputH.Text = Value.height.ToString( RuntimeInspectorUtils.numberFormat );
+				if( BoundValues.x != prevVal.x )
+					inputX.Text = BoundValues.x.ToString( RuntimeInspectorUtils.numberFormat );
+				if( BoundValues.y != prevVal.y )
+					inputY.Text = BoundValues.y.ToString( RuntimeInspectorUtils.numberFormat );
+				if( BoundValues.width != prevVal.width )
+					inputW.Text = BoundValues.width.ToString( RuntimeInspectorUtils.numberFormat );
+				if( BoundValues.height != prevVal.height )
+					inputH.Text = BoundValues.height.ToString( RuntimeInspectorUtils.numberFormat );
 			}
 		}
 	}

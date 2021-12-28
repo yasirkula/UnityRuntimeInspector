@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Linq;
 using System.Reflection;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace RuntimeInspectorNamespace
 {
@@ -10,17 +12,17 @@ namespace RuntimeInspectorNamespace
 	{
 		protected override int Length { get { return components.Count + 4; } } // 4: active, name, tag, layer
 
-		private Action<bool> isActiveSetter;
-		private Action<string> nameSetter;
-		private Action<string> tagSetter;
+		private Action<GameObject, bool> isActiveSetter;
+		private Action<GameObject, string> nameSetter;
+		private Action<GameObject, string> tagSetter;
 
-		private Func<bool> isActiveGetter;
-		private Func<string> nameGetter;
-		private Func<string> tagGetter;
+		private Func<GameObject, bool> isActiveGetter;
+		private Func<GameObject, string> nameGetter;
+		private Func<GameObject, string> tagGetter;
 		private PropertyInfo layerProp;
 
-		private readonly List<Component> components = new List<Component>( 8 );
-		private readonly List<bool> componentsExpandedStates = new List<bool>();
+		private readonly List<List<Component>> components = new List<List<Component>>();
+		private readonly HashSet<Object> expandedElements = new HashSet<Object>();
 
 		private Type[] addComponentTypes;
 
@@ -31,22 +33,22 @@ namespace RuntimeInspectorNamespace
 		{
 			base.Initialize();
 
-			isActiveGetter = () => Value.activeSelf;
-			isActiveSetter = value => Value.SetActive( value );
+			isActiveGetter = go => go.activeSelf;
+			isActiveSetter = ( go, value ) => go.SetActive( value );
 
-			nameGetter = () => Value.name;
-			nameSetter = value =>
+			nameGetter = go => go.name;
+			nameSetter = ( go, value ) =>
 			{
-				Value.name = value;
-				NameRaw = Value.GetNameWithType();
+				go.name = value;
+				NameRaw = go.GetNameWithType();
 
 				RuntimeHierarchy hierarchy = Inspector.ConnectedHierarchy;
 				if( hierarchy )
-					hierarchy.RefreshNameOf( Value.transform );
+					hierarchy.RefreshNameOf( go.transform );
 			};
 
-			tagGetter = () => Value.tag;
-			tagSetter = value => Value.tag = value;
+			tagGetter = go => go.tag;
+			tagSetter = ( go, value ) => go.tag = value;
 
 			layerProp = typeof( GameObject ).GetProperty( "layer" );
 		}
@@ -56,17 +58,17 @@ namespace RuntimeInspectorNamespace
 			base.OnUnbound();
 
 			components.Clear();
-			componentsExpandedStates.Clear();
+			expandedElements.Clear();
 		}
 
 		protected override void ClearElements()
 		{
-			componentsExpandedStates.Clear();
+			expandedElements.Clear();
 			for( int i = 0; i < elements.Count; i++ )
 			{
 				// Don't keep track of non-expandable drawers' or destroyed components' expanded states
-				if( elements[i] is IExpandableInspectorField )
-					componentsExpandedStates.Add( ( (IExpandableInspectorField) elements[i] ).IsExpanded );
+				if( elements[i] is IExpandableInspectorField expandable && expandable.IsExpanded )
+					expandedElements.Add( elements[i] );
 			}
 
 			base.ClearElements();
@@ -82,11 +84,22 @@ namespace RuntimeInspectorNamespace
 			StringField tagField = CreateDrawer<string>( "Tag", tagGetter, tagSetter ) as StringField;
 			CreateDrawerForVariable( layerProp, "Layer" );
 
-			for( int i = 0, j = 0; i < components.Count; i++ )
+			foreach( var multiEditedComponents in components )
 			{
-				InspectorField componentDrawer = CreateDrawerForComponent( components[i] );
-				if( componentDrawer is IExpandableInspectorField && j < componentsExpandedStates.Count && componentsExpandedStates[j++] )
-					( (IExpandableInspectorField) componentDrawer ).IsExpanded = true;
+				InspectorField drawer = CreateDrawerForComponents( multiEditedComponents );
+
+				if( !( drawer is IExpandableInspectorField expandable ) )
+					return;
+
+				foreach( Component comp in multiEditedComponents )
+				{
+					if( expandedElements.Contains( comp ) )
+					{
+						// If one of the multi-edited components is expanded, expand their shared drawer
+						expandable.IsExpanded = true;
+						break;
+					}
+				}
 			}
 
 			if( nameField )
@@ -98,26 +111,96 @@ namespace RuntimeInspectorNamespace
 			if( Inspector.ShowAddComponentButton )
 				CreateExposedMethodButton( addComponentMethod, () => this, ( value ) => { } );
 
-			componentsExpandedStates.Clear();
+			expandedElements.Clear();
+		}
+
+		private List<Component> GetFilteredComponents( GameObject go )
+		{
+			var comps = new List<Component>();
+			go.GetComponents( comps );
+
+			for( int i = comps.Count - 1; i >= 0; i-- )
+			{
+				if( !comps[i] )
+					comps.RemoveAt( i );
+			}
+
+			if( Inspector.ComponentFilter != null )
+				Inspector.ComponentFilter( go, comps );
+
+			return comps;
 		}
 
 		public override void Refresh()
 		{
 			// Refresh components
 			components.Clear();
-			GameObject go = Value as GameObject;
-			if( go )
-			{
-				go.GetComponents( components );
+			var lut = new Dictionary<Type, Dictionary<GameObject, Queue<Component>>>();
+			int goCount = 0;
 
-				for( int i = components.Count - 1; i >= 0; i-- )
+			foreach( GameObject obj in BoundValues )
+			{
+				goCount++;
+				foreach( Component comp in GetFilteredComponents( obj ) )
 				{
-					if( !components[i] )
-						components.RemoveAt( i );
+					Dictionary<GameObject, Queue<Component>> dictInLut;
+					Queue<Component> queueInDictInLut;
+					Type compType = comp.GetType();
+
+					if( !lut.TryGetValue( compType, out dictInLut ) )
+					{
+						dictInLut = new Dictionary<GameObject, Queue<Component>>();
+						lut[compType] = dictInLut;
+					}
+
+					if( !dictInLut.TryGetValue( obj, out queueInDictInLut ) )
+					{
+						queueInDictInLut = new Queue<Component>();
+						dictInLut[obj] = queueInDictInLut;
+					}
+
+					queueInDictInLut.Enqueue( comp );
+				}
+			}
+
+			while( lut.Count > 0 )
+			{
+				var invalidTypes = new List<Type>();
+
+				foreach( var pair in lut )
+				{
+					Type compType = pair.Key;
+					var dictInLut = pair.Value;
+					var comps = new List<Component>( goCount );
+					bool compOnAllObjects = true;
+
+					foreach( GameObject obj in BoundValues )
+					{
+						if( dictInLut.TryGetValue( obj, out var queue ) )
+						{
+							comps.Add( queue.Dequeue() );
+							if( queue.Count == 0 )
+								dictInLut.Remove( obj );
+						}
+						else
+						{
+							compOnAllObjects = false;
+							invalidTypes.Add( compType );
+							break;
+						}
+					}
+
+					if( compOnAllObjects )
+					{
+						components.Add( comps );
+
+						if( dictInLut.Count == 0)
+							invalidTypes.Add( compType );
+					}
 				}
 
-				if( Inspector.ComponentFilter != null )
-					Inspector.ComponentFilter( go, components );
+				foreach( Type type in invalidTypes )
+					lut.Remove( type );
 			}
 
 			// Regenerate components' drawers, if necessary
@@ -127,8 +210,7 @@ namespace RuntimeInspectorNamespace
 		[UnityEngine.Scripting.Preserve] // This method is bound to addComponentMethod
 		private void AddComponentButtonClicked()
 		{
-			GameObject target = (GameObject) Value;
-			if( !target )
+			if( !BoundValues.Any() )
 				return;
 
 			if( addComponentTypes == null )
@@ -185,12 +267,16 @@ namespace RuntimeInspectorNamespace
 
 			ObjectReferencePicker.Instance.Skin = Inspector.Skin;
 			ObjectReferencePicker.Instance.Show(
-				null, ( type ) =>
+				null, x =>
 				{
-					// Make sure that RuntimeInspector is still inspecting this GameObject
-					if( type != null && target && Inspector && ( Inspector.InspectedObject as GameObject ) == target )
+					if( x is Type type && Inspector )
 					{
-						target.AddComponent( (Type) type );
+						foreach( GameObject o in BoundValues )
+						{
+							// Make sure that RuntimeInspector is still inspecting this GameObject
+							if( Inspector.InspectedObjects.Any( o.Equals ) )
+									o.AddComponent( type );
+						}
 						Inspector.Refresh();
 					}
 				},
@@ -200,19 +286,20 @@ namespace RuntimeInspectorNamespace
 		}
 
 		[UnityEngine.Scripting.Preserve] // This method is bound to removeComponentMethod
-		private static void RemoveComponentButtonClicked( InspectorField<Component> componentDrawer )
+		private static void RemoveComponentButtonClicked( IEnumerable<InspectorField> drawers )
 		{
-			if( !componentDrawer || !componentDrawer.Inspector )
-				return;
-
-			Component component = componentDrawer.Value;
-			if( component && !( component is Transform ) )
-				componentDrawer.StartCoroutine( RemoveComponentCoroutine( component, componentDrawer.Inspector ) );
+			foreach( InspectorField drawer in drawers )
+				if( drawer is ISupportsType<Component> componentDrawer )
+					drawer.StartCoroutine( RemoveComponentCoroutine(
+						componentDrawer.GetBoundOfType<Component>(),
+						drawer.Inspector) );
 		}
 
-		private static IEnumerator RemoveComponentCoroutine( Component component, RuntimeInspector inspector )
+		private static IEnumerator RemoveComponentCoroutine( IEnumerable<Component> components, RuntimeInspector inspector )
 		{
-			Destroy( component );
+				foreach( Component component in components )
+						if( component && ! ( component is Transform ) )
+								Destroy( component );
 
 			// Destroy operation doesn't take place immediately, wait for the component to be fully destroyed
 			yield return null;

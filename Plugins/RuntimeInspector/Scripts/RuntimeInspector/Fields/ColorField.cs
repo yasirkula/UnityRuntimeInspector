@@ -13,6 +13,10 @@ namespace RuntimeInspectorNamespace
 
 		[SerializeField]
 		private PointerEventListener inputColor;
+
+		[SerializeField]
+		private Behaviour multiValueText;
+
 		private Image colorImg;
 #pragma warning restore 0649
 
@@ -31,14 +35,22 @@ namespace RuntimeInspectorNamespace
 
 		private void ShowColorPicker( PointerEventData eventData )
 		{
+			var initialBoundValues = BoundValues;
+			Color? value = BoundValues.GetSingleValue();
+
 			ColorPicker.Instance.Skin = Inspector.Skin;
-			ColorPicker.Instance.Show( OnColorChanged, null, Value, Inspector.Canvas );
+			ColorPicker.Instance.Show(
+				OnColorChanged,
+				null,
+				value.HasValue ? value.Value : Color.white,
+				Inspector.Canvas,
+				() => BoundValues = initialBoundValues );
 		}
 
 		private void OnColorChanged( Color32 color )
 		{
 			colorImg.color = color;
-			Value = color;
+			BoundValues = new Color[] { color };
 		}
 
 		protected override void OnSkinChanged()
@@ -53,7 +65,17 @@ namespace RuntimeInspectorNamespace
 		public override void Refresh()
 		{
 			base.Refresh();
-			colorImg.color = Value;
+			Color? value = BoundValues.GetSingleValue();
+			if( value.HasValue )
+			{
+				multiValueText.enabled = false;
+				colorImg.color = value.Value;
+			}
+			else
+			{
+				multiValueText.enabled = true;
+				colorImg.color = Skin.InputFieldNormalBackgroundColor;
+			}
 		}
 	}
 }

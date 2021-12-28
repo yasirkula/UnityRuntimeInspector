@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
@@ -15,7 +16,9 @@ namespace RuntimeInspectorNamespace
 
 		private const string POOL_OBJECT_NAME = "RuntimeInspectorPool";
 
-		public delegate object InspectedObjectChangingDelegate( object previousInspectedObject, object newInspectedObject );
+		public delegate IEnumerable<object> InspectedObjectChangingDelegate(
+				IEnumerable<object> previousInspectedObjects,
+				IEnumerable<object> newInspectedObjects);
 		public delegate void ComponentFilterDelegate( GameObject gameObject, List<Component> components );
 
 #pragma warning disable 0649
@@ -220,10 +223,10 @@ namespace RuntimeInspectorNamespace
 		private bool inspectLock = false;
 		private bool isDirty = false;
 
-		private object m_inspectedObject;
-		public object InspectedObject { get { return m_inspectedObject; } }
+		private IEnumerable<object> m_inspectedObjects = new object[0];
+		public IEnumerable<object> InspectedObjects { get { return m_inspectedObjects; } }
 
-		public bool IsBound { get { return !m_inspectedObject.IsNull(); } }
+		public bool IsBound { get { return m_inspectedObjects.Any(); } }
 
 		private Canvas m_canvas;
 		public Canvas Canvas { get { return m_canvas; } }
@@ -352,9 +355,9 @@ namespace RuntimeInspectorNamespace
 				if( isDirty )
 				{
 					// Rebind to refresh the exposed variables in Inspector
-					object inspectedObject = m_inspectedObject;
+					IEnumerable<object> inspectedObjects = m_inspectedObjects;
 					StopInspectInternal();
-					InspectInternal( inspectedObject );
+					InspectInternal( inspectedObjects );
 
 					isDirty = false;
 					nextRefreshTime = time + m_refreshInterval;
@@ -377,7 +380,7 @@ namespace RuntimeInspectorNamespace
 			if( IsBound )
 			{
 				if( currentDrawer == null )
-					m_inspectedObject = null;
+					m_inspectedObjects = null;
 				else
 					currentDrawer.Refresh();
 			}
@@ -423,15 +426,15 @@ namespace RuntimeInspectorNamespace
 				currentDrawer.Skin = Skin;
 		}
 
-		public void Inspect<T>( T obj ) where T : class
+		public void Inspect<T>( IEnumerable<T> obj ) where T : class
 		{
 			if( !m_isLocked )
 				InspectInternal( obj );
 		}
 
-		internal void InspectInternal<T>( T obj ) where T : class
+		internal void InspectInternal<T>( IEnumerable<T> obj ) where T : class
 		{
-			if( inspectLock || object.Equals( m_inspectedObject, obj ) )
+			if( inspectLock || object.Equals( m_inspectedObjects, obj ) )
 					return;
 
 			isDirty = false;
@@ -439,11 +442,11 @@ namespace RuntimeInspectorNamespace
 
 			if( OnInspectedObjectChanging != null )
 			{
-					object changed = OnInspectedObjectChanging( m_inspectedObject, obj );
-					if( m_inspectedObject == changed )
+					IEnumerable<object> changed = OnInspectedObjectChanging( m_inspectedObjects, obj );
+					if( m_inspectedObjects == changed )
 						return;
 
-					if( changed is T changedT )
+					if( changed is IEnumerable<T> changedT )
 							obj = changedT;
 					else
 							return;
@@ -454,7 +457,7 @@ namespace RuntimeInspectorNamespace
 			inspectLock = true;
 			try
 			{
-				m_inspectedObject = obj;
+				m_inspectedObjects = obj;
 
 				if( obj.IsNull() )
 					return;
@@ -462,7 +465,7 @@ namespace RuntimeInspectorNamespace
 				InspectorField inspectedObjectDrawer = CreateDrawerForType( obj.GetType(), drawArea, 0, false );
 				if( inspectedObjectDrawer != null )
 				{
-					inspectedObjectDrawer.BindTo( obj.GetType(), string.Empty, () => m_inspectedObject, ( value ) => m_inspectedObject = value );
+					inspectedObjectDrawer.BindTo( obj.GetType(), string.Empty, () => m_inspectedObjects, ( value ) => m_inspectedObjects = value );
 					inspectedObjectDrawer.NameRaw = obj.GetNameWithType();
 					inspectedObjectDrawer.Refresh();
 
@@ -473,15 +476,21 @@ namespace RuntimeInspectorNamespace
 					if( currentDrawer is IExpandableInspectorField )
 						( (IExpandableInspectorField) currentDrawer ).HeaderVisibility = m_inspectedObjectHeaderVisibility;
 
-					GameObject go = m_inspectedObject as GameObject;
-					if( !go && m_inspectedObject as Component )
-						go = ( (Component) m_inspectedObject ).gameObject;
+					if( ConnectedHierarchy )
+					{
+							bool success = true;
+							var options = RuntimeHierarchy.SelectOptions.FocusOnSelection;
+							if( m_inspectedObjects is IEnumerable<GameObject> gameObjects )
+									success = ConnectedHierarchy.Select( gameObjects.Select( go => go.transform ).ToArray(), options );
+							else if( m_inspectedObjects is IEnumerable<Component> components )
+									success = ConnectedHierarchy.Select( components.Select( comp => comp.transform ).ToArray(), options );
 
-					if( ConnectedHierarchy && go && !ConnectedHierarchy.Select( go.transform, RuntimeHierarchy.SelectOptions.FocusOnSelection ) )
-						ConnectedHierarchy.Deselect();
+							if( !success )
+									ConnectedHierarchy.Deselect();
+					}
 				}
 				else
-					m_inspectedObject = null;
+					m_inspectedObjects = null;
 			}
 			finally
 			{
@@ -506,7 +515,7 @@ namespace RuntimeInspectorNamespace
 				currentDrawer = null;
 			}
 
-			m_inspectedObject = null;
+			m_inspectedObjects = null;
 			scrollView.verticalNormalizedPosition = 1f;
 
 			ColorPicker.Instance.Close();
@@ -559,12 +568,6 @@ namespace RuntimeInspectorNamespace
 			newDrawer.Initialize();
 			return newDrawer;
 		}
-
-		// private InspectorField<T>[] GetDrawersForType<T>( Type type, bool drawObjectsAsFields )
-		// {
-		// 		var a = GetDrawersForType( type, drawObjectsAsFields );
-		// 		return (InspectorField<T>[]) a;
-		// }
 
 		private InspectorField[] GetDrawersForType( Type type, bool drawObjectsAsFields )
 		{

@@ -49,36 +49,36 @@ namespace RuntimeInspectorNamespace
 				( reference ) => OnReferenceChanged( (Object) reference ), null,
 				( reference ) => (Object) reference ? ( (Object) reference ).name : "None",
 				( reference ) => reference.GetNameWithType(),
-				allReferences, Value, true, "Select " + m_boundVariableType.Name, Inspector.Canvas );
+				allReferences, BoundValues, true, "Select " + m_boundVariableType.Name, Inspector.Canvas );
 		}
 
 		private void InspectReference( PointerEventData eventData )
 		{
-			if( Value != null && !Value.Equals( null ) )
+			if( BoundValues != null && !BoundValues.Equals( null ) )
 			{
-				if( Value is Component )
-					Inspector.InspectInternal( ( (Component) Value ).gameObject );
+				if( BoundValues is Component )
+					Inspector.InspectInternal( ( (Component) BoundValues ).gameObject );
 				else
-					Inspector.InspectInternal( Value );
+					Inspector.InspectInternal( BoundValues );
 			}
 		}
 
 		protected override void OnBound( MemberInfo variable )
 		{
 			base.OnBound( variable );
-			OnReferenceChanged( Value );
+			OnReferenceChanged( BoundValues );
 		}
 
 		protected virtual void OnReferenceChanged( Object reference )
 		{
-			if( Value != reference )
-				Value = reference;
+			if( BoundValues != reference )
+				BoundValues = reference;
 
 			if( referenceNameText != null )
 				referenceNameText.text = reference.GetNameWithType( m_boundVariableType );
 
 			if( inspectReferenceButton != null )
-				inspectReferenceButton.gameObject.SetActive( Value != null && !Value.Equals( null ) );
+				inspectReferenceButton.gameObject.SetActive( BoundValues != null && !BoundValues.Equals( null ) );
 
 			Inspector.RefreshDelayed();
 		}
@@ -117,11 +117,11 @@ namespace RuntimeInspectorNamespace
 
 		public override void Refresh()
 		{
-			Object lastValue = Value;
+			Object lastValue = BoundValues;
 			base.Refresh();
 
-			if( lastValue != Value )
-				OnReferenceChanged( Value );
+			if( lastValue != BoundValues )
+				OnReferenceChanged( BoundValues );
 		}
 	}
 }

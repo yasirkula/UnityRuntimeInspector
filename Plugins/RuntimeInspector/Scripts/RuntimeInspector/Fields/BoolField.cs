@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Linq;
+using UnityEngine;
 using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
@@ -11,6 +12,9 @@ namespace RuntimeInspectorNamespace
 
 		[SerializeField]
 		private Toggle input;
+
+		[SerializeField]
+		private Behaviour multiValuesMark;
 #pragma warning restore 0649
 
 		public override void Initialize()
@@ -21,7 +25,7 @@ namespace RuntimeInspectorNamespace
 
 		private void OnValueChanged( bool input )
 		{
-			Value = input;
+			BoundValues = new bool[] { input };
 			Inspector.RefreshDelayed();
 		}
 
@@ -37,10 +41,25 @@ namespace RuntimeInspectorNamespace
 			( (RectTransform) input.transform ).anchorMin = rightSideAnchorMin;
 		}
 
+		private void SwitchMarks( bool hasMultipleValues )
+		{
+			input.graphic.enabled = !hasMultipleValues;
+			multiValuesMark.enabled = hasMultipleValues;
+		}
+
 		public override void Refresh()
 		{
 			base.Refresh();
-			input.isOn = Value;
+			bool? value = BoundValues.GetSingleValue();
+			if( value.HasValue )
+			{
+				input.isOn = value.Value;
+				SwitchMarks( false );
+			}
+			else
+			{
+				SwitchMarks( true );
+			}
 		}
 	}
 }
