@@ -1403,7 +1403,7 @@ namespace RuntimeInspectorNamespace
 #endif
 
 				if( m_connectedInspector )
-					m_connectedInspector.Inspect( m_currentSelection.Select( t => t.gameObject ) );
+					m_connectedInspector.Inspect( m_currentSelection.Select( t => t.gameObject ).ToArray() );
 
 				if( OnSelectionChanged != null )
 					OnSelectionChanged( m_currentSelection.AsReadOnly() );

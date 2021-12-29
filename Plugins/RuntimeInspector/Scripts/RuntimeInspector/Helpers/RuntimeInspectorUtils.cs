@@ -1,6 +1,7 @@
 ﻿#define EXCLUDE_BACKING_FIELDS_FROM_VARIABLES
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -103,20 +104,17 @@ namespace RuntimeInspectorNamespace
 		// Distinct entries: single null, return false
 		public static bool GetSingle<T>( this IEnumerable<T> e, out T single ) where T : class
 		{
+			single = null;
 			if( e == null || !e.Any() )
-			{
-					single = null;
-					return true;
-			}
+				return true;
 
 			T first = e.First();
-			if( e.All( x => x == first ) )
+			if( e.All( x => Equals( first, x ) ) )
 			{
-					single = first;
-					return true;
+				single = first;
+				return true;
 			}
 
-			single = null;
 			return false;
 		}
 
@@ -239,7 +237,24 @@ namespace RuntimeInspectorNamespace
 				return string.Concat( "None (", defaultType.Name, ")" );
 			}
 
-			return ( obj is Object ) ? string.Concat( ( (Object) obj ).name, " (", obj.GetType().Name, ")" ) : obj.GetType().Name;
+			string typeName = obj.GetType().Name;
+			if( obj is IEnumerable enumerable )
+			{
+				int count = 0;
+				foreach( object elem in enumerable )
+				{
+					if( count == 0 )
+						typeName = elem.GetType().Name;
+					count++;
+				}
+
+				if( count > 1 )
+					return string.Concat( typeName, " [", count, "]" );
+			}
+			else if( obj is Object unityObject )
+				return string.Concat( unityObject.name, " (", typeName, ")" );
+
+			return typeName;
 		}
 
 		public static Texture GetTexture( this Object obj )

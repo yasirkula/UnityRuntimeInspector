@@ -33,9 +33,7 @@ namespace RuntimeInspectorNamespace
 		{
 			get
 			{
-				if( BoundValues == null )
-						return 0;
-				return BoundValues.SingleOrDefault().Count;
+				return BoundValues.Any() ? BoundValues.Min( list => list.Count ) : 0;
 			}
 		}
 
@@ -66,6 +64,22 @@ namespace RuntimeInspectorNamespace
 
 			isArray = m_boundVariableType.IsArray;
 			elementType = isArray ? m_boundVariableType.GetElementType() : m_boundVariableType.GetGenericArguments()[0];
+			UpdateSizeInputText();
+		}
+
+		private void UpdateSizeInputText()
+		{
+			if( BoundValues == null || !BoundValues.Any() )
+				return;
+
+			int firstCount = BoundValues.First().Count;
+			if( BoundValues.Any( x => x.Count != firstCount ) )
+				sizeInput.HasMultipleValues = true;
+			else
+			{
+				sizeInput.HasMultipleValues = false;
+				sizeInput.Text = firstCount.ToString( RuntimeInspectorUtils.numberFormat );
+			}
 		}
 
 		protected override void OnUnbound()
@@ -107,11 +121,8 @@ namespace RuntimeInspectorNamespace
 
 		protected override void GenerateElements()
 		{
-			if( BoundValues == null )
-				return;
-
-			int count = BoundValues.SingleOrDefault().Count;
-			for( int i = 0; i < count; i++ )
+			int minElemCount = Length;
+			for( int i = 0; i < minElemCount; i++ )
 			{
 				InspectorField elementDrawer = Inspector.CreateDrawerForType( elementType, drawArea, Depth + 1 );
 				if( elementDrawer == null )
@@ -123,7 +134,7 @@ namespace RuntimeInspectorNamespace
 
 					int i_copy = i;
 					string variableName = Inspector.ArrayIndicesStartAtOne ? ( ( i + 1 ) + ":" ) : ( i + ":" );
-					elementDrawer.BindTo( elementType, variableName, () => everyIth.AsReadOnly(), everyNewIth =>
+					elementDrawer.BindTo( elementType, variableName, () => everyIth, everyNewIth =>
 					{
 						foreach( var ( list, newIth ) in BoundValues.Zip( everyNewIth, Tuple.Create ) )
 							list[i_copy] = newIth;
@@ -139,7 +150,7 @@ namespace RuntimeInspectorNamespace
 				elements.Add( elementDrawer );
 			}
 
-			sizeInput.Text = Length.ToString( RuntimeInspectorUtils.numberFormat );
+			UpdateSizeInputText();
 			elementsExpandedStates.Clear();
 		}
 
@@ -148,17 +159,19 @@ namespace RuntimeInspectorNamespace
 			object[] assignableObjects = RuntimeInspectorUtils.GetAssignableObjectsFromDraggedReferenceItem( eventData, elementType );
 			if( assignableObjects != null && assignableObjects.Length > 0 )
 			{
-				int prevLength = Length;
-				if( !OnSizeChanged( null, ( prevLength + assignableObjects.Length ).ToString( RuntimeInspectorUtils.numberFormat ) ) )
-					return;
-
+				var newBoundValues = new List<IList>();
 				foreach( IList list in BoundValues )
+				{
+					int oldCount = list.Count;
+					IList current = ChangeSizeOfList( list, oldCount + assignableObjects.Length );
+
 					for( int i = 0; i < assignableObjects.Length; i++ )
-						list[prevLength + i] = assignableObjects[i];
+						current[oldCount + i] = assignableObjects[i];
 
-				// trigger setter
-				BoundValues = BoundValues;
+					newBoundValues.Add( current );
+				}
 
+				BoundValues = newBoundValues;
 				if( !IsExpanded )
 					IsExpanded = true;
 			}
@@ -173,28 +186,20 @@ namespace RuntimeInspectorNamespace
 			return false;
 		}
 
-		private bool OnSizeChanged( BoundInputField source, string input )
+		private IList ChangeSizeOfList( IList list, int newLength )
 		{
-			if( !int.TryParse( input, NumberStyles.Integer, RuntimeInspectorUtils.numberFormat, out int newLength )
-					|| newLength < 0
-					|| !( BoundValues is IList boundObjectsList ) )
-				return false;
-
-			int currLength = Length;
-			if( currLength == newLength )
-				return false;
-
-			for( int j = 0; j < boundObjectsList.Count; j++ )
+			int curLength = list.Count;
+			if( curLength != newLength )
 			{
-				if( boundObjectsList[j] is Array array )
+				if( list is Array array )
 				{
 					Array newArray = Array.CreateInstance( m_boundVariableType.GetElementType(), newLength );
-					if( newLength > currLength )
+					if( newLength > curLength )
 					{
 						if( array != null )
-							Array.ConstrainedCopy( array, 0, newArray, 0, currLength );
+							Array.ConstrainedCopy( array, 0, newArray, 0, curLength );
 
-						for( int i = currLength; i < newLength; i++ )
+						for( int i = curLength; i < newLength; i++ )
 						{
 							object template = GetTemplateElement( array );
 							if( template != null )
@@ -204,18 +209,16 @@ namespace RuntimeInspectorNamespace
 					else
 						Array.ConstrainedCopy( array, 0, newArray, 0, newLength );
 
-					boundObjectsList[j] = newArray;
+					list = newArray;
 				}
-				else if( boundObjectsList[j] is IList list )
+				else
 				{
-					int deltaLength = newLength - currLength;
+					int deltaLength = newLength - curLength;
 					if( deltaLength > 0 )
 					{
 						if( list == null )
-						{
-							list = (IList) Activator.CreateInstance( typeof( List<> ).MakeGenericType( m_boundVariableType.GetGenericArguments()[0] ) );
-							boundObjectsList[j] = list;
-						}
+							list = (IList) Activator.CreateInstance(
+								typeof( List<> ).MakeGenericType( m_boundVariableType.GetGenericArguments()[0] ) );
 
 						for( int i = 0; i < deltaLength; i++ )
 							list.Add( GetTemplateElement( list ) );
@@ -227,21 +230,31 @@ namespace RuntimeInspectorNamespace
 					}
 				}
 			}
+			return list;
+		}
 
-			// trigger setter
-			BoundValues = BoundValues;
+		private bool OnSizeChanged( BoundInputField source, string input )
+		{
+			if( !int.TryParse( input, NumberStyles.Integer, RuntimeInspectorUtils.numberFormat, out int newLength ) || newLength < 0 )
+				return false;
+
+			var newBoundValues = new List<IList>();
+			foreach( IList list in BoundValues )
+				newBoundValues.Add( ChangeSizeOfList( list, newLength ) );
+
+			BoundValues = newBoundValues;
 			Inspector.RefreshDelayed();
 			return true;
 		}
 
-		private object GetTemplateElement( object value )
+		private object GetTemplateElement( IList value )
 		{
 			Array array = null;
 			IList list = null;
 			if( isArray )
 				array = (Array) value;
 			else
-				list = (IList) value;
+				list = value;
 
 			object template = null;
 			Type elementType = isArray ? m_boundVariableType.GetElementType() : m_boundVariableType.GetGenericArguments()[0];

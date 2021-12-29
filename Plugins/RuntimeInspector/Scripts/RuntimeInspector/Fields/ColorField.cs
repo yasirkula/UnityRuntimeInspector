@@ -17,7 +17,7 @@ namespace RuntimeInspectorNamespace
 		private PointerEventListener inputColor;
 
 		[SerializeField]
-		private Behaviour multiValueText;
+		private Text multiValueText;
 
 		private Image colorImg;
 
@@ -65,6 +65,7 @@ namespace RuntimeInspectorNamespace
 			Vector2 rightSideAnchorMin = new Vector2( Skin.LabelWidthPercentage, 0f );
 			variableNameMask.rectTransform.anchorMin = rightSideAnchorMin;
 			colorPickerArea.anchorMin = rightSideAnchorMin;
+			multiValueText.SetSkinInputFieldText( Skin );
 		}
 
 		public override void Refresh()

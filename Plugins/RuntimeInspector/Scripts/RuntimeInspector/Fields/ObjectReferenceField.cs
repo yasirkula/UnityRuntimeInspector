@@ -47,10 +47,15 @@ namespace RuntimeInspectorNamespace
 
 			ObjectReferencePicker.Instance.Skin = Inspector.Skin;
 			ObjectReferencePicker.Instance.Show(
-				( reference ) => OnReferenceChanged( new Object[] { (Object) reference } ), null,
-				( reference ) => (Object) reference ? ( (Object) reference ).name : "None",
-				( reference ) => reference.GetNameWithType(),
-				allReferences, BoundValues, true, "Select " + m_boundVariableType.Name, Inspector.Canvas );
+       onReferenceChanged:         ( reference ) => OnReferenceChanged( new Object[] { (Object) reference } ),
+       onSelectionConfirmed:       null,
+       referenceNameGetter:        ( reference ) => (Object) reference ? ( (Object) reference ).name : "None",
+       referenceDisplayNameGetter: ( reference ) => reference.GetNameWithType(),
+       references:                 allReferences,
+       initialReference:           BoundValues.First(),
+       includeNullReference:       true,
+       title:                      "Select " + m_boundVariableType.Name,
+       referenceCanvas:            Inspector.Canvas);
 		}
 
 		private void InspectReference( PointerEventData eventData )

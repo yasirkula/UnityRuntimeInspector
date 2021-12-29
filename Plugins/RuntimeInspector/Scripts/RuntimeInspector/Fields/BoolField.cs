@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
@@ -14,7 +13,7 @@ namespace RuntimeInspectorNamespace
 		private Toggle input;
 
 		[SerializeField]
-		private Behaviour multiValuesMark;
+		private Image multiValuesMark;
 #pragma warning restore 0649
 
 		public override void Initialize()
@@ -35,6 +34,7 @@ namespace RuntimeInspectorNamespace
 
 			toggleBackground.color = Skin.InputFieldNormalBackgroundColor;
 			input.graphic.color = Skin.ToggleCheckmarkColor;
+			multiValuesMark.color = Skin.ToggleCheckmarkColor;
 
 			Vector2 rightSideAnchorMin = new Vector2( Skin.LabelWidthPercentage, 0f );
 			variableNameMask.rectTransform.anchorMin = rightSideAnchorMin;

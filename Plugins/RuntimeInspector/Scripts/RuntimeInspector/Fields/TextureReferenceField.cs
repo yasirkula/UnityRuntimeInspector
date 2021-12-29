@@ -15,6 +15,9 @@ namespace RuntimeInspectorNamespace
 #pragma warning disable 0649
 		[SerializeField]
 		private RawImage referencePreview;
+
+		[SerializeField]
+		private Text multiValueText;
 #pragma warning restore 0649
 
 		protected override float HeightMultiplier { get { return 2f; } }
@@ -22,6 +25,12 @@ namespace RuntimeInspectorNamespace
 		public override bool SupportsType( Type type )
 		{
 			return typeof( Texture ).IsAssignableFrom( type ) || typeof( Sprite ).IsAssignableFrom( type );
+		}
+
+		protected override void OnSkinChanged()
+		{
+			base.OnSkinChanged();
+			multiValueText.SetSkinInputFieldText( Skin );
 		}
 
 		protected override void OnReferenceChanged( IEnumerable<Object> references )
@@ -34,10 +43,12 @@ namespace RuntimeInspectorNamespace
 				Texture tex = value.GetTexture();
 				referencePreview.enabled = tex != null;
 				referencePreview.texture = tex;
+				multiValueText.enabled = false;
 			}
 			else
 			{
 				referencePreview.enabled = false;
+				multiValueText.enabled = true;
 			}
 		}
 	}

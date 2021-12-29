@@ -8,7 +8,8 @@ namespace RuntimeInspectorNamespace
 		public delegate bool OnValueChangedDelegate( BoundInputField source, string input );
 
 		[SerializeField]
-		private Text multiValuesText;
+		[UnityEngine.Serialization.FormerlySerializedAs("multiValuesText")]
+		private Text multiValueText;
 
 		private bool initialized = false;
 		private bool inputValid = true;
@@ -82,8 +83,8 @@ namespace RuntimeInspectorNamespace
 						placeholder.color = placeholderColor;
 					}
 
-					if( multiValuesText )
-						multiValuesText.SetSkinInputFieldText( m_skin );
+					if( multiValueText )
+						multiValueText.SetSkinInputFieldText( m_skin );
 				}
 			}
 		}
@@ -163,8 +164,8 @@ namespace RuntimeInspectorNamespace
 		private void OnHasMultipleValuesChanged( bool value )
 		{
 			inputField.textComponent.enabled = !value;
-			if( multiValuesText )
-				multiValuesText.enabled = value;
+			if( multiValueText )
+				multiValueText.enabled = value;
 		}
 	}
 }

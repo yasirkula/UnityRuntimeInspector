@@ -1,14 +1,12 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
-	public class EnumField : InspectorField<object>
+    public class EnumField : InspectorField<object>
 	{
 #pragma warning disable 0649
 		[SerializeField]
@@ -37,6 +35,9 @@ namespace RuntimeInspectorNamespace
 
 		[SerializeField]
 		private Dropdown input;
+
+		[SerializeField]
+		private Text multiValueText;
 #pragma warning restore 0649
 
 		private static readonly Dictionary<Type, List<string>> enumNames = new Dictionary<Type, List<string>>();
@@ -145,6 +146,7 @@ namespace RuntimeInspectorNamespace
 
 			input.captionText.SetSkinInputFieldText( Skin );
 			templateText.SetSkinInputFieldText( Skin );
+			multiValueText.SetSkinInputFieldText( Skin );
 
 			templateBackground.color = Skin.InputFieldNormalBackgroundColor.Tint( 0.075f );
 			templateCheckmark.color = Skin.ToggleCheckmarkColor;
@@ -162,10 +164,11 @@ namespace RuntimeInspectorNamespace
 				int valueIndex = currEnumValues.IndexOf( value );
 				if( valueIndex != -1 )
 					input.value = valueIndex;
+				multiValueText.enabled = false;
 			}
 			else
 			{
-				throw new NotImplementedException();
+				multiValueText.enabled = true;
 			}
 		}
 	}

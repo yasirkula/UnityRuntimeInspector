@@ -223,10 +223,10 @@ namespace RuntimeInspectorNamespace
 		private bool inspectLock = false;
 		private bool isDirty = false;
 
-		private IEnumerable<object> m_inspectedObjects = new object[0];
+		private IEnumerable<object> m_inspectedObjects;
 		public IEnumerable<object> InspectedObjects { get { return m_inspectedObjects; } }
 
-		public bool IsBound { get { return m_inspectedObjects.Any(); } }
+		public bool IsBound { get { return m_inspectedObjects != null && m_inspectedObjects.Any(); } }
 
 		private Canvas m_canvas;
 		public Canvas Canvas { get { return m_canvas; } }
@@ -459,13 +459,15 @@ namespace RuntimeInspectorNamespace
 			{
 				m_inspectedObjects = obj;
 
-				if( obj.IsNull() )
+				if( obj == null || !obj.Any() )
 					return;
 
-				InspectorField inspectedObjectDrawer = CreateDrawerForType( obj.GetType(), drawArea, 0, false );
+				Type elemType = obj.First().GetType();
+
+				InspectorField inspectedObjectDrawer = CreateDrawerForType( elemType, drawArea, 0, false );
 				if( inspectedObjectDrawer != null )
 				{
-					inspectedObjectDrawer.BindTo( obj.GetType(), string.Empty, () => m_inspectedObjects, ( value ) => m_inspectedObjects = value );
+					inspectedObjectDrawer.BindTo( elemType, string.Empty, () => m_inspectedObjects, ( value ) => m_inspectedObjects = value );
 					inspectedObjectDrawer.NameRaw = obj.GetNameWithType();
 					inspectedObjectDrawer.Refresh();
 

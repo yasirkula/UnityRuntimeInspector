@@ -51,7 +51,7 @@ namespace RuntimeInspectorNamespace
 			{
 				var newBoundValues = new List<object>();
 				foreach( object o in BoundValues )
-						newBoundValues.Add( boundMethod.CallAndReturnValue( o ) );
+					newBoundValues.Add( boundMethod.CallAndReturnValue( o ) );
 				BoundValues = newBoundValues;
 			}
 			else
