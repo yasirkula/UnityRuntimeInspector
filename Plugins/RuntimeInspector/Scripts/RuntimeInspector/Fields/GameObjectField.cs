@@ -76,9 +76,6 @@ namespace RuntimeInspectorNamespace
 
 		protected override void GenerateElements()
 		{
-			if( components.Count == 0 )
-				return;
-
 			CreateDrawer<bool>( "Is Active", isActiveGetter, isActiveSetter );
 			StringField nameField = CreateDrawer<string>( "Name", nameGetter, nameSetter ) as StringField;
 			StringField tagField = CreateDrawer<string>( "Tag", tagGetter, tagSetter ) as StringField;
@@ -143,6 +140,9 @@ namespace RuntimeInspectorNamespace
 
 			foreach( GameObject obj in BoundValues )
 			{
+				if( !obj )
+					continue;
+
 				goCount++;
 				foreach( Component comp in GetFilteredComponents( obj ) )
 				{
@@ -289,20 +289,19 @@ namespace RuntimeInspectorNamespace
 		}
 
 		[UnityEngine.Scripting.Preserve] // This method is bound to removeComponentMethod
-		private static void RemoveComponentButtonClicked( IEnumerable<InspectorField> drawers )
+		private static void RemoveComponentButtonClicked( InspectorField drawer )
 		{
-			foreach( InspectorField drawer in drawers )
-				if( drawer is ISupportsType<Component> componentDrawer )
-					drawer.StartCoroutine( RemoveComponentCoroutine(
-						componentDrawer.GetBoundOfType<Component>(),
-						drawer.Inspector) );
+			if( drawer is ISupportsType<Component> componentDrawer )
+				drawer.StartCoroutine( RemoveComponentCoroutine(
+					componentDrawer.GetBoundOfType<Component>(),
+					drawer.Inspector) );
 		}
 
 		private static IEnumerator RemoveComponentCoroutine( IEnumerable<Component> components, RuntimeInspector inspector )
 		{
-				foreach( Component component in components )
-						if( component && ! ( component is Transform ) )
-								Destroy( component );
+			foreach( Component component in components )
+				if( component && ! ( component is Transform ) )
+					Destroy( component );
 
 			// Destroy operation doesn't take place immediately, wait for the component to be fully destroyed
 			yield return null;

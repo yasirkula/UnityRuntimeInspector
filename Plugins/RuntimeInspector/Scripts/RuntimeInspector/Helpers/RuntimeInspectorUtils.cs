@@ -229,30 +229,40 @@ namespace RuntimeInspectorNamespace
 
 		public static string GetNameWithType( this object obj, Type defaultType = null )
 		{
+			const string none = "None";
+
 			if( obj.IsNull() )
 			{
 				if( defaultType == null )
-					return "None";
+					return none;
 
 				return string.Concat( "None (", defaultType.Name, ")" );
 			}
 
-			string typeName = obj.GetType().Name;
+			string typeName = null;
 			if( obj is IEnumerable enumerable )
 			{
 				int count = 0;
 				foreach( object elem in enumerable )
 				{
-					if( count == 0 )
+					if( typeName == null && elem != null )
 						typeName = elem.GetType().Name;
 					count++;
 				}
 
+				if( typeName == null )
+					typeName = none;
+
 				if( count > 1 )
 					return string.Concat( typeName, " [", count, "]" );
 			}
-			else if( obj is Object unityObject )
-				return string.Concat( unityObject.name, " (", typeName, ")" );
+			else
+			{
+				typeName = obj.GetType().Name;
+
+				if( obj is Object unityObject )
+					return string.Concat( unityObject.name, " (", typeName, ")" );
+			}
 
 			return typeName;
 		}

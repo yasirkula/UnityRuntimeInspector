@@ -47,15 +47,15 @@ namespace RuntimeInspectorNamespace
 
 			ObjectReferencePicker.Instance.Skin = Inspector.Skin;
 			ObjectReferencePicker.Instance.Show(
-       onReferenceChanged:         ( reference ) => OnReferenceChanged( new Object[] { (Object) reference } ),
-       onSelectionConfirmed:       null,
-       referenceNameGetter:        ( reference ) => (Object) reference ? ( (Object) reference ).name : "None",
-       referenceDisplayNameGetter: ( reference ) => reference.GetNameWithType(),
-       references:                 allReferences,
-       initialReference:           BoundValues.First(),
-       includeNullReference:       true,
-       title:                      "Select " + m_boundVariableType.Name,
-       referenceCanvas:            Inspector.Canvas);
+				onReferenceChanged:         ( reference ) => OnReferenceChanged( new Object[] { (Object) reference } ),
+				onSelectionConfirmed:       null,
+				referenceNameGetter:        ( reference ) => (Object) reference ? ( (Object) reference ).name : "None",
+				referenceDisplayNameGetter: ( reference ) => reference.GetNameWithType(),
+				references:                 allReferences,
+				initialReference:           BoundValues.First(),
+				includeNullReference:       true,
+				title:                      "Select " + m_boundVariableType.Name,
+				referenceCanvas:            Inspector.Canvas);
 		}
 
 		private void InspectReference( PointerEventData eventData )
@@ -77,15 +77,13 @@ namespace RuntimeInspectorNamespace
 
 		protected virtual void OnReferenceChanged( IEnumerable<Object> references )
 		{
-			if( BoundValues != references )
-				BoundValues = references;
-
 			if( referenceNameText != null )
 				referenceNameText.text = references.GetNameWithType( m_boundVariableType );
 
 			if( inspectReferenceButton != null )
-				inspectReferenceButton.gameObject.SetActive( BoundValues.Any() );
+				inspectReferenceButton.gameObject.SetActive( BoundValues.Any( x => x != null ) );
 
+			BoundValues = references;
 			Inspector.RefreshDelayed();
 		}
 
@@ -122,10 +120,10 @@ namespace RuntimeInspectorNamespace
 
 		public override void Refresh()
 		{
-			var oldBoundValues = BoundValues;
+			var oldBoundValues = BoundValues.FirstOrDefault();
 			base.Refresh();
 
-			if( oldBoundValues != BoundValues )
+			if( oldBoundValues != BoundValues.FirstOrDefault() )
 				OnReferenceChanged( BoundValues );
 		}
 	}

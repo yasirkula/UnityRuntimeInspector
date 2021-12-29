@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
-    public class EnumField : InspectorField<object>
+    public class EnumField : InspectorField<int>
 	{
 #pragma warning disable 0649
 		[SerializeField]
@@ -111,7 +111,7 @@ namespace RuntimeInspectorNamespace
 
 		private void OnValueChanged( int input )
 		{
-			BoundValues = new object[] { currEnumValues[input] };
+			BoundValues = new int[] { input };
 			Inspector.RefreshDelayed();
 		}
 
@@ -156,19 +156,21 @@ namespace RuntimeInspectorNamespace
 			( (RectTransform) input.transform ).anchorMin = rightSideAnchorMin;
 		}
 
+		private void UpdateMultiValueText( bool hasMultipleValues )
+		{
+			multiValueText.enabled = hasMultipleValues;
+			input.captionText.enabled = !hasMultipleValues;
+		}
+
 		public override void Refresh()
 		{
 			base.Refresh();
-			if( BoundValues.GetSingle( out object value ) )
+			int? value = BoundValues.GetSingle();
+
+			UpdateMultiValueText( !value.HasValue );
+			if( value.HasValue )
 			{
-				int valueIndex = currEnumValues.IndexOf( value );
-				if( valueIndex != -1 )
-					input.value = valueIndex;
-				multiValueText.enabled = false;
-			}
-			else
-			{
-				multiValueText.enabled = true;
+				input.value = value.Value;
 			}
 		}
 	}

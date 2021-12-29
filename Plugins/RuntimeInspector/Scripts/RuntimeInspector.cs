@@ -462,7 +462,9 @@ namespace RuntimeInspectorNamespace
 				if( obj == null || !obj.Any() )
 					return;
 
-				Type elemType = obj.First().GetType();
+				Type elemType = obj.GetType().GetElementType();
+				if( elemType == null )
+					return;
 
 				InspectorField inspectedObjectDrawer = CreateDrawerForType( elemType, drawArea, 0, false );
 				if( inspectedObjectDrawer != null )
