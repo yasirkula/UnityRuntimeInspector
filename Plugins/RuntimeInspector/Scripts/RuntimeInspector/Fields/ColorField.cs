@@ -1,11 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
-    public class ColorField : InspectorField<Color>
+    public class ColorField : InspectorField<Color>, IBound<Color32>
 	{
 #pragma warning disable 0649
 		[SerializeField]
@@ -18,9 +20,12 @@ namespace RuntimeInspectorNamespace
 		private Behaviour multiValueText;
 
 		private Image colorImg;
+
+        IEnumerable<Color32> IBound<Color32>.BoundValues
+			=> BoundValues.Cast<Color32>();
 #pragma warning restore 0649
 
-		public override void Initialize()
+        public override void Initialize()
 		{
 			base.Initialize();
 
@@ -36,7 +41,7 @@ namespace RuntimeInspectorNamespace
 		private void ShowColorPicker( PointerEventData eventData )
 		{
 			var initialBoundValues = BoundValues;
-			Color? value = BoundValues.GetSingleValue();
+			Color? value = BoundValues.GetSingle();
 
 			ColorPicker.Instance.Skin = Inspector.Skin;
 			ColorPicker.Instance.Show(
@@ -65,7 +70,7 @@ namespace RuntimeInspectorNamespace
 		public override void Refresh()
 		{
 			base.Refresh();
-			Color? value = BoundValues.GetSingleValue();
+			Color? value = BoundValues.GetSingle();
 			if( value.HasValue )
 			{
 				multiValueText.enabled = false;

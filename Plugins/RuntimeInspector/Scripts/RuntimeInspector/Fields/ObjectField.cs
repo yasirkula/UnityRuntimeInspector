@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
@@ -20,7 +21,7 @@ namespace RuntimeInspectorNamespace
 		{
 			get
 			{
-				if( BoundValues.IsNull() )
+				if( !BoundValues.Any() )
 				{
 					if( !initializeObjectButton.gameObject.activeSelf )
 						return -1;
@@ -55,7 +56,7 @@ namespace RuntimeInspectorNamespace
 
 		protected override void GenerateElements()
 		{
-			if( BoundValues.IsNull() )
+			if( !BoundValues.Any() )
 			{
 				initializeObjectButton.gameObject.SetActive( CanInitializeNewObject() );
 				return;
@@ -63,7 +64,7 @@ namespace RuntimeInspectorNamespace
 
 			initializeObjectButton.gameObject.SetActive( false );
 
-			if( ( customEditor = RuntimeInspectorUtils.GetCustomEditor( BoundValues.GetType() ) ) != null )
+			if( ( customEditor = RuntimeInspectorUtils.GetCustomEditor( BoundValues.First().GetType() ) ) != null )
 				customEditor.GenerateElements( this );
 			else
 				CreateDrawersForVariables();
@@ -96,16 +97,16 @@ namespace RuntimeInspectorNamespace
 
 		public void CreateDrawersForVariables( params string[] variables )
 		{
+			var vars = Inspector.GetExposedVariablesForType( BoundValues.First().GetType() );
+
 			if( variables == null || variables.Length == 0 )
 			{
-				foreach( MemberInfo variable in Inspector.GetExposedVariablesForType( BoundValues.GetType() ) )
-				{
-						CreateDrawerForVariable( variable );
-				}
+				foreach( MemberInfo variable in vars )
+					CreateDrawerForVariable( variable );
 			}
 			else
 			{
-				foreach( MemberInfo variable in Inspector.GetExposedVariablesForType( BoundValues.GetType() ) )
+				foreach( MemberInfo variable in vars )
 				{
 					if( Array.IndexOf( variables, variable.Name ) >= 0 )
 						CreateDrawerForVariable( variable );
@@ -115,14 +116,16 @@ namespace RuntimeInspectorNamespace
 
 		public void CreateDrawersForVariablesExcluding( params string[] variablesToExclude )
 		{
+			var vars = Inspector.GetExposedVariablesForType( BoundValues.First().GetType() );
+
 			if( variablesToExclude == null || variablesToExclude.Length == 0 )
 			{
-				foreach( MemberInfo variable in Inspector.GetExposedVariablesForType( BoundValues.GetType() ) )
+				foreach( MemberInfo variable in vars )
 					CreateDrawerForVariable( variable );
 			}
 			else
 			{
-				foreach( MemberInfo variable in Inspector.GetExposedVariablesForType( BoundValues.GetType() ) )
+				foreach( MemberInfo variable in vars )
 				{
 					if( Array.IndexOf( variablesToExclude, variable.Name ) < 0 )
 						CreateDrawerForVariable( variable );
@@ -171,7 +174,7 @@ namespace RuntimeInspectorNamespace
 		{
 			if( CanInitializeNewObject() )
 			{
-				BoundValues = m_boundVariableType.Instantiate();
+				BoundValues = new object[] { m_boundVariableType.Instantiate() };
 
 				RegenerateElements();
 				IsExpanded = true;

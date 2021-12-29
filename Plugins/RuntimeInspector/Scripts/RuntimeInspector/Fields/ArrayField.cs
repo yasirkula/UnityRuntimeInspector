@@ -125,7 +125,7 @@ namespace RuntimeInspectorNamespace
 					string variableName = Inspector.ArrayIndicesStartAtOne ? ( ( i + 1 ) + ":" ) : ( i + ":" );
 					elementDrawer.BindTo( elementType, variableName, () => everyIth.AsReadOnly(), everyNewIth =>
 					{
-						foreach( var ( list, newIth ) in BoundValues.Zip( everyNewIth, RuntimeInspectorUtils.MakeTuple ) )
+						foreach( var ( list, newIth ) in BoundValues.Zip( everyNewIth, Tuple.Create ) )
 							list[i_copy] = newIth;
 
 						// Trigger setter

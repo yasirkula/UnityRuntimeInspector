@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
@@ -108,7 +110,7 @@ namespace RuntimeInspectorNamespace
 
 		private void OnValueChanged( int input )
 		{
-			BoundValues = currEnumValues[input];
+			BoundValues = new object[] { currEnumValues[input] };
 			Inspector.RefreshDelayed();
 		}
 
@@ -155,10 +157,16 @@ namespace RuntimeInspectorNamespace
 		public override void Refresh()
 		{
 			base.Refresh();
-
-			int valueIndex = currEnumValues.IndexOf( BoundValues );
-			if( valueIndex != -1 )
-				input.value = valueIndex;
+			if( BoundValues.GetSingle( out object value ) )
+			{
+				int valueIndex = currEnumValues.IndexOf( value );
+				if( valueIndex != -1 )
+					input.value = valueIndex;
+			}
+			else
+			{
+				throw new NotImplementedException();
+			}
 		}
 	}
 }

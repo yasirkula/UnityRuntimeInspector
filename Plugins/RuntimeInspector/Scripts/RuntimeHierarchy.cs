@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
@@ -284,15 +285,7 @@ namespace RuntimeInspectorNamespace
 				if( m_connectedInspector != value )
 				{
 					m_connectedInspector = value;
-
-					for( int i = m_currentSelection.Count - 1; i >= 0; i-- )
-					{
-						if( m_currentSelection[i] )
-						{
-							m_connectedInspector.Inspect( m_currentSelection[i].gameObject );
-							break;
-						}
-					}
+					m_connectedInspector.Inspect( m_currentSelection.Select( t => t.gameObject ) );
 				}
 			}
 		}
@@ -1410,16 +1403,7 @@ namespace RuntimeInspectorNamespace
 #endif
 
 				if( m_connectedInspector )
-				{
-					for( int i = m_currentSelection.Count - 1; i >= 0; i-- )
-					{
-						if( m_currentSelection[i] )
-						{
-							m_connectedInspector.Inspect( m_currentSelection[i].gameObject );
-							break;
-						}
-					}
-				}
+					m_connectedInspector.Inspect( m_currentSelection.Select( t => t.gameObject ) );
 
 				if( OnSelectionChanged != null )
 					OnSelectionChanged( m_currentSelection.AsReadOnly() );

@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 #if !UNITY_EDITOR && NETFX_CORE
 using System.Reflection;
 #endif
@@ -22,15 +24,21 @@ namespace RuntimeInspectorNamespace
 			return typeof( Texture ).IsAssignableFrom( type ) || typeof( Sprite ).IsAssignableFrom( type );
 		}
 
-		protected override void OnReferenceChanged( Object reference )
+		protected override void OnReferenceChanged( IEnumerable<Object> references )
 		{
-			base.OnReferenceChanged( reference );
+			base.OnReferenceChanged( references );
+			referenceNameText.gameObject.SetActive( !references.Any() );
 
-			referenceNameText.gameObject.SetActive( !reference );
-
-			Texture tex = reference.GetTexture();
-			referencePreview.enabled = tex != null;
-			referencePreview.texture = tex;
+			if( BoundValues.GetSingle( out Object value ) )
+			{
+				Texture tex = value.GetTexture();
+				referencePreview.enabled = tex != null;
+				referencePreview.texture = tex;
+			}
+			else
+			{
+				referencePreview.enabled = false;
+			}
 		}
 	}
 }

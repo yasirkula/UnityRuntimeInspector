@@ -488,11 +488,15 @@ namespace RuntimeInspectorNamespace
 
 		private void GenerateExposedMethodButtons()
 		{
-			if( Inspector.ShowRemoveComponentButton && typeof( Component ).IsAssignableFrom( m_boundVariableType ) && !typeof( Transform ).IsAssignableFrom( m_boundVariableType ) )
+			if( Inspector.ShowRemoveComponentButton
+				&&  typeof( Component ).IsAssignableFrom( m_boundVariableType )
+				&& !typeof( Transform ).IsAssignableFrom( m_boundVariableType ) )
+			{
 				CreateExposedMethodButton(
-						GameObjectField.removeComponentMethod,
-						() => new ExpandableInspectorField<T>[] { this },
-						value => { } );
+					GameObjectField.removeComponentMethod,
+					() => new ExpandableInspectorField<T>[] { this },
+					value => { } );
+			}
 
 			ExposedMethod[] methods = m_boundVariableType.GetExposedMethods();
 			if( methods != null )

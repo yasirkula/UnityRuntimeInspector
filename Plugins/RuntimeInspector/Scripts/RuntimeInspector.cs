@@ -434,22 +434,22 @@ namespace RuntimeInspectorNamespace
 
 		internal void InspectInternal<T>( IEnumerable<T> obj ) where T : class
 		{
-			if( inspectLock || object.Equals( m_inspectedObjects, obj ) )
-					return;
+			if( inspectLock )
+				return;
 
 			isDirty = false;
 			Initialize();
 
 			if( OnInspectedObjectChanging != null )
 			{
-					IEnumerable<object> changed = OnInspectedObjectChanging( m_inspectedObjects, obj );
-					if( m_inspectedObjects == changed )
-						return;
+				IEnumerable<object> changed = OnInspectedObjectChanging( m_inspectedObjects, obj );
+				if( m_inspectedObjects == changed )
+					return;
 
-					if( changed is IEnumerable<T> changedT )
-							obj = changedT;
-					else
-							return;
+				if( changed is IEnumerable<T> changedT )
+					obj = changedT;
+				else
+					return;
 			}
 
 			StopInspectInternal();
@@ -478,15 +478,16 @@ namespace RuntimeInspectorNamespace
 
 					if( ConnectedHierarchy )
 					{
-							bool success = true;
-							var options = RuntimeHierarchy.SelectOptions.FocusOnSelection;
-							if( m_inspectedObjects is IEnumerable<GameObject> gameObjects )
-									success = ConnectedHierarchy.Select( gameObjects.Select( go => go.transform ).ToArray(), options );
-							else if( m_inspectedObjects is IEnumerable<Component> components )
-									success = ConnectedHierarchy.Select( components.Select( comp => comp.transform ).ToArray(), options );
+						bool success = true;
+						var options = RuntimeHierarchy.SelectOptions.FocusOnSelection;
 
-							if( !success )
-									ConnectedHierarchy.Deselect();
+						if( m_inspectedObjects is IEnumerable<GameObject> gameObjects )
+							success = ConnectedHierarchy.Select( gameObjects.Select( go => go.transform ).ToArray(), options );
+						else if( m_inspectedObjects is IEnumerable<Component> components )
+							success = ConnectedHierarchy.Select( components.Select( comp => comp.transform ).ToArray(), options );
+
+						if( !success )
+							ConnectedHierarchy.Deselect();
 					}
 				}
 				else

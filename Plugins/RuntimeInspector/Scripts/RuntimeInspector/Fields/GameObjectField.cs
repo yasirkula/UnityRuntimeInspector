@@ -109,7 +109,10 @@ namespace RuntimeInspectorNamespace
 				tagField.SetterMode = StringField.Mode.OnSubmit;
 
 			if( Inspector.ShowAddComponentButton )
-				CreateExposedMethodButton( addComponentMethod, () => this, ( value ) => { } );
+				CreateExposedMethodButton(
+					addComponentMethod,
+					() => new GameObjectField[] { this },
+					value => { } );
 
 			expandedElements.Clear();
 		}

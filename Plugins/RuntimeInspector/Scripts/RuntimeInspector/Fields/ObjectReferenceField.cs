@@ -1,4 +1,5 @@
-﻿using System;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -46,7 +47,7 @@ namespace RuntimeInspectorNamespace
 
 			ObjectReferencePicker.Instance.Skin = Inspector.Skin;
 			ObjectReferencePicker.Instance.Show(
-				( reference ) => OnReferenceChanged( (Object) reference ), null,
+				( reference ) => OnReferenceChanged( new Object[] { (Object) reference } ), null,
 				( reference ) => (Object) reference ? ( (Object) reference ).name : "None",
 				( reference ) => reference.GetNameWithType(),
 				allReferences, BoundValues, true, "Select " + m_boundVariableType.Name, Inspector.Canvas );
@@ -54,10 +55,10 @@ namespace RuntimeInspectorNamespace
 
 		private void InspectReference( PointerEventData eventData )
 		{
-			if( BoundValues != null && !BoundValues.Equals( null ) )
+			if( BoundValues.Any() )
 			{
-				if( BoundValues is Component )
-					Inspector.InspectInternal( ( (Component) BoundValues ).gameObject );
+				if( BoundValues is IEnumerable<Component> components )
+					Inspector.InspectInternal( components.Select( c => c.gameObject ) );
 				else
 					Inspector.InspectInternal( BoundValues );
 			}
@@ -69,25 +70,24 @@ namespace RuntimeInspectorNamespace
 			OnReferenceChanged( BoundValues );
 		}
 
-		protected virtual void OnReferenceChanged( Object reference )
+		protected virtual void OnReferenceChanged( IEnumerable<Object> references )
 		{
-			if( BoundValues != reference )
-				BoundValues = reference;
+			if( BoundValues != references )
+				BoundValues = references;
 
 			if( referenceNameText != null )
-				referenceNameText.text = reference.GetNameWithType( m_boundVariableType );
+				referenceNameText.text = references.GetNameWithType( m_boundVariableType );
 
 			if( inspectReferenceButton != null )
-				inspectReferenceButton.gameObject.SetActive( BoundValues != null && !BoundValues.Equals( null ) );
+				inspectReferenceButton.gameObject.SetActive( BoundValues.Any() );
 
 			Inspector.RefreshDelayed();
 		}
 
 		public void OnDrop( PointerEventData eventData )
 		{
-			Object assignableObject = (Object) RuntimeInspectorUtils.GetAssignableObjectFromDraggedReferenceItem( eventData, m_boundVariableType );
-			if( assignableObject )
-				OnReferenceChanged( assignableObject );
+			var objs = (IEnumerable<Object>) RuntimeInspectorUtils.GetAssignableObjectsFromDraggedReferenceItem( eventData, m_boundVariableType );
+			OnReferenceChanged( objs );
 		}
 
 		protected override void OnSkinChanged()
@@ -117,10 +117,10 @@ namespace RuntimeInspectorNamespace
 
 		public override void Refresh()
 		{
-			Object lastValue = BoundValues;
+			var oldBoundValues = BoundValues;
 			base.Refresh();
 
-			if( lastValue != BoundValues )
+			if( oldBoundValues != BoundValues )
 				OnReferenceChanged( BoundValues );
 		}
 	}

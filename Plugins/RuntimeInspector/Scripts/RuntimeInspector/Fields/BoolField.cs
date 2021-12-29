@@ -50,7 +50,7 @@ namespace RuntimeInspectorNamespace
 		public override void Refresh()
 		{
 			base.Refresh();
-			bool? value = BoundValues.GetSingleValue();
+			bool? value = BoundValues.GetSingle();
 			if( value.HasValue )
 			{
 				input.isOn = value.Value;

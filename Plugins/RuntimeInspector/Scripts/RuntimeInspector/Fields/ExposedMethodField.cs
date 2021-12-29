@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -47,9 +48,17 @@ namespace RuntimeInspectorNamespace
 			Refresh();
 
 			if( boundMethod.IsInitializer )
-				BoundValues = boundMethod.CallAndReturnValue( BoundValues );
+			{
+				var newBoundValues = new List<object>();
+				foreach( object o in BoundValues )
+						newBoundValues.Add( boundMethod.CallAndReturnValue( o ) );
+				BoundValues = newBoundValues;
+			}
 			else
-				boundMethod.Call( BoundValues );
+			{
+				foreach( object o in BoundValues )
+					boundMethod.Call( o );
+			}
 		}
 	}
 }

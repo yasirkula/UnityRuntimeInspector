@@ -95,19 +95,34 @@ namespace RuntimeInspectorNamespace
 		}
 
 		// Get first entry if all entries in given sequence are equal, null
-		// otherwise
-		public static T GetSingle<T>( this IEnumerable<T> e ) where T : class
+		// otherwise. Returns true if all entries are equal.
+		//
+		// Sequence null or empty: single null, return true
+		// All entries equal: single first entry, return true
+		// All entries null: single null, return true
+		// Distinct entries: single null, return false
+		public static bool GetSingle<T>( this IEnumerable<T> e, out T single ) where T : class
 		{
 			if( e == null || !e.Any() )
-				return null;
+			{
+					single = null;
+					return true;
+			}
 
 			T first = e.First();
-			return e.All( x => x == first ) ? first : null;
+			if( e.All( x => x == first ) )
+			{
+					single = first;
+					return true;
+			}
+
+			single = null;
+			return false;
 		}
 
 		// Get first entry if all entries in given sequence are equal, null
 		// otherwise
-		public static T? GetSingleValue<T>( this IEnumerable<T> e ) where T : struct, IEquatable<T>
+		public static T? GetSingle<T>( this IEnumerable<T> e ) where T : struct, IEquatable<T>
 		{
 			if( e == null || !e.Any() )
 				return null;
@@ -118,7 +133,16 @@ namespace RuntimeInspectorNamespace
 			return null;
 		}
 
-		public static ( F, S ) MakeTuple<F,S>( F first, S second ) => ( first, second );
+		// For each given list, compare the ith entry with the ith entry in every
+		// other list. If all are equal, put the value at the ith position in the
+		// returned list. If unequal, put null at that position.
+		public static IEnumerable<T?> SinglePerEntry<T>( this IEnumerable<IEnumerable<T>> source ) where T : struct, IEquatable<T>
+		{
+			var result = source.First().Cast<T?>();
+			foreach( IEnumerable<T> elem in source.Skip( 1 ) )
+				result = elem.Zip( result, ( e, r ) => r.HasValue && r.Value.Equals( e ) ? r : null );
+			return result;
+		}
 
 		// Call given function with each 'zipped' pair built from entries in
 		// given sequences.
@@ -144,7 +168,7 @@ namespace RuntimeInspectorNamespace
 			}
 			else
 			{
-				foreach( var ( f, s ) in first.Zip( second, MakeTuple ) )
+				foreach( var ( f, s ) in first.Zip( second, Tuple.Create ) )
 					sink( f, s );
 			}
 		}
@@ -1045,5 +1069,16 @@ namespace RuntimeInspectorNamespace
 
 			return null;
 		}
+
+		public static Quaternion Quaternion( this Vector4 v )
+			=> new Quaternion( v.x, v.y, v.z, v.w );
+
+		public static RectInt FloorToInt( this Rect r )
+			=> new RectInt( Vector2Int.FloorToInt( r.position ), Vector2Int.FloorToInt( r.size ) );
+
+		public static IEnumerable<float> Enumerate( this Vector2 v ) { yield return v.x; yield return v.y; }
+		public static IEnumerable<float> Enumerate( this Vector3 v ) { yield return v.x; yield return v.y; yield return v.z; }
+		public static IEnumerable<float> Enumerate( this Vector4 v ) { yield return v.x; yield return v.y; yield return v.z; yield return v.w; }
+		public static IEnumerable<float> Enumerate( this    Rect v ) { yield return v.x; yield return v.y; yield return v.width; yield return v.height; }
 	}
 }
