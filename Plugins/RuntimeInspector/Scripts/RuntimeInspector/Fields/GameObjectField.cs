@@ -21,7 +21,11 @@ namespace RuntimeInspectorNamespace
 		private Func<GameObject, string> tagGetter;
 		private PropertyInfo layerProp;
 
+		// Outer list: Each entry corresponds to one component drawer drawn.
+		// Inner list: Each drawer can be bound to a list of components of the same type.
 		private readonly List<List<Component>> components = new List<List<Component>>();
+
+		// Objects in here should be drawn expanded
 		private readonly HashSet<Object> expandedElements = new HashSet<Object>();
 
 		private Type[] addComponentTypes;
@@ -135,74 +139,90 @@ namespace RuntimeInspectorNamespace
 		{
 			// Refresh components
 			components.Clear();
-			var lut = new Dictionary<Type, Dictionary<GameObject, Queue<Component>>>();
-			int goCount = 0;
 
+			// Maps a component type to bound GameObjects having a component of
+			// this type. GameObjects in turn are mapped to their components of
+			// this type.
+			var lut = new Dictionary<Type, Dictionary<GameObject, Queue<Component>>>();
+
+			// Create Look Up Table which sorts components of all bound GameObjects
+			// so that components of equal type on different objects are bundled
+			// into one drawer.
+			// Two drawers can end up with the same component type, if all bound
+			// objects have the same component at least two times.
 			foreach( GameObject obj in BoundValues )
 			{
 				if( !obj )
 					continue;
 
-				goCount++;
 				foreach( Component comp in GetFilteredComponents( obj ) )
 				{
-					Dictionary<GameObject, Queue<Component>> dictInLut;
-					Queue<Component> queueInDictInLut;
 					Type compType = comp.GetType();
-
-					if( !lut.TryGetValue( compType, out dictInLut ) )
+					Dictionary<GameObject, Queue<Component>> goToComps;
+					if( !lut.TryGetValue( compType, out goToComps ) )
 					{
-						dictInLut = new Dictionary<GameObject, Queue<Component>>();
-						lut[compType] = dictInLut;
+						goToComps = new Dictionary<GameObject, Queue<Component>>();
+						lut[compType] = goToComps;
 					}
 
-					if( !dictInLut.TryGetValue( obj, out queueInDictInLut ) )
+					Queue<Component> compsOnGoOfCompType;
+					if( !goToComps.TryGetValue( obj, out compsOnGoOfCompType ) )
 					{
-						queueInDictInLut = new Queue<Component>();
-						dictInLut[obj] = queueInDictInLut;
+						compsOnGoOfCompType = new Queue<Component>();
+						goToComps[obj] = compsOnGoOfCompType;
 					}
-
-					queueInDictInLut.Enqueue( comp );
+					compsOnGoOfCompType.Enqueue( comp );
 				}
 			}
 
+			// Read LUT
 			while( lut.Count > 0 )
 			{
-				var invalidTypes = new List<Type>();
+				// Types that have been processed already.
+				// Exists because we shouldn't remove types from LUT while we iterate
+				// over it.
+				var checkedTypes = new List<Type>();
 
 				foreach( var pair in lut )
 				{
 					Type compType = pair.Key;
-					var dictInLut = pair.Value;
-					var comps = new List<Component>( goCount );
+					var goToComps = pair.Value;
+
+					// Components to bind to the draw for 'compType'
+					var toDraw = new List<Component>();
+
+					// Current component type must be on every bound GameObject to be
+					// drawn
 					bool compOnAllObjects = true;
 
-					foreach( GameObject obj in BoundValues )
+					foreach( GameObject go in BoundValues )
 					{
-						if( dictInLut.TryGetValue( obj, out var queue ) )
+						if( goToComps.TryGetValue( go, out var compsOnGoOfCompType ) )
 						{
-							comps.Add( queue.Dequeue() );
-							if( queue.Count == 0 )
-								dictInLut.Remove( obj );
+							toDraw.Add( compsOnGoOfCompType.Dequeue() );
+							if( compsOnGoOfCompType.Count == 0 )
+								goToComps.Remove( go );
 						}
 						else
 						{
+							// Type can't be drawn. It's not on every bound object.
 							compOnAllObjects = false;
-							invalidTypes.Add( compType );
+							checkedTypes.Add( compType );
 							break;
 						}
 					}
 
 					if( compOnAllObjects )
 					{
-						components.Add( comps );
-
-						if( dictInLut.Count == 0)
-							invalidTypes.Add( compType );
+						components.Add( toDraw );
+						if( goToComps.Count == 0)
+							// No objects with a component of this type are left to process.
+							// Type doesn't need to be looked up anymore.
+							checkedTypes.Add( compType );
 					}
 				}
 
-				foreach( Type type in invalidTypes )
+				foreach( Type type in checkedTypes )
 					lut.Remove( type );
 			}
 
