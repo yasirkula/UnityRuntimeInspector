@@ -229,15 +229,17 @@ namespace RuntimeInspectorNamespace
 
 		public static string GetNameWithType( this object obj, Type defaultType = null )
 		{
-			const string none = "None";
-
-			if( obj.IsNull() )
+			string HandleDefaultType()
 			{
+				const string none = "None";
 				if( defaultType == null )
 					return none;
 
-				return string.Concat( "None (", defaultType.Name, ")" );
+				return string.Concat( none, " (", defaultType.Name, ")" );
 			}
+
+			if( obj.IsNull() )
+				return HandleDefaultType();
 
 			string typeName = null;
 			if( obj is IEnumerable enumerable )
@@ -251,7 +253,7 @@ namespace RuntimeInspectorNamespace
 				}
 
 				if( typeName == null )
-					typeName = none;
+					typeName = HandleDefaultType();
 
 				if( count > 1 )
 					return string.Concat( typeName, " [", count, "]" );

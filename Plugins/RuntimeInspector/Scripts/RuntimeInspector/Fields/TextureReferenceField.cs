@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 #if !UNITY_EDITOR && NETFX_CORE
 using System.Reflection;
 #endif
@@ -36,18 +35,19 @@ namespace RuntimeInspectorNamespace
 		protected override void OnReferenceChanged( IEnumerable<Object> references )
 		{
 			base.OnReferenceChanged( references );
-			referenceNameText.gameObject.SetActive( !references.Any() );
 
 			if( BoundValues.GetSingle( out Object value ) )
 			{
 				Texture tex = value.GetTexture();
 				referencePreview.enabled = tex != null;
 				referencePreview.texture = tex;
+				referenceNameText.enabled = value == null;
 				multiValueText.enabled = false;
 			}
 			else
 			{
 				referencePreview.enabled = false;
+				referenceNameText.enabled = false;
 				multiValueText.enabled = true;
 			}
 		}
