@@ -225,18 +225,18 @@ namespace RuntimeInspectorNamespace
 			return typeof( T ).IsAssignableFrom( type );
 		}
 
-		public override void BindTo<P>(
+		public override void BindTo<TParent>(
 			Type variableType,
 			string variableName,
-			Getter<P> getter,
-			Setter<P> setter,
+			Getter<TParent> getter,
+			Setter<TParent> setter,
 			MemberInfo variable = null)
 		{
 			BindTo(
 				variableType,
 				variableName,
 				() => getter().Cast<T>(),
-				o => setter( o.Cast<P>() ),
+				o => setter( o.Cast<TParent>() ),
 				variable);
 		}
 
@@ -591,48 +591,63 @@ namespace RuntimeInspectorNamespace
 			return variableDrawer;
 		}
 
-		public InspectorField<U> CreateDrawer<U>( string variableName, Func<T, U> getter, Action<T, U> setter, bool drawObjectsAsFields = true )
-		{
-				return CreateDrawer<U>(
-					variableName,
-					() => BoundValues.Select( getter ),
-					newChildObjs =>
-					{
-						foreach( T o in BoundValues )
-							foreach( U v in newChildObjs )
-									setter( o, v );
-					},
-					drawObjectsAsFields);
-		}
+		public InspectorField CreateDrawer<U>(
+			string variableName,
+			Func<T, U> getter,
+			Action<T, U> setter,
+			bool drawObjectsAsFields = true)
+			=> CreateDrawer( typeof( U ), variableName, getter, setter, drawObjectsAsFields );
 
-		public InspectorField<U> CreateDrawer<U>( string variableName, Getter<U> getter, Setter<U> setter, bool drawObjectsAsFields = true )
+		public InspectorField CreateDrawer<U>(
+			Type variableType,
+			string variableName,
+			Func<T, U> getter,
+			Action<T, U> setter,
+			bool drawObjectsAsFields = true)
 		{
-			  InspectorField<U> variableDrawer = Inspector.CreateDrawerForType( typeof(U), drawArea, Depth + 1, drawObjectsAsFields ) as InspectorField<U>;
-				if( variableDrawer != null )
+			return CreateDrawer(
+				variableType,
+				variableName,
+				() => BoundValues.Select( getter ),
+				newChildObjs =>
 				{
-						variableDrawer.BindTo( typeof(U), variableName == null ? null : string.Empty, getter, setter );
-						if( variableName != null )
-							variableDrawer.NameRaw = variableName;
-
-						elements.Add( variableDrawer );
-				}
-
-				return variableDrawer;
+					foreach( T o in BoundValues )
+						foreach( U v in newChildObjs )
+							setter( o, v );
+				},
+				drawObjectsAsFields);
 		}
 
-		public InspectorField CreateDrawer( Type variableType, string variableName, Getter<object> getter, Setter<object> setter, bool drawObjectsAsFields = true )
+		public InspectorField CreateDrawer<U>(
+			string variableName,
+			Getter<U> getter,
+			Setter<U> setter,
+			bool drawObjectsAsFields = true)
+			=> CreateDrawer( typeof( U ), variableName, getter, setter, drawObjectsAsFields );
+
+		public InspectorField CreateDrawer<U>(
+			Type variableType,
+			string variableName,
+			Getter<U> getter,
+			Setter<U> setter,
+			bool drawObjectsAsFields = true)
 		{
-			InspectorField variableDrawer = Inspector.CreateDrawerForType( variableType, drawArea, Depth + 1, drawObjectsAsFields );
-			if( variableDrawer != null )
-			{
-				variableDrawer.BindTo( variableType, variableName == null ? null : string.Empty, getter, setter );
-				if( variableName != null )
-					variableDrawer.NameRaw = variableName;
+			InspectorField drawer = Inspector.CreateDrawerForType( variableType, drawArea, Depth + 1, drawObjectsAsFields );
+			if( drawer == null )
+				return null;
 
-				elements.Add( variableDrawer );
-			}
+			if( variableName == null )
+				variableName = string.Empty;
+			else
+				drawer.NameRaw = variableName;
 
-			return variableDrawer;
+			if( drawer is InspectorField<U> drawerU )
+				drawerU.BindTo( variableType, variableName, getter, setter );
+			else
+				drawer. BindTo( variableType, variableName, getter, setter );
+
+			elements.Add( drawer );
+			return drawer;
 		}
 
 		public ExposedMethodField CreateExposedMethodButton( ExposedMethod method, Getter<object> getter, Setter<object> setter )
