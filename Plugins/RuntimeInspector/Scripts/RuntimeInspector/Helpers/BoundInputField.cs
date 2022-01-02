@@ -163,6 +163,8 @@ namespace RuntimeInspectorNamespace
 
 		private void OnHasMultipleValuesChanged( bool value )
 		{
+			if( value )
+				inputField.text = DefaultEmptyValue;
 			inputField.textComponent.enabled = !value;
 			if( multiValueText )
 				multiValueText.enabled = value;

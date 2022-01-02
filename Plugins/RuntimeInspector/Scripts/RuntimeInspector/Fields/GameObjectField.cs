@@ -309,12 +309,12 @@ namespace RuntimeInspectorNamespace
 		}
 
 		[UnityEngine.Scripting.Preserve] // This method is bound to removeComponentMethod
-		private static void RemoveComponentButtonClicked( InspectorField drawer )
+		private static void RemoveComponentButtonClicked<T>( T drawer )
+			where T : InspectorField, ISupportsType<Component>
 		{
-			if( drawer is ISupportsType<Component> componentDrawer )
-				drawer.StartCoroutine( RemoveComponentCoroutine(
-					componentDrawer.GetBoundOfType<Component>(),
-					drawer.Inspector) );
+			drawer.StartCoroutine( RemoveComponentCoroutine(
+				drawer.GetBoundOfType<Component>(),
+				drawer.Inspector) );
 		}
 
 		private static IEnumerator RemoveComponentCoroutine( IEnumerable<Component> components, RuntimeInspector inspector )

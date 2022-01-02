@@ -159,8 +159,8 @@ namespace RuntimeInspectorNamespace
 			BindTo(
 				field.FieldType,
 				variableName,
-				() => parent.BoundValues.Cast<object>().Select( field.GetValue ),
-				newValues => parent.BoundValues.Cast<object>().PassZipped( newValues, field.SetValue ),
+				() => parent.BoundValues.Select( x => field.GetValue( x ) ),
+				newValues => parent.BoundValues.PassZipped( newValues, ( x, y ) => field.SetValue( x, y ) ),
 				field);
 		}
 
@@ -171,11 +171,13 @@ namespace RuntimeInspectorNamespace
 			BindTo(
 				property.PropertyType,
 				variableName,
-				() => parent.BoundValues.Cast<object>().Select( property.GetValue ),
-				newValues => parent.BoundValues.Cast<object>().PassZipped( newValues, property.SetValue ),
+				() => parent.BoundValues.Select( x => property.GetValue( x ) ),
+				newValues => parent.BoundValues.PassZipped( newValues, ( x, y ) => property.SetValue( x, y ) ),
 				property);
 		}
 
+		/// Overload of BindTo that casts from <typeparam name="TParent"/> to the
+		/// value type of the inspector field.
 		public abstract void BindTo<TParent>(
 			Type variableType,
 			string variableName,
@@ -187,20 +189,28 @@ namespace RuntimeInspectorNamespace
 		public abstract void Unbind();
 	}
 
+	// Co-variant interface to reference a inspector field that binds only
+	// Transform components as one that binds Components (IBound<Component>).
+	// Think "The objects I bind to are components, but I don't necessarily bind
+	// to all components".
 	public interface IBound<out T>
 	{
 		IEnumerable<T> BoundValues { get; }
 	}
 
+	// Assume a inspector field can bind all objects. This contra-variant
+	// interface allows you to reference it as a field that could potentially
+	// bind Components (ISupportsType<Component>), and get all components from
+	// it that it actually binds to.
 	public interface ISupportsType<in T>
 	{
 		IEnumerable<D> GetBoundOfType<D>() where D : T;
 	}
 
-	public abstract class InspectorField<T> : InspectorField, ISupportsType<T>, IBound<T>
+	public abstract class InspectorField<TBinding> : InspectorField, ISupportsType<TBinding>, IBound<TBinding>
 	{
-		private IEnumerable<T> m_boundObjects = new T[0];
-		public IEnumerable<T> BoundValues
+		private IEnumerable<TBinding> m_boundObjects = new TBinding[0];
+		public IEnumerable<TBinding> BoundValues
 		{
 			get { return m_boundObjects; }
 			protected set
@@ -210,19 +220,19 @@ namespace RuntimeInspectorNamespace
 			}
 		}
 
-		public IEnumerable<D> GetBoundOfType<D>() where D : T
+		public IEnumerable<D> GetBoundOfType<D>() where D : TBinding
 		{
-			foreach( T obj in m_boundObjects )
+			foreach( TBinding obj in m_boundObjects )
 				if( typeof( D ).IsAssignableFrom( obj.GetType() ) )
 					yield return (D) obj;
 		}
 
-		private Getter<T> getter;
-		private Setter<T> setter;
+		private Getter<TBinding> getter;
+		private Setter<TBinding> setter;
 
 		public override bool SupportsType( Type type )
 		{
-			return typeof( T ).IsAssignableFrom( type );
+			return typeof( TBinding ).IsAssignableFrom( type );
 		}
 
 		public override void BindTo<TParent>(
@@ -235,7 +245,7 @@ namespace RuntimeInspectorNamespace
 			BindTo(
 				variableType,
 				variableName,
-				() => getter().Cast<T>(),
+				() => getter().Cast<TBinding>(),
 				o => setter( o.Cast<TParent>() ),
 				variable);
 		}
@@ -243,8 +253,8 @@ namespace RuntimeInspectorNamespace
 		public void BindTo(
 			Type variableType,
 			string variableName,
-			Getter<T> getter,
-			Setter<T> setter,
+			Getter<TBinding> getter,
+			Setter<TBinding> setter,
 			MemberInfo variable = null)
 		{
 			m_boundVariableType = variableType;
@@ -274,7 +284,7 @@ namespace RuntimeInspectorNamespace
 
 		protected virtual void OnUnbound()
 		{
-			m_boundObjects = new T[0];
+			m_boundObjects = new TBinding[0];
 		}
 
 		public override void Refresh()
@@ -295,9 +305,9 @@ namespace RuntimeInspectorNamespace
 #else
 				if( m_boundVariableType.GetTypeInfo().IsValueType )
 #endif
-					m_boundObjects = new T[1] { (T) Activator.CreateInstance( m_boundVariableType ) };
+					m_boundObjects = new TBinding[1] { (TBinding) Activator.CreateInstance( m_boundVariableType ) };
 				else
-					m_boundObjects = new T[0];
+					m_boundObjects = new TBinding[0];
 			}
 		}
 	}
@@ -308,7 +318,7 @@ namespace RuntimeInspectorNamespace
 		public RuntimeInspector.HeaderVisibility HeaderVisibility { get; set; }
 	}
 
-	public abstract class ExpandableInspectorField<T> : InspectorField<T>, IExpandableInspectorField
+	public abstract class ExpandableInspectorField<TBinding> : InspectorField<TBinding>, IExpandableInspectorField
 	{
 #pragma warning disable 0649
 		[SerializeField]
@@ -494,7 +504,7 @@ namespace RuntimeInspectorNamespace
 			{
 				CreateExposedMethodButton(
 					GameObjectField.removeComponentMethod,
-					() => new ExpandableInspectorField<T>[] { this },
+					() => new ExpandableInspectorField<TBinding>[] { this },
 					value => { } );
 			}
 
@@ -509,7 +519,7 @@ namespace RuntimeInspectorNamespace
 						CreateExposedMethodButton(
 							method,
 							() => (IEnumerable<object>) BoundValues,
-							value => BoundValues = value.Cast<T>() );
+							value => BoundValues = value.Cast<TBinding>() );
 				}
 			}
 		}
@@ -591,18 +601,22 @@ namespace RuntimeInspectorNamespace
 			return variableDrawer;
 		}
 
-		public InspectorField CreateDrawer<U>(
+		public InspectorField CreateDrawer<TChild>(
 			string variableName,
-			Func<T, U> getter,
-			Action<T, U> setter,
+			Func<TBinding, TChild> getter,
+			Action<TBinding, TChild> setter,
 			bool drawObjectsAsFields = true)
-			=> CreateDrawer( typeof( U ), variableName, getter, setter, drawObjectsAsFields );
+			=> CreateDrawer( typeof( TChild ), variableName, getter, setter, drawObjectsAsFields );
 
-		public InspectorField CreateDrawer<U>(
+		// Overload that handles multi-selection automatically. You don't pass
+		// functions getting or setting a sequence of bound values, but instead
+		// functions specifying how to convert a bound value of the parent drawer
+		// to one of the child drawer.
+		public InspectorField CreateDrawer<TChild>(
 			Type variableType,
 			string variableName,
-			Func<T, U> getter,
-			Action<T, U> setter,
+			Func<TBinding, TChild> getter,
+			Action<TBinding, TChild> setter,
 			bool drawObjectsAsFields = true)
 		{
 			return CreateDrawer(
@@ -611,25 +625,25 @@ namespace RuntimeInspectorNamespace
 				() => BoundValues.Select( getter ),
 				newChildObjs =>
 				{
-					foreach( T o in BoundValues )
-						foreach( U v in newChildObjs )
-							setter( o, v );
+					foreach( TBinding instance in BoundValues )
+						foreach( TChild value in newChildObjs )
+							setter( instance, value );
 				},
 				drawObjectsAsFields);
 		}
 
-		public InspectorField CreateDrawer<U>(
+		protected InspectorField CreateDrawer<TChild>(
 			string variableName,
-			Getter<U> getter,
-			Setter<U> setter,
+			Getter<TChild> getter,
+			Setter<TChild> setter,
 			bool drawObjectsAsFields = true)
-			=> CreateDrawer( typeof( U ), variableName, getter, setter, drawObjectsAsFields );
+			=> CreateDrawer( typeof( TChild ), variableName, getter, setter, drawObjectsAsFields );
 
-		public InspectorField CreateDrawer<U>(
+		protected InspectorField CreateDrawer<TChild>(
 			Type variableType,
 			string variableName,
-			Getter<U> getter,
-			Setter<U> setter,
+			Getter<TChild> getter,
+			Setter<TChild> setter,
 			bool drawObjectsAsFields = true)
 		{
 			InspectorField drawer = Inspector.CreateDrawerForType( variableType, drawArea, Depth + 1, drawObjectsAsFields );
@@ -641,9 +655,11 @@ namespace RuntimeInspectorNamespace
 			else
 				drawer.NameRaw = variableName;
 
-			if( drawer is InspectorField<U> drawerU )
+			if( drawer is InspectorField<TChild> drawerU )
 				drawerU.BindTo( variableType, variableName, getter, setter );
 			else
+				// If there is no inspector field taking values of the correct type
+				// directly, we use the overload that casts.
 				drawer. BindTo( variableType, variableName, getter, setter );
 
 			elements.Add( drawer );
