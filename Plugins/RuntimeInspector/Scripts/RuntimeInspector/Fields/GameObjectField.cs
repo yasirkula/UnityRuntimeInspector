@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Reflection;
 using System.Collections;
 using System.Collections.Generic;
@@ -233,7 +232,7 @@ namespace RuntimeInspectorNamespace
 		[UnityEngine.Scripting.Preserve] // This method is bound to addComponentMethod
 		private void AddComponentButtonClicked()
 		{
-			if( !BoundValues.Any() )
+			if( BoundValues.Count == 0 )
 				return;
 
 			if( addComponentTypes == null )

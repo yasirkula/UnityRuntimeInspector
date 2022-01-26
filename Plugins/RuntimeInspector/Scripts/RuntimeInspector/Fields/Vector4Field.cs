@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
@@ -38,7 +37,7 @@ namespace RuntimeInspectorNamespace
 
 		protected override float HeightMultiplier { get { return 2f; } }
 
-		IEnumerable<Quaternion> IBound<Quaternion>.BoundValues
+		IReadOnlyList<Quaternion> IBound<Quaternion>.BoundValues
 			=> BoundValues.Select( RuntimeInspectorUtils.Quaternion );
 
 		public override void Initialize()
@@ -80,9 +79,8 @@ namespace RuntimeInspectorNamespace
 		private void UpdateInputs()
 		{
 			float?[] coords = BoundValues
-				.Select( RuntimeInspectorUtils.Enumerate )
-				.SinglePerEntry()
-				.ToArray();
+				.Select( RuntimeInspectorUtils.ToArray )
+				.SinglePerEntry();
 
 			inputX.HasMultipleValues = !coords[0].HasValue;
 			inputY.HasMultipleValues = !coords[1].HasValue;

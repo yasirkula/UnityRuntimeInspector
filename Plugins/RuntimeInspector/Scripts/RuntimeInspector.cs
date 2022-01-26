@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
@@ -16,9 +15,9 @@ namespace RuntimeInspectorNamespace
 
 		private const string POOL_OBJECT_NAME = "RuntimeInspectorPool";
 
-		public delegate IEnumerable<object> InspectedObjectChangingDelegate(
-				IEnumerable<object> previousInspectedObjects,
-				IEnumerable<object> newInspectedObjects);
+		public delegate IReadOnlyList<object> InspectedObjectChangingDelegate(
+				IReadOnlyList<object> previousInspectedObjects,
+				IReadOnlyList<object> newInspectedObjects);
 		public delegate void ComponentFilterDelegate( GameObject gameObject, List<Component> components );
 
 #pragma warning disable 0649
@@ -223,10 +222,10 @@ namespace RuntimeInspectorNamespace
 		private bool inspectLock = false;
 		private bool isDirty = false;
 
-		private IEnumerable<object> m_inspectedObjects;
-		public IEnumerable<object> InspectedObjects { get { return m_inspectedObjects; } }
+		private IReadOnlyList<object> m_inspectedObjects;
+		public IReadOnlyList<object> InspectedObjects { get { return m_inspectedObjects; } }
 
-		public bool IsBound { get { return m_inspectedObjects != null && m_inspectedObjects.Any(); } }
+		public bool IsBound { get { return m_inspectedObjects != null && m_inspectedObjects.Count > 0; } }
 
 		private Canvas m_canvas;
 		public Canvas Canvas { get { return m_canvas; } }
@@ -355,7 +354,7 @@ namespace RuntimeInspectorNamespace
 				if( isDirty )
 				{
 					// Rebind to refresh the exposed variables in Inspector
-					IEnumerable<object> inspectedObjects = m_inspectedObjects;
+					IReadOnlyList<object> inspectedObjects = m_inspectedObjects;
 					StopInspectInternal();
 					InspectInternal( inspectedObjects );
 
@@ -426,13 +425,13 @@ namespace RuntimeInspectorNamespace
 				currentDrawer.Skin = Skin;
 		}
 
-		public void Inspect<T>( IEnumerable<T> obj ) where T : class
+		public void Inspect<T>( IReadOnlyList<T> obj ) where T : class
 		{
 			if( !m_isLocked )
 				InspectInternal( obj );
 		}
 
-		internal void InspectInternal<T>( IEnumerable<T> obj ) where T : class
+		internal void InspectInternal<T>( IReadOnlyList<T> obj ) where T : class
 		{
 			if( inspectLock )
 				return;
@@ -442,11 +441,11 @@ namespace RuntimeInspectorNamespace
 
 			if( OnInspectedObjectChanging != null )
 			{
-				IEnumerable<object> changed = OnInspectedObjectChanging( m_inspectedObjects, obj );
+				IReadOnlyList<object> changed = OnInspectedObjectChanging( m_inspectedObjects, obj );
 				if( m_inspectedObjects == changed )
 					return;
 
-				if( changed is IEnumerable<T> changedT )
+				if( changed is T[] changedT )
 					obj = changedT;
 				else
 					return;
@@ -459,7 +458,7 @@ namespace RuntimeInspectorNamespace
 			{
 				m_inspectedObjects = obj;
 
-				if( obj == null || !obj.Any() )
+				if( obj == null || obj.Count == 0 )
 					return;
 
 				Type elemType = obj.GetType().GetElementType();
@@ -485,10 +484,21 @@ namespace RuntimeInspectorNamespace
 						bool success = true;
 						var options = RuntimeHierarchy.SelectOptions.FocusOnSelection;
 
-						if( m_inspectedObjects is IEnumerable<GameObject> gameObjects )
-							success = ConnectedHierarchy.Select( gameObjects.Select( go => go.transform ).ToArray(), options );
-						else if( m_inspectedObjects is IEnumerable<Component> components )
-							success = ConnectedHierarchy.Select( components.Select( comp => comp.transform ).ToArray(), options );
+						if( m_inspectedObjects is IReadOnlyList<GameObject> )
+						{
+							// Beware: these are two complete unrelated Select() methods!
+							// One selects objects in the hierarchy, the other is named
+							// after the Linq function.
+							success = ConnectedHierarchy.Select(
+									( (IReadOnlyList<GameObject>) m_inspectedObjects ).Select( go => go.transform ),
+									options);
+						}
+						else if( m_inspectedObjects is IReadOnlyList<Component> )
+						{
+							success = ConnectedHierarchy.Select(
+									( (IReadOnlyList<Component>) m_inspectedObjects ).Select( comp => comp.transform ),
+									options);
+						}
 
 						if( !success )
 							ConnectedHierarchy.Deselect();

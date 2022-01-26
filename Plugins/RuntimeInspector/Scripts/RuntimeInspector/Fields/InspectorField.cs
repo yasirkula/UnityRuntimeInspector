@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
@@ -9,8 +8,8 @@ namespace RuntimeInspectorNamespace
 {
 	public abstract class InspectorField : MonoBehaviour, ITooltipContent
 	{
-		public delegate IEnumerable<T> Getter<out T>();
-		public delegate void Setter<in T>( IEnumerable<T> value );
+		public delegate IReadOnlyList<T> Getter<out T>();
+		public delegate void Setter<in T>( IReadOnlyList<T> value );
 
 #pragma warning disable 0649
 		[SerializeField]
@@ -195,7 +194,7 @@ namespace RuntimeInspectorNamespace
 	// to all components".
 	public interface IBound<out T>
 	{
-		IEnumerable<T> BoundValues { get; }
+		IReadOnlyList<T> BoundValues { get; }
 	}
 
 	// Assume a inspector field can bind all objects. This contra-variant
@@ -209,8 +208,8 @@ namespace RuntimeInspectorNamespace
 
 	public abstract class InspectorField<TBinding> : InspectorField, ISupportsType<TBinding>, IBound<TBinding>
 	{
-		private IEnumerable<TBinding> m_boundObjects = new TBinding[0];
-		public IEnumerable<TBinding> BoundValues
+		private IReadOnlyList<TBinding> m_boundObjects = new TBinding[0];
+		public IReadOnlyList<TBinding> BoundValues
 		{
 			get { return m_boundObjects; }
 			protected set
@@ -245,8 +244,8 @@ namespace RuntimeInspectorNamespace
 			BindTo(
 				variableType,
 				variableName,
-				() => getter().Cast<TBinding>(),
-				o => setter( o.Cast<TParent>() ),
+				() => getter().Cast<TParent, TBinding>(),
+				o => setter( o.Cast<TBinding, TParent>() ),
 				variable);
 		}
 
@@ -518,8 +517,8 @@ namespace RuntimeInspectorNamespace
 					if( ( isInitialized && method.VisibleWhenInitialized ) || ( !isInitialized && method.VisibleWhenUninitialized ) )
 						CreateExposedMethodButton(
 							method,
-							() => (IEnumerable<object>) BoundValues,
-							value => BoundValues = value.Cast<TBinding>() );
+							() => BoundValues.Cast<TBinding, object>(),
+							value => BoundValues = value.Cast<object, TBinding>() );
 				}
 			}
 		}
@@ -553,9 +552,9 @@ namespace RuntimeInspectorNamespace
 			}
 		}
 
-		public InspectorField CreateDrawerForComponents( IEnumerable<Component> components, string variableName = null )
+		public InspectorField CreateDrawerForComponents( IReadOnlyList<Component> components, string variableName = null )
 		{
-			Type componentType = components.First().GetType();
+			Type componentType = components[0].GetType();
 			InspectorField variableDrawer = Inspector.CreateDrawerForType( componentType, drawArea, Depth + 1, false );
 			if( variableDrawer != null )
 			{

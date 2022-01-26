@@ -4,7 +4,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
@@ -100,45 +99,100 @@ namespace RuntimeInspectorNamespace
 		//
 		// Sequence null or empty: single null, return true
 		// All entries equal: single first entry, return true
+		// Distinct entries: single first entry, return false
 		// All entries null: single null, return true
-		// Distinct entries: single null, return false
-		public static bool GetSingle<T>( this IEnumerable<T> e, out T single ) where T : class
+		public static bool GetSingle<T>( this IReadOnlyList<T> list, out T single ) where T : class
 		{
-			single = null;
-			if( e == null || !e.Any() )
-				return true;
-
-			T first = e.First();
-			if( e.All( x => Equals( first, x ) ) )
+			if( list == null || list.Count == 0 )
 			{
-				single = first;
-				return true;
+				single = null;
 			}
-
-			return false;
+			else
+			{
+				single = list[0];
+				foreach( T item in list )
+					if( !Equals( item, single ) )
+						return false;
+			}
+			return true;
 		}
 
 		// Get first entry if all entries in given sequence are equal, null
 		// otherwise
-		public static T? GetSingle<T>( this IEnumerable<T> e ) where T : struct, IEquatable<T>
+		public static T? GetSingle<T>( this IReadOnlyList<T> list ) where T : struct, IEquatable<T>
 		{
-			if( e == null || !e.Any() )
+			if( list == null || list.Count == 0 )
 				return null;
 
-			T first = e.First();
-			if( e.All( x => x.Equals( first ) ) )
-				return first;
-			return null;
+			T first = list[0];
+			foreach( T item in list )
+				if( !item.Equals( first ) )
+					return null;
+			return first;
 		}
 
 		// For each given list, compare the ith entry with the ith entry in every
 		// other list. If all are equal, put the value at the ith position in the
 		// returned list. If unequal, put null at that position.
-		public static IEnumerable<T?> SinglePerEntry<T>( this IEnumerable<IEnumerable<T>> source ) where T : struct, IEquatable<T>
+		public static T?[] SinglePerEntry<T>(
+				this IReadOnlyList<IReadOnlyList<T>> source) where T : struct, IEquatable<T>
 		{
-			var result = source.First().Cast<T?>();
-			foreach( IEnumerable<T> elem in source.Skip( 1 ) )
-				result = elem.Zip( result, ( e, r ) => r.HasValue && r.Value.Equals( e ) ? r : null );
+			if( source.Count == 0 )
+				return new T?[0];
+
+			int len = int.MaxValue;
+			foreach( var list in source )
+				len = Math.Min( len, list.Count );
+
+			var result = new T?[len];
+			for( int i = 0; i < len; i++ )
+			{
+				result[i] = source[0][i];
+				for( int j = 1; j < source.Count; j++ )
+				{
+					if( result[i].HasValue && !result[i].Value.Equals( source[j][i] ) )
+						result[i] = null;
+				}
+			}
+			return result;
+		}
+
+		public static T FirstOrDefault<T>( this IReadOnlyList<T> source )
+		{
+			if( source.Count == 0 )
+				return default( T );
+			return source[0];
+		}
+
+		public static bool All<T>( this IEnumerable<T> source, Func<T, bool> func )
+		{
+			foreach( T item in source )
+				if( !func( item ) )
+					return false;
+			return true;
+		}
+
+		public static bool Any<T>( this IEnumerable<T> source, Func<T, bool> func )
+		{
+			foreach( T item in source )
+				if( func( item ) )
+					return true;
+			return false;
+		}
+
+		public static TResult[] Cast<TSource, TResult>( this IReadOnlyList<TSource> source )
+		{
+			var result = new TResult[source.Count];
+			for( int i = 0; i < result.Length; i++ )
+				result[i] = (TResult) (object) source[i];
+			return result;
+		}
+
+		public static TResult[] Select<TSource, TResult>( this IReadOnlyList<TSource> list, Func<TSource, TResult> selector )
+		{
+			var result = new TResult[list.Count];
+			for( int i = 0; i < result.Length; i++ )
+				result[i] = selector( list[i] );
 			return result;
 		}
 
@@ -148,26 +202,25 @@ namespace RuntimeInspectorNamespace
 		// passed together with every entry in the other sequence.
 		// If both pairs have no or at least two entries, IEnumerable.Zip is used.
 		public static void PassZipped<TFirst, TSecond>(
-				this IEnumerable<TFirst> first,
-				IEnumerable<TSecond> second,
+				this IReadOnlyList<TFirst> first,
+				IReadOnlyList<TSecond> second,
 				Action<TFirst, TSecond> sink)
 		{
-			if( first.Count() == 1 )
+			if( first.Count == 1 )
 			{
-				TFirst f = first.Single();
 				foreach( TSecond s in second )
-					sink( f, s );
+					sink( first[0], s );
 			}
-			else if( second.Count() == 1 )
+			else if( second.Count == 1 )
 			{
-				TSecond s = second.Single();
 				foreach( TFirst f in first )
-					sink( f, s );
+					sink( f, second[0] );
 			}
 			else
 			{
-				foreach( var ( f, s ) in first.Zip( second, Tuple.Create ) )
-					sink( f, s );
+				int len = Math.Min(first.Count, second.Count);
+				for (int i = 0; i < len; i++)
+					sink( first[i], second[i] );
 			}
 		}
 
@@ -1100,12 +1153,14 @@ namespace RuntimeInspectorNamespace
 		public static Quaternion Quaternion( this Vector4 v )
 			=> new Quaternion( v.x, v.y, v.z, v.w );
 
+#if UNITY_2017_2_OR_NEWER
 		public static RectInt FloorToInt( this Rect r )
 			=> new RectInt( Vector2Int.FloorToInt( r.position ), Vector2Int.FloorToInt( r.size ) );
+#endif
 
-		public static IEnumerable<float> Enumerate( this Vector2 v ) { yield return v.x; yield return v.y; }
-		public static IEnumerable<float> Enumerate( this Vector3 v ) { yield return v.x; yield return v.y; yield return v.z; }
-		public static IEnumerable<float> Enumerate( this Vector4 v ) { yield return v.x; yield return v.y; yield return v.z; yield return v.w; }
-		public static IEnumerable<float> Enumerate( this    Rect v ) { yield return v.x; yield return v.y; yield return v.width; yield return v.height; }
+		public static float[] ToArray( this Vector2 v ) => new float[] { v.x, v.y };
+		public static float[] ToArray( this Vector3 v ) => new float[] { v.x, v.y, v.z };
+		public static float[] ToArray( this Vector4 v ) => new float[] { v.x, v.y, v.z, v.w };
+		public static float[] ToArray( this    Rect v ) => new float[] { v.x, v.y, v.width, v.height };
 	}
 }

@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -33,7 +32,13 @@ namespace RuntimeInspectorNamespace
 		{
 			get
 			{
-				return BoundValues.Any() ? BoundValues.Min( list => list.Count ) : 0;
+				if( BoundValues.Count == 0 )
+					return 0;
+
+				int minCount = int.MaxValue;
+				foreach( var item in BoundValues )
+					minCount = Math.Min( minCount, BoundValues.Count );
+				return minCount;
 			}
 		}
 
@@ -69,10 +74,10 @@ namespace RuntimeInspectorNamespace
 
 		private void UpdateSizeInputText()
 		{
-			if( BoundValues == null || !BoundValues.Any() )
+			if( BoundValues == null || BoundValues.Count == 0 )
 				return;
 
-			int firstCount = BoundValues.First().Count;
+			int firstCount = BoundValues[0].Count;
 			if( BoundValues.Any( x => x.Count != firstCount ) )
 				sizeInput.HasMultipleValues = true;
 			else
@@ -136,8 +141,9 @@ namespace RuntimeInspectorNamespace
 					string variableName = Inspector.ArrayIndicesStartAtOne ? ( ( i + 1 ) + ":" ) : ( i + ":" );
 					elementDrawer.BindTo( elementType, variableName, () => everyIth, everyNewIth =>
 					{
-						foreach( var ( list, newIth ) in BoundValues.Zip( everyNewIth, Tuple.Create ) )
-							list[i_copy] = newIth;
+						int minCount = Math.Min( BoundValues.Count, everyNewIth.Count );
+						for( int j = 0; j < minCount; j++ )
+							BoundValues[j][i_copy] = everyNewIth[j];
 
 						// Trigger setter
 						BoundValues = BoundValues;

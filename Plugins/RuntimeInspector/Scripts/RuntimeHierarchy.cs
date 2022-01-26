@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
@@ -1403,7 +1402,7 @@ namespace RuntimeInspectorNamespace
 #endif
 
 				if( m_connectedInspector )
-					m_connectedInspector.Inspect( m_currentSelection.Select( t => t.gameObject ).ToArray() );
+					m_connectedInspector.Inspect( m_currentSelection.Select( t => t.gameObject ) );
 
 				if( OnSelectionChanged != null )
 					OnSelectionChanged( m_currentSelection.AsReadOnly() );

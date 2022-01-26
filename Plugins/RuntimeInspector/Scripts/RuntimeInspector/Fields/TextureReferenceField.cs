@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-#if !UNITY_EDITOR && NETFX_CORE
-using System.Reflection;
-#endif
 using UnityEngine;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
@@ -32,7 +29,7 @@ namespace RuntimeInspectorNamespace
 			multiValueText.SetSkinInputFieldText( Skin );
 		}
 
-		protected override void OnReferenceChanged( IEnumerable<Object> references )
+		protected override void OnReferenceChanged( IReadOnlyList<Object> references )
 		{
 			base.OnReferenceChanged( references );
 

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
@@ -21,7 +20,7 @@ namespace RuntimeInspectorNamespace
 		{
 			get
 			{
-				if( !BoundValues.Any() )
+				if( BoundValues.Count == 0 )
 				{
 					if( !initializeObjectButton.gameObject.activeSelf )
 						return -1;
@@ -97,7 +96,7 @@ namespace RuntimeInspectorNamespace
 
 		public void CreateDrawersForVariables( params string[] variables )
 		{
-			var vars = Inspector.GetExposedVariablesForType( BoundValues.First().GetType() );
+			var vars = Inspector.GetExposedVariablesForType( BoundValues[0].GetType() );
 
 			if( variables == null || variables.Length == 0 )
 			{
@@ -116,7 +115,7 @@ namespace RuntimeInspectorNamespace
 
 		public void CreateDrawersForVariablesExcluding( params string[] variablesToExclude )
 		{
-			var vars = Inspector.GetExposedVariablesForType( BoundValues.First().GetType() );
+			var vars = Inspector.GetExposedVariablesForType( BoundValues[0].GetType() );
 
 			if( variablesToExclude == null || variablesToExclude.Length == 0 )
 			{

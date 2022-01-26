@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
@@ -36,7 +35,7 @@ namespace RuntimeInspectorNamespace
 #if UNITY_2017_2_OR_NEWER
 		private bool isVector3Int;
 
-		IEnumerable<Vector3Int> IBound<Vector3Int>.BoundValues
+		IReadOnlyList<Vector3Int> IBound<Vector3Int>.BoundValues
 			=> BoundValues.Select( Vector3Int.FloorToInt );
 #endif
 
@@ -83,9 +82,8 @@ namespace RuntimeInspectorNamespace
 		private void UpdateInputs()
 		{
 			float?[] coords = BoundValues
-				.Select( RuntimeInspectorUtils.Enumerate )
-				.SinglePerEntry()
-				.ToArray();
+				.Select( RuntimeInspectorUtils.ToArray )
+				.SinglePerEntry();
 
 			inputX.HasMultipleValues = !coords[0].HasValue;
 			inputY.HasMultipleValues = !coords[1].HasValue;
@@ -93,13 +91,13 @@ namespace RuntimeInspectorNamespace
 
 #if UNITY_2017_2_OR_NEWER
 			if( isVector3Int )
-				UpdateInputTexts( coords.Cast<int?>().ToArray() );
+				UpdateInputTexts( coords.Cast<float?, int?>() );
 #endif
 			else
 				UpdateInputTexts( coords );
 		}
 
-		private void UpdateInputTexts<T>( T?[] coords ) where T : struct, IConvertible
+		private void UpdateInputTexts<T>( IReadOnlyList<T?> coords ) where T : struct, IConvertible
 		{
 			if( coords[0].HasValue )
 				inputX.Text = coords[0].Value.ToString( RuntimeInspectorUtils.numberFormat );

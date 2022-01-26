@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -52,7 +51,7 @@ namespace RuntimeInspectorNamespace
 				referenceNameGetter:        ( reference ) => (Object) reference ? ( (Object) reference ).name : "None",
 				referenceDisplayNameGetter: ( reference ) => reference.GetNameWithType(),
 				references:                 allReferences,
-				initialReference:           BoundValues.First(),
+				initialReference:           BoundValues[0],
 				includeNullReference:       true,
 				title:                      "Select " + m_boundVariableType.Name,
 				referenceCanvas:            Inspector.Canvas);
@@ -60,10 +59,10 @@ namespace RuntimeInspectorNamespace
 
 		private void InspectReference( PointerEventData eventData )
 		{
-			if( BoundValues.Any() )
+			if( BoundValues.Count > 0 )
 			{
-				if( BoundValues is IEnumerable<Component> components )
-					Inspector.InspectInternal( components.Select( c => c.gameObject ) );
+				if( BoundValues is Component[] )
+					Inspector.InspectInternal( ( (Component[]) BoundValues ).Select( c => c.gameObject ) );
 				else
 					Inspector.InspectInternal( BoundValues );
 			}
@@ -75,7 +74,7 @@ namespace RuntimeInspectorNamespace
 			OnReferenceChanged( BoundValues );
 		}
 
-		protected virtual void OnReferenceChanged( IEnumerable<Object> references )
+		protected virtual void OnReferenceChanged( IReadOnlyList<Object> references )
 		{
 			if( referenceNameText != null )
 				referenceNameText.text = references.GetNameWithType( m_boundVariableType );
@@ -89,7 +88,7 @@ namespace RuntimeInspectorNamespace
 
 		public void OnDrop( PointerEventData eventData )
 		{
-			var objs = (IEnumerable<Object>) RuntimeInspectorUtils.GetAssignableObjectsFromDraggedReferenceItem( eventData, m_boundVariableType );
+			var objs = (Object[]) RuntimeInspectorUtils.GetAssignableObjectsFromDraggedReferenceItem( eventData, m_boundVariableType );
 			OnReferenceChanged( objs );
 		}
 

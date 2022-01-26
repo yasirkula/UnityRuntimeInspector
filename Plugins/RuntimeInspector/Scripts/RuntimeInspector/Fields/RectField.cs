@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
@@ -42,7 +41,7 @@ namespace RuntimeInspectorNamespace
 #if UNITY_2017_2_OR_NEWER
 		private bool isRectInt;
 
-		IEnumerable<RectInt> IBound<RectInt>.BoundValues
+		IReadOnlyList<RectInt> IBound<RectInt>.BoundValues
 			=> BoundValues.Select( RuntimeInspectorUtils.FloorToInt );
 #endif
 
@@ -95,9 +94,8 @@ namespace RuntimeInspectorNamespace
 		private void UpdateInputs()
 		{
 			float?[] coords = BoundValues
-				.Select( RuntimeInspectorUtils.Enumerate )
-				.SinglePerEntry()
-				.ToArray();
+				.Select( RuntimeInspectorUtils.ToArray )
+				.SinglePerEntry();
 
 			inputX.HasMultipleValues = !coords[0].HasValue;
 			inputY.HasMultipleValues = !coords[1].HasValue;
@@ -106,13 +104,13 @@ namespace RuntimeInspectorNamespace
 
 #if UNITY_2017_2_OR_NEWER
 			if( isRectInt )
-				UpdateInputTexts( coords.Cast<int?>().ToArray() );
+				UpdateInputTexts( coords.Cast<float?, int?>() );
 #endif
 			else
 				UpdateInputTexts( coords );
 		}
 
-		private void UpdateInputTexts<T>( T?[] coords ) where T : struct, IConvertible
+		private void UpdateInputTexts<T>( IReadOnlyList<T?> coords ) where T : struct, IConvertible
 		{
 			if( coords[0].HasValue )
 				inputX.Text = coords[0].Value.ToString( RuntimeInspectorUtils.numberFormat );
@@ -142,21 +140,19 @@ namespace RuntimeInspectorNamespace
 			if( !couldParse )
 					return false;
 
-			var newRs = new List<Rect>();
-			foreach( Rect oldR in BoundValues )
+			Rect[] newRs = new Rect[BoundValues.Count];
+			for (int i = 0; i < BoundValues.Count; i++)
 			{
-				Rect newR = oldR;
+				newRs[i] = BoundValues[i];
 
 				if( source == inputX )
-					newR.x = value;
+					newRs[i].x = value;
 				else if( source == inputY )
-					newR.y = value;
+					newRs[i].y = value;
 				else if( source == inputW )
-					newR.width = value;
+					newRs[i].width = value;
 				else
-					newR.height = value;
-
-				newRs.Add( newR );
+					newRs[i].height = value;
 			}
 
 			BoundValues = newRs;

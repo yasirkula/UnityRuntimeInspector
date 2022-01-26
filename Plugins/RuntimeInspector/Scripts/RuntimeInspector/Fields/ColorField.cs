@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -21,8 +20,8 @@ namespace RuntimeInspectorNamespace
 
 		private Image colorImg;
 
-        IEnumerable<Color32> IBound<Color32>.BoundValues
-			=> BoundValues.Cast<Color32>();
+        IReadOnlyList<Color32> IBound<Color32>.BoundValues
+			=> BoundValues.Cast<Color, Color32>();
 #pragma warning restore 0649
 
         public override void Initialize()
