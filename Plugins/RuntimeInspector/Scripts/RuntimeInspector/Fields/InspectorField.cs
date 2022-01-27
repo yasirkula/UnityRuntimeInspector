@@ -151,30 +151,6 @@ namespace RuntimeInspectorNamespace
 				variableNameText.rectTransform.sizeDelta = new Vector2( -Skin.IndentAmount * Depth, 0f );
 		}
 
-		public void BindTo<TParent>( IBound<TParent> parent, FieldInfo field, string variableName = null )
-		{
-			if( variableName == null )
-				variableName = field.Name;
-			BindTo(
-				field.FieldType,
-				variableName,
-				() => parent.BoundValues.Select( x => field.GetValue( x ) ),
-				newValues => parent.BoundValues.PassZipped( newValues, ( x, y ) => field.SetValue( x, y ) ),
-				field);
-		}
-
-		public void BindTo<TParent>( IBound<TParent> parent, PropertyInfo property, string variableName = null )
-		{
-			if( variableName == null )
-				variableName = property.Name;
-			BindTo(
-				property.PropertyType,
-				variableName,
-				() => parent.BoundValues.Select( x => property.GetValue( x ) ),
-				newValues => parent.BoundValues.PassZipped( newValues, ( x, y ) => property.SetValue( x, y ) ),
-				property);
-		}
-
 		/// Overload of BindTo that casts from <typeparam name="TParent"/> to the
 		/// value type of the inspector field.
 		public abstract void BindTo<TParent>(
@@ -183,6 +159,16 @@ namespace RuntimeInspectorNamespace
 			Getter<TParent> getter,
 			Setter<TParent> setter,
 			MemberInfo variable = null);
+
+		public abstract void BindTo<TParent>(
+			InspectorField<TParent> parent,
+			FieldInfo field,
+			string variableName = null);
+
+		public abstract void BindTo<TParent>(
+			InspectorField<TParent> parent,
+			PropertyInfo property,
+			string variableName = null);
 
 		public abstract void Refresh();
 		public abstract void Unbind();
@@ -234,6 +220,80 @@ namespace RuntimeInspectorNamespace
 			return typeof( TBinding ).IsAssignableFrom( type );
 		}
 
+		// Level 2: Highest abstraction, for fields
+		public override void BindTo<TParent>(
+			InspectorField<TParent> parent,
+			FieldInfo field,
+			string variableName = null )
+		{
+			BindToImpl(
+				parent,
+				field,
+				field.FieldType,
+				instance => field.GetValue( instance ),
+				( instance, value ) => field.SetValue( instance, value ),
+				variableName );
+		}
+
+		// Level 2: Highest abstraction, for properties
+		public override void BindTo<TParent>(
+			InspectorField<TParent> parent,
+			PropertyInfo property,
+			string variableName = null)
+		{
+			BindToImpl(
+				parent,
+				property,
+				property.PropertyType,
+				instance => property.GetValue( instance ),
+				( instance, value ) => property.SetValue( instance, value ),
+				variableName );
+		}
+
+		// Level 2
+		private void BindToImpl<TParent>(
+			InspectorField<TParent> parent,
+			MemberInfo member,
+			Type memberType,
+			Func<TParent, object> getter,
+			Action<TParent, object> setter,
+			string variableName )
+		{
+			if ( variableName == null )
+				variableName = member.Name;
+
+			// Call different setter depending on whether TParent
+			// is value- or reference type
+			void WrappedSetter( IReadOnlyList<object> newValues )
+			{
+#if UNITY_EDITOR || !NETFX_CORE
+				if( m_boundVariableType.IsValueType )
+#else
+				if( m_boundVariableType.GetTypeInfo().IsValueType )
+#endif
+				{
+					parent.BoundValues = parent.BoundValues.Broadcast(
+						newValues, ( x, y ) =>
+						{
+							setter( x, y );
+							return x;
+						} );
+				}
+				else
+				{
+					parent.BoundValues.Broadcast( newValues, setter );
+				}
+			}
+
+			BindTo(
+				memberType,
+				variableName,
+				() => parent.BoundValues.Select( getter ),
+				WrappedSetter,
+				member);
+		}
+
+		// Level 1
 		public override void BindTo<TParent>(
 			Type variableType,
 			string variableName,
@@ -249,6 +309,7 @@ namespace RuntimeInspectorNamespace
 				variable);
 		}
 
+		// Level 0: Most basic
 		public void BindTo(
 			Type variableType,
 			string variableName,

@@ -201,7 +201,35 @@ namespace RuntimeInspectorNamespace
 		// If one of the sequences only has one entry, it is
 		// passed together with every entry in the other sequence.
 		// If both pairs have no or at least two entries, IEnumerable.Zip is used.
-		public static void PassZipped<TFirst, TSecond>(
+		public static TFirst[] Broadcast<TFirst, TSecond>(
+				this IReadOnlyList<TFirst> first,
+				IReadOnlyList<TSecond> second,
+				Func<TFirst, TSecond, TFirst> sink)
+		{
+			TFirst[] result;
+			if( first.Count == 1 )
+			{
+				result = new TFirst[second.Count];
+				for( int i = 0; i < result.Length; i++ )
+					result[i] = sink( first[0], second[i] );
+			}
+			else if( second.Count == 1 )
+			{
+				result = new TFirst[first.Count];
+				for( int i = 0; i < result.Length; i++ )
+					result[i] = sink( first[i], second[0] );
+			}
+			else
+			{
+				int minLen = Math.Min(first.Count, second.Count);
+				result = new TFirst[minLen];
+				for( int i = 0; i < minLen; i++ )
+					result[i] = sink( first[i], second[i] );
+			}
+			return result;
+		}
+
+		public static void Broadcast<TFirst, TSecond>(
 				this IReadOnlyList<TFirst> first,
 				IReadOnlyList<TSecond> second,
 				Action<TFirst, TSecond> sink)
