@@ -36,7 +36,12 @@ namespace RuntimeInspectorNamespace
 		private bool isVector3Int;
 
 		IReadOnlyList<Vector3Int> IBound<Vector3Int>.BoundValues
-			=> BoundValues.Select( Vector3Int.FloorToInt );
+		{
+			get
+			{
+				return BoundValues.Select( Vector3Int.FloorToInt );
+			}
+		}
 #endif
 
 		public override void Initialize()

@@ -3,7 +3,7 @@ using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
-    public class BoolField : InspectorField<bool>
+	public class BoolField : InspectorField<bool>
 	{
 #pragma warning disable 0649
 		[SerializeField]

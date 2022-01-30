@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace RuntimeInspectorNamespace
 {
-    public class TransformField : ExpandableInspectorField<Transform>
+	public class TransformField : ExpandableInspectorField<Transform>
 	{
 		protected override int Length { get { return 3; } } // localPosition, localEulerAngles, localScale
 

@@ -42,7 +42,12 @@ namespace RuntimeInspectorNamespace
 		private bool isRectInt;
 
 		IReadOnlyList<RectInt> IBound<RectInt>.BoundValues
-			=> BoundValues.Select( RuntimeInspectorUtils.FloorToInt );
+		{
+			get
+			{
+				return BoundValues.Select( RuntimeInspectorUtils.FloorToInt );
+			}
+		}
 #endif
 
 		protected override float HeightMultiplier { get { return 2f; } }

@@ -1178,16 +1178,20 @@ namespace RuntimeInspectorNamespace
 		}
 
 		public static Quaternion Quaternion( this Vector4 v )
-			=> new Quaternion( v.x, v.y, v.z, v.w );
+		{
+			return new Quaternion( v.x, v.y, v.z, v.w );
+		}
 
 #if UNITY_2017_2_OR_NEWER
 		public static RectInt FloorToInt( this Rect r )
-			=> new RectInt( Vector2Int.FloorToInt( r.position ), Vector2Int.FloorToInt( r.size ) );
+		{
+			return new RectInt( Vector2Int.FloorToInt( r.position ), Vector2Int.FloorToInt( r.size ) );
+		}
 #endif
 
-		public static float[] ToArray( this Vector2 v ) => new float[] { v.x, v.y };
-		public static float[] ToArray( this Vector3 v ) => new float[] { v.x, v.y, v.z };
-		public static float[] ToArray( this Vector4 v ) => new float[] { v.x, v.y, v.z, v.w };
-		public static float[] ToArray( this    Rect v ) => new float[] { v.x, v.y, v.width, v.height };
+		public static float[] ToArray( this Vector2 v ) { return new float[] { v.x, v.y }; }
+		public static float[] ToArray( this Vector3 v ) { return new float[] { v.x, v.y, v.z }; }
+		public static float[] ToArray( this Vector4 v ) { return new float[] { v.x, v.y, v.z, v.w }; }
+		public static float[] ToArray( this    Rect v ) { return new float[] { v.x, v.y, v.width, v.height }; }
 	}
 }

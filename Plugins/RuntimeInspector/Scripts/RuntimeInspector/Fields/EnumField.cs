@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
-    public class EnumField : InspectorField<int>
+	public class EnumField : InspectorField<int>
 	{
 #pragma warning disable 0649
 		[SerializeField]

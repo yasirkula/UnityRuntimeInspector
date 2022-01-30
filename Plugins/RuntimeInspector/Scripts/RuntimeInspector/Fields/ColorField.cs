@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
-    public class ColorField : InspectorField<Color>, IBound<Color32>
+	public class ColorField : InspectorField<Color>, IBound<Color32>
 	{
 #pragma warning disable 0649
 		[SerializeField]
@@ -20,11 +20,17 @@ namespace RuntimeInspectorNamespace
 
 		private Image colorImg;
 
-        IReadOnlyList<Color32> IBound<Color32>.BoundValues
-			=> BoundValues.Cast<Color, Color32>();
+		IReadOnlyList<Color32> IBound<Color32>.BoundValues
+		{
+			get
+			{
+				return BoundValues.Cast<Color, Color32>();
+			}
+		}
+
 #pragma warning restore 0649
 
-        public override void Initialize()
+		public override void Initialize()
 		{
 			base.Initialize();
 

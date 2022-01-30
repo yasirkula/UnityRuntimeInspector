@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
-    public class NumberField : InspectorField<IConvertible>
+	public class NumberField : InspectorField<IConvertible>
 	{
 		private static readonly HashSet<Type> supportedTypes = new HashSet<Type>()
 		{

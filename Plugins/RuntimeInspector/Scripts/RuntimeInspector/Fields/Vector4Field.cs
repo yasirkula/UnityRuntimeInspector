@@ -38,7 +38,12 @@ namespace RuntimeInspectorNamespace
 		protected override float HeightMultiplier { get { return 2f; } }
 
 		IReadOnlyList<Quaternion> IBound<Quaternion>.BoundValues
-			=> BoundValues.Select( RuntimeInspectorUtils.Quaternion );
+		{
+			get
+			{
+				return BoundValues.Select( RuntimeInspectorUtils.Quaternion );
+			}
+		}
 
 		public override void Initialize()
 		{

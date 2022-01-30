@@ -664,7 +664,9 @@ namespace RuntimeInspectorNamespace
 			Func<TBinding, TChild> getter,
 			Action<TBinding, TChild> setter,
 			bool drawObjectsAsFields = true)
-			=> CreateDrawer( typeof( TChild ), variableName, getter, setter, drawObjectsAsFields );
+		{
+			return CreateDrawer( typeof( TChild ), variableName, getter, setter, drawObjectsAsFields );
+		}
 
 		// Overload that handles multi-selection automatically. You don't pass
 		// functions getting or setting a sequence of bound values, but instead
@@ -695,7 +697,9 @@ namespace RuntimeInspectorNamespace
 			Getter<TChild> getter,
 			Setter<TChild> setter,
 			bool drawObjectsAsFields = true)
-			=> CreateDrawer( typeof( TChild ), variableName, getter, setter, drawObjectsAsFields );
+		{
+			return CreateDrawer( typeof( TChild ), variableName, getter, setter, drawObjectsAsFields );
+		}
 
 		protected InspectorField CreateDrawer<TChild>(
 			Type variableType,
