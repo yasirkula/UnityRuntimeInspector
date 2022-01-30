@@ -445,8 +445,8 @@ namespace RuntimeInspectorNamespace
 				if( m_inspectedObjects == changed )
 					return;
 
-				if( changed is T[] changedT )
-					obj = changedT;
+				if( changed is T[] )
+					obj = (T[]) changed;
 				else
 					return;
 			}

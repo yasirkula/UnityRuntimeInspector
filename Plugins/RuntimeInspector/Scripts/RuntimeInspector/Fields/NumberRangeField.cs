@@ -33,7 +33,8 @@ namespace RuntimeInspectorNamespace
 
 		protected override bool OnValueChanged( BoundInputField source, string input )
 		{
-			if( numberHandler.TryParse( input, out IConvertible value ) )
+			IConvertible value;
+			if( numberHandler.TryParse( input, out value ) )
 			{
 				float fvalue = numberHandler.ConvertToFloat( value );
 				if( fvalue >= slider.BackingField.minValue && fvalue <= slider.BackingField.maxValue )
@@ -72,7 +73,8 @@ namespace RuntimeInspectorNamespace
 		public override void Refresh()
 		{
 			base.Refresh();
-			if( BoundValues.GetSingle( out IConvertible value ) )
+			IConvertible value;
+			if( BoundValues.GetSingle( out value ) )
 			{
 				slider.HasMultipleValues = false;
 				slider.Value = numberHandler.ConvertToFloat( value );

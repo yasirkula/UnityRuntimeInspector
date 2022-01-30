@@ -92,8 +92,8 @@ namespace RuntimeInspectorNamespace
 #if UNITY_2017_2_OR_NEWER
 			if( isVector3Int )
 				UpdateInputTexts( coords.Cast<float?, int?>() );
-#endif
 			else
+#endif
 				UpdateInputTexts( coords );
 		}
 
@@ -115,7 +115,8 @@ namespace RuntimeInspectorNamespace
 #if UNITY_2017_2_OR_NEWER
 			if( isVector3Int )
 			{
-					couldParse = int.TryParse( input, NumberStyles.Integer, RuntimeInspectorUtils.numberFormat, out int intval );
+					int intval;
+					couldParse = int.TryParse( input, NumberStyles.Integer, RuntimeInspectorUtils.numberFormat, out intval );
 					value = intval;
 			}
 			else

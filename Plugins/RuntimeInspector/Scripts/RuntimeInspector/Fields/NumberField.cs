@@ -32,6 +32,11 @@ namespace RuntimeInspectorNamespace
 			input.DefaultEmptyValue = "0";
 		}
 
+		public override bool SupportsType( Type type )
+		{
+			return supportedTypes.Contains( type );
+		}
+
 		protected override void OnBound( MemberInfo variable )
 		{
 			base.OnBound( variable );
@@ -47,7 +52,8 @@ namespace RuntimeInspectorNamespace
 
 		protected virtual bool OnValueChanged( BoundInputField source, string input )
 		{
-			if( numberHandler.TryParse( input, out IConvertible value ) )
+			IConvertible value;
+			if( numberHandler.TryParse( input, out value ) )
 			{
 				BoundValues = new IConvertible[] { value };
 				return true;
@@ -79,7 +85,8 @@ namespace RuntimeInspectorNamespace
 
 		private void UpdateInput()
 		{
-			if( BoundValues.GetSingle( out IConvertible value ) )
+			IConvertible value;
+			if( BoundValues.GetSingle( out value ) )
 			{
 				input.Text = value.ToString( RuntimeInspectorUtils.numberFormat );
 				input.HasMultipleValues = false;

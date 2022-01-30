@@ -70,7 +70,7 @@ namespace RuntimeInspectorNamespace
 			for( int i = 0; i < elements.Count; i++ )
 			{
 				// Don't keep track of non-expandable drawers' or destroyed components' expanded states
-				if( elements[i] is IExpandableInspectorField expandable && expandable.IsExpanded )
+				if( elements[i] is IExpandableInspectorField && ( (IExpandableInspectorField) elements[i] ).IsExpanded )
 					expandedElements.Add( elements[i] );
 			}
 
@@ -88,7 +88,7 @@ namespace RuntimeInspectorNamespace
 			{
 				InspectorField drawer = CreateDrawerForComponents( multiEditedComponents );
 
-				if( !( drawer is IExpandableInspectorField expandable ) )
+				if( !( drawer is IExpandableInspectorField ) )
 					return;
 
 				foreach( Component comp in multiEditedComponents )
@@ -96,7 +96,7 @@ namespace RuntimeInspectorNamespace
 					if( expandedElements.Contains( comp ) )
 					{
 						// If one of the multi-edited components is expanded, expand their shared drawer
-						expandable.IsExpanded = true;
+						( (IExpandableInspectorField) drawer).IsExpanded = true;
 						break;
 					}
 				}
@@ -196,7 +196,8 @@ namespace RuntimeInspectorNamespace
 
 					foreach( GameObject go in BoundValues )
 					{
-						if( goToComps.TryGetValue( go, out var compsOnGoOfCompType ) )
+						Queue<Component> compsOnGoOfCompType;
+						if( goToComps.TryGetValue( go, out compsOnGoOfCompType ) )
 						{
 							toDraw.Add( compsOnGoOfCompType.Dequeue() );
 							if( compsOnGoOfCompType.Count == 0 )
@@ -291,13 +292,13 @@ namespace RuntimeInspectorNamespace
 			ObjectReferencePicker.Instance.Show(
 				null, x =>
 				{
-					if( x is Type type && Inspector )
+					if( x is Type && Inspector )
 					{
 						foreach( GameObject o in BoundValues )
 						{
 							// Make sure that RuntimeInspector is still inspecting this GameObject
 							if( Inspector.InspectedObjects.Any( o.Equals ) )
-									o.AddComponent( type );
+									o.AddComponent( (Type) x );
 						}
 						Inspector.Refresh();
 					}

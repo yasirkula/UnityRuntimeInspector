@@ -262,34 +262,32 @@ namespace RuntimeInspectorNamespace
 			if ( variableName == null )
 				variableName = member.Name;
 
-			// Call different setter depending on whether TParent
-			// is value- or reference type
-			void WrappedSetter( IReadOnlyList<object> newValues )
-			{
-#if UNITY_EDITOR || !NETFX_CORE
-				if( m_boundVariableType.IsValueType )
-#else
-				if( m_boundVariableType.GetTypeInfo().IsValueType )
-#endif
-				{
-					parent.BoundValues = parent.BoundValues.Broadcast(
-						newValues, ( x, y ) =>
-						{
-							setter( x, y );
-							return x;
-						} );
-				}
-				else
-				{
-					parent.BoundValues.Broadcast( newValues, setter );
-				}
-			}
-
 			BindTo(
 				memberType,
 				variableName,
 				() => parent.BoundValues.Select( getter ),
-				WrappedSetter,
+				newValues =>
+				{
+					// Call different setter depending on whether TParent
+					// is value- or reference type
+	#if UNITY_EDITOR || !NETFX_CORE
+					if( m_boundVariableType.IsValueType )
+	#else
+					if( m_boundVariableType.GetTypeInfo().IsValueType )
+	#endif
+					{
+						parent.BoundValues = parent.BoundValues.Broadcast(
+							newValues, ( x, y ) =>
+							{
+								setter( x, y );
+								return x;
+							} );
+					}
+					else
+					{
+						parent.BoundValues.Broadcast( newValues, setter );
+					}
+				},
 				member);
 		}
 
@@ -374,8 +372,8 @@ namespace RuntimeInspectorNamespace
 
 	public interface IExpandableInspectorField
 	{
-		public bool IsExpanded { get; set; }
-		public RuntimeInspector.HeaderVisibility HeaderVisibility { get; set; }
+		bool IsExpanded { get; set; }
+		RuntimeInspector.HeaderVisibility HeaderVisibility { get; set; }
 	}
 
 	public abstract class ExpandableInspectorField<TBinding> : InspectorField<TBinding>, IExpandableInspectorField
@@ -715,8 +713,8 @@ namespace RuntimeInspectorNamespace
 			else
 				drawer.NameRaw = variableName;
 
-			if( drawer is InspectorField<TChild> drawerU )
-				drawerU.BindTo( variableType, variableName, getter, setter );
+			if( drawer is InspectorField<TChild> )
+				( (InspectorField<TChild>) drawer ).BindTo( variableType, variableName, getter, setter );
 			else
 				// If there is no inspector field taking values of the correct type
 				// directly, we use the overload that casts.

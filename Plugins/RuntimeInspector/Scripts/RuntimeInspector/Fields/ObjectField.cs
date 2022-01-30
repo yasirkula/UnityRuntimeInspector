@@ -134,10 +134,10 @@ namespace RuntimeInspectorNamespace
 
 		private InspectorField CreateDrawerForVariable( MemberInfo variable )
 		{
-				if( variable is FieldInfo field )
-						return base.CreateDrawerForVariable( field );
-				if( variable is PropertyInfo property )
-						return base.CreateDrawerForVariable( property );
+				if( variable is FieldInfo )
+						return base.CreateDrawerForVariable( (FieldInfo) variable );
+				if( variable is PropertyInfo )
+						return base.CreateDrawerForVariable( (PropertyInfo) variable );
 				throw new ArgumentException( "Variable can either be a field or a property" );
 		}
 

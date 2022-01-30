@@ -119,14 +119,14 @@ namespace RuntimeInspectorNamespace
 
 		// Get first entry if all entries in given sequence are equal, null
 		// otherwise
-		public static T? GetSingle<T>( this IReadOnlyList<T> list ) where T : struct, IEquatable<T>
+		public static T? GetSingle<T>( this IReadOnlyList<T> list ) where T : struct
 		{
 			if( list == null || list.Count == 0 )
 				return null;
 
 			T first = list[0];
 			foreach( T item in list )
-				if( !item.Equals( first ) )
+				if( !IEquatable<T>.Equals( first, item ) )
 					return null;
 			return first;
 		}
@@ -308,25 +308,24 @@ namespace RuntimeInspectorNamespace
 			return stringBuilder.ToString();
 		}
 
+		private static string HandleDefaultType( Type type )
+		{
+			const string none = "None";
+			if( type == null )
+				return none;
+			return string.Concat( none, " (", type.Name, ")" );
+		}
+
 		public static string GetNameWithType( this object obj, Type defaultType = null )
 		{
-			string HandleDefaultType()
-			{
-				const string none = "None";
-				if( defaultType == null )
-					return none;
-
-				return string.Concat( none, " (", defaultType.Name, ")" );
-			}
-
 			if( obj.IsNull() )
-				return HandleDefaultType();
+				return HandleDefaultType( defaultType );
 
 			string typeName = null;
-			if( obj is IEnumerable enumerable )
+			if( obj is IEnumerable )
 			{
 				int count = 0;
-				foreach( object elem in enumerable )
+				foreach( object elem in (IEnumerable) obj )
 				{
 					if( typeName == null && elem != null )
 						typeName = elem.GetType().Name;
@@ -334,7 +333,7 @@ namespace RuntimeInspectorNamespace
 				}
 
 				if( typeName == null )
-					typeName = HandleDefaultType();
+					typeName = HandleDefaultType( defaultType );
 
 				if( count > 1 )
 					return string.Concat( typeName, " [", count, "]" );
@@ -343,8 +342,8 @@ namespace RuntimeInspectorNamespace
 			{
 				typeName = obj.GetType().Name;
 
-				if( obj is Object unityObject )
-					return string.Concat( unityObject.name, " (", typeName, ")" );
+				if( obj is Object )
+					return string.Concat( ( (Object) obj ).name, " (", typeName, ")" );
 			}
 
 			return typeName;

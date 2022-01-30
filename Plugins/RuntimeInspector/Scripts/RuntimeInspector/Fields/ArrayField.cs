@@ -197,23 +197,24 @@ namespace RuntimeInspectorNamespace
 			int curLength = list.Count;
 			if( curLength != newLength )
 			{
-				if( list is Array array )
+				if( list is Array )
 				{
+					Array oldArray = (Array) list;
 					Array newArray = Array.CreateInstance( m_boundVariableType.GetElementType(), newLength );
 					if( newLength > curLength )
 					{
-						if( array != null )
-							Array.ConstrainedCopy( array, 0, newArray, 0, curLength );
+						if( oldArray != null )
+							Array.ConstrainedCopy( oldArray, 0, newArray, 0, curLength );
 
 						for( int i = curLength; i < newLength; i++ )
 						{
-							object template = GetTemplateElement( array );
+							object template = GetTemplateElement( oldArray );
 							if( template != null )
 								newArray.SetValue( template, i );
 						}
 					}
 					else
-						Array.ConstrainedCopy( array, 0, newArray, 0, newLength );
+						Array.ConstrainedCopy( oldArray, 0, newArray, 0, newLength );
 
 					list = newArray;
 				}
@@ -241,7 +242,8 @@ namespace RuntimeInspectorNamespace
 
 		private bool OnSizeChanged( BoundInputField source, string input )
 		{
-			if( !int.TryParse( input, NumberStyles.Integer, RuntimeInspectorUtils.numberFormat, out int newLength ) || newLength < 0 )
+			int newLength;
+			if( !int.TryParse( input, NumberStyles.Integer, RuntimeInspectorUtils.numberFormat, out newLength ) || newLength < 0 )
 				return false;
 
 			var newBoundValues = new List<IList>();

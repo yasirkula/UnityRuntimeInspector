@@ -33,7 +33,8 @@ namespace RuntimeInspectorNamespace
 		{
 			base.OnReferenceChanged( references );
 
-			if( BoundValues.GetSingle( out Object value ) )
+			Object value;
+			if( BoundValues.GetSingle( out value ) )
 			{
 				Texture tex = value.GetTexture();
 				referencePreview.enabled = tex != null;
