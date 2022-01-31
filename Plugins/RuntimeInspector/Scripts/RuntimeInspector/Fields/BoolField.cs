@@ -13,7 +13,7 @@ namespace RuntimeInspectorNamespace
 		private Toggle input;
 
 		[SerializeField]
-		private Image multiValuesMark;
+		private Image multiValueImage;
 #pragma warning restore 0649
 
 		public override void Initialize()
@@ -34,7 +34,7 @@ namespace RuntimeInspectorNamespace
 
 			toggleBackground.color = Skin.InputFieldNormalBackgroundColor;
 			input.graphic.color = Skin.ToggleCheckmarkColor;
-			multiValuesMark.color = Skin.ToggleCheckmarkColor;
+			multiValueImage.color = Skin.ToggleCheckmarkColor;
 
 			Vector2 rightSideAnchorMin = new Vector2( Skin.LabelWidthPercentage, 0f );
 			variableNameMask.rectTransform.anchorMin = rightSideAnchorMin;
@@ -44,7 +44,7 @@ namespace RuntimeInspectorNamespace
 		private void SwitchMarks( bool hasMultipleValues )
 		{
 			input.graphic.enabled = !hasMultipleValues;
-			multiValuesMark.enabled = hasMultipleValues;
+			multiValueImage.enabled = hasMultipleValues;
 		}
 
 		public override void Refresh()
