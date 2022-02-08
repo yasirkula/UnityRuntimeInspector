@@ -29,7 +29,7 @@ namespace RuntimeInspectorNamespace
 			multiValueText.SetSkinInputFieldText( Skin );
 		}
 
-		protected override void OnReferenceChanged( IReadOnlyList<Object> references )
+		protected override void OnReferenceChanged( IList<Object> references )
 		{
 			base.OnReferenceChanged( references );
 

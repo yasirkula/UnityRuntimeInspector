@@ -73,7 +73,7 @@ namespace RuntimeInspectorNamespace
 		private bool OnValueChanged( BoundInputField source, string input )
 		{
 			if( m_setterMode == Mode.OnValueChange )
-				BoundValues = new string[] { input };
+				BoundValues = new string[] { input }.AsReadOnly();
 
 			return true;
 		}
@@ -81,7 +81,7 @@ namespace RuntimeInspectorNamespace
 		private bool OnValueSubmitted( BoundInputField source, string input )
 		{
 			if( m_setterMode == Mode.OnSubmit )
-				BoundValues = new string[] { input };
+				BoundValues = new string[] { input }.AsReadOnly();
 
 			Inspector.RefreshDelayed();
 			return true;

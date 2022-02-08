@@ -24,7 +24,7 @@ namespace RuntimeInspectorNamespace
 
 		private void OnValueChanged( bool input )
 		{
-			BoundValues = new bool[] { input };
+			BoundValues = new bool[] { input }.AsReadOnly();
 			Inspector.RefreshDelayed();
 		}
 

@@ -7,7 +7,7 @@ using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
-	public class Vector4Field : InspectorField<Vector4>, IBound<Quaternion>
+	public class Vector4Field : InspectorField<Vector4>
 	{
 #pragma warning disable 0649
 		[SerializeField]
@@ -36,14 +36,6 @@ namespace RuntimeInspectorNamespace
 #pragma warning restore 0649
 
 		protected override float HeightMultiplier { get { return 2f; } }
-
-		IReadOnlyList<Quaternion> IBound<Quaternion>.BoundValues
-		{
-			get
-			{
-				return BoundValues.Select( RuntimeInspectorUtils.Quaternion );
-			}
-		}
 
 		public override void Initialize()
 		{
@@ -126,7 +118,7 @@ namespace RuntimeInspectorNamespace
 				newVs.Add( newV );
 			}
 
-			BoundValues = newVs;
+			BoundValues = newVs.AsReadOnly();
 			return true;
 		}
 

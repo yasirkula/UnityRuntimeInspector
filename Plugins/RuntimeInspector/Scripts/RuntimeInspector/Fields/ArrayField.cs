@@ -135,19 +135,23 @@ namespace RuntimeInspectorNamespace
 
 					var everyIth = new List<object>();
 					foreach( IList list in BoundValues )
-							everyIth.Add( list[i] );
+						everyIth.Add( list[i] );
 
 					int i_copy = i;
 					string variableName = Inspector.ArrayIndicesStartAtOne ? ( ( i + 1 ) + ":" ) : ( i + ":" );
-					elementDrawer.BindTo( elementType, variableName, () => everyIth, everyNewIth =>
-					{
-						int minCount = Math.Min( BoundValues.Count, everyNewIth.Count );
-						for( int j = 0; j < minCount; j++ )
-							BoundValues[j][i_copy] = everyNewIth[j];
+					elementDrawer.BindTo(
+						variableType: elementType,
+						variableName: variableName,
+						getter: () => everyIth.AsReadOnly(),
+						setter: everyNewIth =>
+						{
+							int minCount = Math.Min( BoundValues.Count, everyNewIth.Count );
+							for( int j = 0; j < minCount; j++ )
+								BoundValues[j][i_copy] = everyNewIth[j];
 
-						// Trigger setter
-						BoundValues = BoundValues;
-					} );
+							// Trigger setter
+							BoundValues = BoundValues;
+						} );
 
 				if( i < elementsExpandedStates.Count && elementsExpandedStates[i] && elementDrawer is IExpandableInspectorField )
 					( (IExpandableInspectorField) elementDrawer ).IsExpanded = true;
@@ -177,7 +181,7 @@ namespace RuntimeInspectorNamespace
 					newBoundValues.Add( current );
 				}
 
-				BoundValues = newBoundValues;
+				BoundValues = newBoundValues.AsReadOnly();
 				if( !IsExpanded )
 					IsExpanded = true;
 			}
@@ -250,7 +254,7 @@ namespace RuntimeInspectorNamespace
 			foreach( IList list in BoundValues )
 				newBoundValues.Add( ChangeSizeOfList( list, newLength ) );
 
-			BoundValues = newBoundValues;
+			BoundValues = newBoundValues.AsReadOnly();
 			Inspector.RefreshDelayed();
 			return true;
 		}

@@ -111,7 +111,7 @@ namespace RuntimeInspectorNamespace
 			if( Inspector.ShowAddComponentButton )
 				CreateExposedMethodButton(
 					addComponentMethod,
-					() => new GameObjectField[] { this },
+					() => new object[] { this }.AsReadOnly(),
 					value => { } );
 
 			expandedElements.Clear();
@@ -309,8 +309,7 @@ namespace RuntimeInspectorNamespace
 		}
 
 		[UnityEngine.Scripting.Preserve] // This method is bound to removeComponentMethod
-		private static void RemoveComponentButtonClicked<T>( T drawer )
-			where T : InspectorField, ISupportsType<Component>
+		private static void RemoveComponentButtonClicked( InspectorField drawer )
 		{
 			drawer.StartCoroutine( RemoveComponentCoroutine(
 				drawer.GetBoundOfType<Component>(),

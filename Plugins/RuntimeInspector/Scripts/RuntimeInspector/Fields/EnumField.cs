@@ -111,7 +111,7 @@ namespace RuntimeInspectorNamespace
 
 		private void OnValueChanged( int input )
 		{
-			BoundValues = new int[] { input };
+			BoundValues = new int[] { input }.AsReadOnly();
 			Inspector.RefreshDelayed();
 		}
 

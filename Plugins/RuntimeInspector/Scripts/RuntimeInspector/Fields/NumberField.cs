@@ -55,7 +55,7 @@ namespace RuntimeInspectorNamespace
 			IConvertible value;
 			if( numberHandler.TryParse( input, out value ) )
 			{
-				BoundValues = new IConvertible[] { value };
+				BoundValues = new IConvertible[] { value }.AsReadOnly();
 				return true;
 			}
 			return false;

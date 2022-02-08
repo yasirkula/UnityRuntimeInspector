@@ -173,7 +173,7 @@ namespace RuntimeInspectorNamespace
 		{
 			if( CanInitializeNewObject() )
 			{
-				BoundValues = new object[] { m_boundVariableType.Instantiate() };
+				BoundValues = new object[] { m_boundVariableType.Instantiate() }.AsReadOnly();
 
 				RegenerateElements();
 				IsExpanded = true;

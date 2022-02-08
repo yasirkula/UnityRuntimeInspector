@@ -8,9 +8,6 @@ using UnityEngine.UI;
 namespace RuntimeInspectorNamespace
 {
 	public class RectField : InspectorField<Rect>
-#if UNITY_2017_2_OR_NEWER
-	, IBound<RectInt>
-#endif
 	{
 #pragma warning disable 0649
 		[SerializeField]
@@ -40,14 +37,6 @@ namespace RuntimeInspectorNamespace
 
 #if UNITY_2017_2_OR_NEWER
 		private bool isRectInt;
-
-		IReadOnlyList<RectInt> IBound<RectInt>.BoundValues
-		{
-			get
-			{
-				return BoundValues.Select( RuntimeInspectorUtils.FloorToInt );
-			}
-		}
 #endif
 
 		protected override float HeightMultiplier { get { return 2f; } }
@@ -115,7 +104,7 @@ namespace RuntimeInspectorNamespace
 				UpdateInputTexts( coords );
 		}
 
-		private void UpdateInputTexts<T>( IReadOnlyList<T?> coords ) where T : struct, IConvertible
+		private void UpdateInputTexts<T>( IList<T?> coords ) where T : struct, IConvertible
 		{
 			if( coords[0].HasValue )
 				inputX.Text = coords[0].Value.ToString( RuntimeInspectorUtils.numberFormat );
@@ -161,7 +150,7 @@ namespace RuntimeInspectorNamespace
 					newRs[i].height = value;
 			}
 
-			BoundValues = newRs;
+			BoundValues = newRs.AsReadOnly();
 			return true;
 		}
 

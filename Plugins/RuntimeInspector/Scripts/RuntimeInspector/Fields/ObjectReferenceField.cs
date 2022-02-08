@@ -61,8 +61,9 @@ namespace RuntimeInspectorNamespace
 		{
 			if( BoundValues.Count > 0 )
 			{
-				if( BoundValues is Component[] )
-					Inspector.InspectInternal( ( (Component[]) BoundValues ).Select( c => c.gameObject ) );
+				var components = GetBoundOfType<Component>();
+				if( components.Count > 0 )
+					Inspector.InspectInternal( components.Select( c => c.gameObject ) );
 				else
 					Inspector.InspectInternal( BoundValues );
 			}
@@ -74,7 +75,7 @@ namespace RuntimeInspectorNamespace
 			OnReferenceChanged( BoundValues );
 		}
 
-		protected virtual void OnReferenceChanged( IReadOnlyList<Object> references )
+		protected virtual void OnReferenceChanged( IList<Object> references )
 		{
 			if( referenceNameText != null )
 				referenceNameText.text = references.GetNameWithType( m_boundVariableType );
@@ -82,7 +83,7 @@ namespace RuntimeInspectorNamespace
 			if( inspectReferenceButton != null )
 				inspectReferenceButton.gameObject.SetActive( BoundValues.Any( x => x != null ) );
 
-			BoundValues = references;
+			BoundValues = references.AsReadOnly();
 			Inspector.RefreshDelayed();
 		}
 

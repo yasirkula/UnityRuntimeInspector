@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -15,9 +17,9 @@ namespace RuntimeInspectorNamespace
 
 		private const string POOL_OBJECT_NAME = "RuntimeInspectorPool";
 
-		public delegate IReadOnlyList<object> InspectedObjectChangingDelegate(
-				IReadOnlyList<object> previousInspectedObjects,
-				IReadOnlyList<object> newInspectedObjects);
+		public delegate IEnumerable InspectedObjectChangingDelegate(
+				ReadOnlyCollection<object> previousInspectedObjects,
+				ReadOnlyCollection<object> newInspectedObjects);
 		public delegate void ComponentFilterDelegate( GameObject gameObject, List<Component> components );
 
 #pragma warning disable 0649
@@ -222,8 +224,8 @@ namespace RuntimeInspectorNamespace
 		private bool inspectLock = false;
 		private bool isDirty = false;
 
-		private IReadOnlyList<object> m_inspectedObjects;
-		public IReadOnlyList<object> InspectedObjects { get { return m_inspectedObjects; } }
+		private ReadOnlyCollection<object> m_inspectedObjects;
+		public ReadOnlyCollection<object> InspectedObjects { get { return m_inspectedObjects; } }
 
 		public bool IsBound { get { return m_inspectedObjects != null && m_inspectedObjects.Count > 0; } }
 
@@ -354,7 +356,7 @@ namespace RuntimeInspectorNamespace
 				if( isDirty )
 				{
 					// Rebind to refresh the exposed variables in Inspector
-					IReadOnlyList<object> inspectedObjects = m_inspectedObjects;
+					IList<object> inspectedObjects = m_inspectedObjects;
 					StopInspectInternal();
 					InspectInternal( inspectedObjects );
 
@@ -425,13 +427,13 @@ namespace RuntimeInspectorNamespace
 				currentDrawer.Skin = Skin;
 		}
 
-		public void Inspect<T>( IReadOnlyList<T> obj ) where T : class
+		public void Inspect<T>( IList<T> obj ) where T : class
 		{
 			if( !m_isLocked )
 				InspectInternal( obj );
 		}
 
-		internal void InspectInternal<T>( IReadOnlyList<T> obj ) where T : class
+		internal void InspectInternal<T>( IList<T> obj ) where T : class
 		{
 			if( inspectLock )
 				return;
@@ -441,12 +443,15 @@ namespace RuntimeInspectorNamespace
 
 			if( OnInspectedObjectChanging != null )
 			{
-				IReadOnlyList<object> changed = OnInspectedObjectChanging( m_inspectedObjects, obj );
+				IEnumerable changed = OnInspectedObjectChanging(
+					m_inspectedObjects,
+					obj.Cast<T, object>().AsReadOnly());
+
 				if( m_inspectedObjects == changed )
 					return;
 
-				if( changed is T[] )
-					obj = (T[]) changed;
+				if( changed is IList<T> )
+					obj = (IList<T>) changed;
 				else
 					return;
 			}
@@ -456,7 +461,7 @@ namespace RuntimeInspectorNamespace
 			inspectLock = true;
 			try
 			{
-				m_inspectedObjects = obj;
+				m_inspectedObjects = obj.Cast<T, object>().AsReadOnly();
 
 				if( obj == null || obj.Count == 0 )
 					return;
@@ -468,7 +473,11 @@ namespace RuntimeInspectorNamespace
 				InspectorField inspectedObjectDrawer = CreateDrawerForType( elemType, drawArea, 0, false );
 				if( inspectedObjectDrawer != null )
 				{
-					inspectedObjectDrawer.BindTo( elemType, string.Empty, () => m_inspectedObjects, ( value ) => m_inspectedObjects = value );
+					inspectedObjectDrawer.BindTo(
+						elemType,
+						string.Empty,
+						() => m_inspectedObjects.Cast<object, T>().AsReadOnly(),
+						value => m_inspectedObjects = value.Cast<T, object>().AsReadOnly());
 					inspectedObjectDrawer.NameRaw = obj.GetNameWithType();
 					inspectedObjectDrawer.Refresh();
 
@@ -484,19 +493,19 @@ namespace RuntimeInspectorNamespace
 						bool success = true;
 						var options = RuntimeHierarchy.SelectOptions.FocusOnSelection;
 
-						if( m_inspectedObjects is IReadOnlyList<GameObject> )
+						if( m_inspectedObjects is IList<GameObject> )
 						{
 							// Beware: these are two complete unrelated Select() methods!
 							// One selects objects in the hierarchy, the other is named
 							// after the Linq function.
 							success = ConnectedHierarchy.Select(
-									( (IReadOnlyList<GameObject>) m_inspectedObjects ).Select( go => go.transform ),
+									( (IList<GameObject>) m_inspectedObjects ).Select( go => go.transform ),
 									options);
 						}
-						else if( m_inspectedObjects is IReadOnlyList<Component> )
+						else if( m_inspectedObjects is IList<Component> )
 						{
 							success = ConnectedHierarchy.Select(
-									( (IReadOnlyList<Component>) m_inspectedObjects ).Select( comp => comp.transform ),
+									( (IList<Component>) m_inspectedObjects ).Select( comp => comp.transform ),
 									options);
 						}
 

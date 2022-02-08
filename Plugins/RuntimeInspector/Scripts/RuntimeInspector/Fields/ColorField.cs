@@ -1,12 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
-	public class ColorField : InspectorField<Color>, IBound<Color32>
+	public class ColorField : InspectorField<Color>
 	{
 #pragma warning disable 0649
 		[SerializeField]
@@ -19,14 +18,6 @@ namespace RuntimeInspectorNamespace
 		private Text multiValueText;
 
 		private Image colorImg;
-
-		IReadOnlyList<Color32> IBound<Color32>.BoundValues
-		{
-			get
-			{
-				return BoundValues.Cast<Color, Color32>();
-			}
-		}
 
 #pragma warning restore 0649
 
@@ -60,7 +51,7 @@ namespace RuntimeInspectorNamespace
 		private void OnColorChanged( Color32 color )
 		{
 			colorImg.color = color;
-			BoundValues = new Color[] { color };
+			BoundValues = new Color[] { color }.AsReadOnly();
 		}
 
 		protected override void OnSkinChanged()

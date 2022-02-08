@@ -8,9 +8,6 @@ using UnityEngine.UI;
 namespace RuntimeInspectorNamespace
 {
 	public class Vector2Field : InspectorField<Vector2>
-#if UNITY_2017_2_OR_NEWER
-	, IBound<Vector2Int>
-#endif
 	{
 #pragma warning disable 0649
 		[SerializeField]
@@ -28,14 +25,6 @@ namespace RuntimeInspectorNamespace
 
 #if UNITY_2017_2_OR_NEWER
 		private bool isVector2Int;
-
-		IReadOnlyList<Vector2Int> IBound<Vector2Int>.BoundValues
-		{
-			get
-			{
-				return BoundValues.Select( Vector2Int.FloorToInt );
-			}
-		}
 #endif
 
 		public override void Initialize()
@@ -91,7 +80,7 @@ namespace RuntimeInspectorNamespace
 				UpdateInputTexts( coords );
 		}
 
-		private void UpdateInputTexts<T>( IReadOnlyList<T?> coords ) where T : struct, IConvertible
+		private void UpdateInputTexts<T>( IList<T?> coords ) where T : struct, IConvertible
 		{
 			if( coords[0].HasValue )
 				inputX.Text = coords[0].Value.ToString( RuntimeInspectorUtils.numberFormat );
@@ -128,7 +117,7 @@ namespace RuntimeInspectorNamespace
 				newVs.Add( newV );
 			}
 
-			BoundValues = newVs;
+			BoundValues = newVs.AsReadOnly();
 			return true;
 		}
 

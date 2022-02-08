@@ -3,6 +3,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.Serialization;
@@ -101,7 +102,7 @@ namespace RuntimeInspectorNamespace
 		// All entries equal: single first entry, return true
 		// Distinct entries: single first entry, return false
 		// All entries null: single null, return true
-		public static bool GetSingle<T>( this IReadOnlyList<T> list, out T single ) where T : class
+		public static bool GetSingle<T>( this IList<T> list, out T single ) where T : class
 		{
 			if( list == null || list.Count == 0 )
 			{
@@ -119,7 +120,7 @@ namespace RuntimeInspectorNamespace
 
 		// Get first entry if all entries in given sequence are equal, null
 		// otherwise
-		public static T? GetSingle<T>( this IReadOnlyList<T> list ) where T : struct
+		public static T? GetSingle<T>( this IList<T> list ) where T : struct
 		{
 			if( list == null || list.Count == 0 )
 				return null;
@@ -135,7 +136,7 @@ namespace RuntimeInspectorNamespace
 		// other list. If all are equal, put the value at the ith position in the
 		// returned list. If unequal, put null at that position.
 		public static T?[] SinglePerEntry<T>(
-				this IReadOnlyList<IReadOnlyList<T>> source) where T : struct, IEquatable<T>
+				this IList<IList<T>> source) where T : struct, IEquatable<T>
 		{
 			if( source.Count == 0 )
 				return new T?[0];
@@ -157,7 +158,7 @@ namespace RuntimeInspectorNamespace
 			return result;
 		}
 
-		public static T FirstOrDefault<T>( this IReadOnlyList<T> source )
+		public static T FirstOrDefault<T>( this IList<T> source )
 		{
 			if( source.Count == 0 )
 				return default( T );
@@ -180,7 +181,7 @@ namespace RuntimeInspectorNamespace
 			return false;
 		}
 
-		public static TResult[] Cast<TSource, TResult>( this IReadOnlyList<TSource> source )
+		public static TResult[] Cast<TSource, TResult>( this IList<TSource> source )
 		{
 			var result = new TResult[source.Count];
 			for( int i = 0; i < result.Length; i++ )
@@ -188,12 +189,17 @@ namespace RuntimeInspectorNamespace
 			return result;
 		}
 
-		public static TResult[] Select<TSource, TResult>( this IReadOnlyList<TSource> list, Func<TSource, TResult> selector )
+		public static TResult[] Select<TSource, TResult>( this IList<TSource> list, Func<TSource, TResult> selector )
 		{
 			var result = new TResult[list.Count];
 			for( int i = 0; i < result.Length; i++ )
 				result[i] = selector( list[i] );
 			return result;
+		}
+
+		public static ReadOnlyCollection<T> AsReadOnly<T>( this IList<T> list )
+		{
+			return new ReadOnlyCollection<T>( list );
 		}
 
 		// Call given function with each 'zipped' pair built from entries in
@@ -202,8 +208,8 @@ namespace RuntimeInspectorNamespace
 		// passed together with every entry in the other sequence.
 		// If both pairs have no or at least two entries, IEnumerable.Zip is used.
 		public static TFirst[] Broadcast<TFirst, TSecond>(
-				this IReadOnlyList<TFirst> first,
-				IReadOnlyList<TSecond> second,
+				this ReadOnlyCollection<TFirst> first,
+				ReadOnlyCollection<TSecond> second,
 				Func<TFirst, TSecond, TFirst> sink)
 		{
 			TFirst[] result;
@@ -230,8 +236,8 @@ namespace RuntimeInspectorNamespace
 		}
 
 		public static void Broadcast<TFirst, TSecond>(
-				this IReadOnlyList<TFirst> first,
-				IReadOnlyList<TSecond> second,
+				this ReadOnlyCollection<TFirst> first,
+				ReadOnlyCollection<TSecond> second,
 				Action<TFirst, TSecond> sink)
 		{
 			if( first.Count == 1 )

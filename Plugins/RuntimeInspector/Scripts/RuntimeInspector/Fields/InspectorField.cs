@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,8 +9,8 @@ namespace RuntimeInspectorNamespace
 {
 	public abstract class InspectorField : MonoBehaviour, ITooltipContent
 	{
-		public delegate IReadOnlyList<T> Getter<out T>();
-		public delegate void Setter<in T>( IReadOnlyList<T> value );
+		public delegate ReadOnlyCollection<T> Getter<T>();
+		public delegate void Setter<T>( ReadOnlyCollection<T> value );
 
 #pragma warning disable 0649
 		[SerializeField]
@@ -172,30 +173,15 @@ namespace RuntimeInspectorNamespace
 
 		public abstract void Refresh();
 		public abstract void Unbind();
+
+		public abstract IList<T> GetBoundOfType<T>();
 	}
 
-	// Co-variant interface to reference a inspector field that binds only
-	// Transform components as one that binds Components (IBound<Component>).
-	// Think "The objects I bind to are components, but I don't necessarily bind
-	// to all components".
-	public interface IBound<out T>
+	public abstract class InspectorField<TBinding> : InspectorField
 	{
-		IReadOnlyList<T> BoundValues { get; }
-	}
-
-	// Assume a inspector field can bind all objects. This contra-variant
-	// interface allows you to reference it as a field that could potentially
-	// bind Components (ISupportsType<Component>), and get all components from
-	// it that it actually binds to.
-	public interface ISupportsType<in T>
-	{
-		IEnumerable<D> GetBoundOfType<D>() where D : T;
-	}
-
-	public abstract class InspectorField<TBinding> : InspectorField, ISupportsType<TBinding>, IBound<TBinding>
-	{
-		private IReadOnlyList<TBinding> m_boundObjects = new TBinding[0];
-		public IReadOnlyList<TBinding> BoundValues
+		private ReadOnlyCollection<TBinding> m_boundObjects
+			= new ReadOnlyCollection<TBinding>(new TBinding[0]);
+		public ReadOnlyCollection<TBinding> BoundValues
 		{
 			get { return m_boundObjects; }
 			protected set
@@ -205,11 +191,13 @@ namespace RuntimeInspectorNamespace
 			}
 		}
 
-		public IEnumerable<D> GetBoundOfType<D>() where D : TBinding
+		public override IList<D> GetBoundOfType<D>()
 		{
-			foreach( TBinding obj in m_boundObjects )
+			var list = new List<D>();
+			foreach( object obj in m_boundObjects )
 				if( typeof( D ).IsAssignableFrom( obj.GetType() ) )
-					yield return (D) obj;
+					list.Add( (D) obj );
+			return list;
 		}
 
 		private Getter<TBinding> getter;
@@ -245,8 +233,8 @@ namespace RuntimeInspectorNamespace
 				parent,
 				property,
 				property.PropertyType,
-				instance => property.GetValue( instance ),
-				( instance, value ) => property.SetValue( instance, value ),
+				instance => property.GetValue( instance, null ),
+				( instance, value ) => property.SetValue( instance, value, null ),
 				variableName );
 		}
 
@@ -265,7 +253,7 @@ namespace RuntimeInspectorNamespace
 			BindTo(
 				memberType,
 				variableName,
-				() => parent.BoundValues.Select( getter ),
+				() => parent.BoundValues.Select( getter ).AsReadOnly(),
 				newValues =>
 				{
 					// Call different setter depending on whether TParent
@@ -281,7 +269,7 @@ namespace RuntimeInspectorNamespace
 							{
 								setter( x, y );
 								return x;
-							} );
+							} ).AsReadOnly();
 					}
 					else
 					{
@@ -302,8 +290,8 @@ namespace RuntimeInspectorNamespace
 			BindTo(
 				variableType,
 				variableName,
-				() => getter().Cast<TParent, TBinding>(),
-				o => setter( o.Cast<TBinding, TParent>() ),
+				() => getter().Cast<TParent, TBinding>().AsReadOnly(),
+				o => setter( o.Cast<TBinding, TParent>().AsReadOnly() ),
 				variable);
 		}
 
@@ -342,7 +330,7 @@ namespace RuntimeInspectorNamespace
 
 		protected virtual void OnUnbound()
 		{
-			m_boundObjects = new TBinding[0];
+			m_boundObjects = new TBinding[0].AsReadOnly();
 		}
 
 		public override void Refresh()
@@ -363,9 +351,12 @@ namespace RuntimeInspectorNamespace
 #else
 				if( m_boundVariableType.GetTypeInfo().IsValueType )
 #endif
-					m_boundObjects = new TBinding[1] { (TBinding) Activator.CreateInstance( m_boundVariableType ) };
+					m_boundObjects = new TBinding[1]
+					{
+						(TBinding) Activator.CreateInstance( m_boundVariableType )
+					}.AsReadOnly();
 				else
-					m_boundObjects = new TBinding[0];
+					m_boundObjects = new TBinding[0].AsReadOnly();
 			}
 		}
 	}
@@ -562,7 +553,7 @@ namespace RuntimeInspectorNamespace
 			{
 				CreateExposedMethodButton(
 					GameObjectField.removeComponentMethod,
-					() => new ExpandableInspectorField<TBinding>[] { this },
+					() => new object[] { this }.AsReadOnly(),
 					value => { } );
 			}
 
@@ -576,8 +567,8 @@ namespace RuntimeInspectorNamespace
 					if( ( isInitialized && method.VisibleWhenInitialized ) || ( !isInitialized && method.VisibleWhenUninitialized ) )
 						CreateExposedMethodButton(
 							method,
-							() => BoundValues.Cast<TBinding, object>(),
-							value => BoundValues = value.Cast<object, TBinding>() );
+							() => BoundValues.Cast<TBinding, object>().AsReadOnly(),
+							value => BoundValues = value.Cast<object, TBinding>().AsReadOnly() );
 				}
 			}
 		}
@@ -611,7 +602,7 @@ namespace RuntimeInspectorNamespace
 			}
 		}
 
-		public InspectorField CreateDrawerForComponents( IReadOnlyList<Component> components, string variableName = null )
+		public InspectorField CreateDrawerForComponents( IList<Component> components, string variableName = null )
 		{
 			Type componentType = components[0].GetType();
 			InspectorField variableDrawer = Inspector.CreateDrawerForType( componentType, drawArea, Depth + 1, false );
@@ -620,7 +611,7 @@ namespace RuntimeInspectorNamespace
 				if( variableName == null )
 					variableName = componentType.Name + " component";
 
-				variableDrawer.BindTo( componentType, string.Empty, () => components, ( value ) => { } );
+				variableDrawer.BindTo( componentType, string.Empty, () => components.AsReadOnly(), ( value ) => { } );
 				variableDrawer.NameRaw = variableName;
 
 				elements.Add( variableDrawer );
@@ -682,7 +673,7 @@ namespace RuntimeInspectorNamespace
 			return CreateDrawer(
 				variableType,
 				variableName,
-				() => BoundValues.Select( getter ),
+				() => BoundValues.Select( getter ).AsReadOnly(),
 				newChildObjs =>
 				{
 					foreach( TBinding instance in BoundValues )
