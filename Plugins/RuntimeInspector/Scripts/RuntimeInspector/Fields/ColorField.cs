@@ -37,13 +37,13 @@ namespace RuntimeInspectorNamespace
 		private void ShowColorPicker( PointerEventData eventData )
 		{
 			var initialBoundValues = BoundValues;
-			Color? value = BoundValues.GetSingle();
 
+			Color single;
 			ColorPicker.Instance.Skin = Inspector.Skin;
 			ColorPicker.Instance.Show(
 				OnColorChanged,
 				null,
-				value.HasValue ? value.Value : Color.white,
+				BoundValues.TryGetSingle(out single) ? single : Color.white,
 				Inspector.Canvas,
 				() => BoundValues = initialBoundValues );
 		}
@@ -67,11 +67,12 @@ namespace RuntimeInspectorNamespace
 		public override void Refresh()
 		{
 			base.Refresh();
-			Color? value = BoundValues.GetSingle();
-			if( value.HasValue )
+
+			Color single;
+			if( BoundValues.TryGetSingle( out single ) )
 			{
 				multiValueText.enabled = false;
-				colorImg.color = value.Value;
+				colorImg.color = single;
 			}
 			else
 			{

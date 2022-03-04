@@ -102,11 +102,11 @@ namespace RuntimeInspectorNamespace
 		// All entries equal: single first entry, return true
 		// Distinct entries: single first entry, return false
 		// All entries null: single null, return true
-		public static bool GetSingle<T>( this IList<T> list, out T single ) where T : class
+		public static bool TryGetSingle<T>( this IList<T> list, out T single )
 		{
 			if( list == null || list.Count == 0 )
 			{
-				single = null;
+				single = default( T );
 			}
 			else
 			{
@@ -116,20 +116,6 @@ namespace RuntimeInspectorNamespace
 						return false;
 			}
 			return true;
-		}
-
-		// Get first entry if all entries in given sequence are equal, null
-		// otherwise
-		public static T? GetSingle<T>( this IList<T> list ) where T : struct
-		{
-			if( list == null || list.Count == 0 )
-				return null;
-
-			T first = list[0];
-			foreach( T item in list )
-				if( !IEquatable<T>.Equals( first, item ) )
-					return null;
-			return first;
 		}
 
 		// For each given list, compare the ith entry with the ith entry in every

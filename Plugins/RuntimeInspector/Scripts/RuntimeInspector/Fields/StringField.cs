@@ -102,7 +102,7 @@ namespace RuntimeInspectorNamespace
 			base.Refresh();
 
 			string value;
-			if( BoundValues.GetSingle( out value ) )
+			if( BoundValues.TryGetSingle( out value ) )
 			{
 				if( value == null )
 					input.Text = string.Empty;

@@ -50,10 +50,11 @@ namespace RuntimeInspectorNamespace
 		public override void Refresh()
 		{
 			base.Refresh();
-			bool? value = BoundValues.GetSingle();
-			if( value.HasValue )
+
+			bool single;
+			if( BoundValues.TryGetSingle( out single ) )
 			{
-				input.isOn = value.Value;
+				input.isOn = single;
 				SwitchMarks( false );
 			}
 			else

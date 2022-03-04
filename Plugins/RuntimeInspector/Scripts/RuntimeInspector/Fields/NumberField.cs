@@ -86,7 +86,7 @@ namespace RuntimeInspectorNamespace
 		private void UpdateInput()
 		{
 			IConvertible value;
-			if( BoundValues.GetSingle( out value ) )
+			if( BoundValues.TryGetSingle( out value ) )
 			{
 				input.Text = value.ToString( RuntimeInspectorUtils.numberFormat );
 				input.HasMultipleValues = false;

@@ -165,12 +165,16 @@ namespace RuntimeInspectorNamespace
 		public override void Refresh()
 		{
 			base.Refresh();
-			int? value = BoundValues.GetSingle();
 
-			UpdateMultiValueText( !value.HasValue );
-			if( value.HasValue )
+			int single;
+			if( BoundValues.TryGetSingle( out single ) )
 			{
-				input.value = value.Value;
+				input.value = single;
+				UpdateMultiValueText( false );
+			}
+			else
+			{
+				UpdateMultiValueText( true );
 			}
 		}
 	}
