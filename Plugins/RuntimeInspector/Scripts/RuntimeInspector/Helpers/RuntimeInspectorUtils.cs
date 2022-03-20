@@ -158,14 +158,14 @@ namespace RuntimeInspectorNamespace
 			return result;
 		}
 
-		public static T FirstOrDefault<T>( this IList<T> source )
+		internal static T FirstOrDefault<T>( this IList<T> source )
 		{
 			if( source.Count == 0 )
 				return default( T );
 			return source[0];
 		}
 
-		public static bool All<T>( this IEnumerable<T> source, Func<T, bool> func )
+		internal static bool All<T>( this IEnumerable<T> source, Func<T, bool> func )
 		{
 			foreach( T item in source )
 				if( !func( item ) )
@@ -173,7 +173,7 @@ namespace RuntimeInspectorNamespace
 			return true;
 		}
 
-		public static bool Any<T>( this IEnumerable<T> source, Func<T, bool> func )
+		internal static bool Any<T>( this IEnumerable<T> source, Func<T, bool> func )
 		{
 			foreach( T item in source )
 				if( func( item ) )
@@ -181,7 +181,7 @@ namespace RuntimeInspectorNamespace
 			return false;
 		}
 
-		public static TResult[] Cast<TSource, TResult>( this IList<TSource> source )
+		internal static TResult[] Cast<TSource, TResult>( this IList<TSource> source )
 		{
 			var result = new TResult[source.Count];
 			for( int i = 0; i < result.Length; i++ )
@@ -189,7 +189,7 @@ namespace RuntimeInspectorNamespace
 			return result;
 		}
 
-		public static TResult[] Select<TSource, TResult>( this IList<TSource> list, Func<TSource, TResult> selector )
+		internal static TResult[] Select<TSource, TResult>( this IList<TSource> list, Func<TSource, TResult> selector )
 		{
 			var result = new TResult[list.Count];
 			for( int i = 0; i < result.Length; i++ )
@@ -197,7 +197,7 @@ namespace RuntimeInspectorNamespace
 			return result;
 		}
 
-		public static ReadOnlyCollection<T> AsReadOnly<T>( this IList<T> list )
+		internal static ReadOnlyCollection<T> AsReadOnly<T>( this IList<T> list )
 		{
 			return new ReadOnlyCollection<T>( list );
 		}
@@ -207,7 +207,7 @@ namespace RuntimeInspectorNamespace
 		// If one of the sequences only has one entry, it is
 		// passed together with every entry in the other sequence.
 		// If both pairs have no or at least two entries, IEnumerable.Zip is used.
-		public static TFirst[] Broadcast<TFirst, TSecond>(
+		internal static TFirst[] Broadcast<TFirst, TSecond>(
 				this ReadOnlyCollection<TFirst> first,
 				ReadOnlyCollection<TSecond> second,
 				Func<TFirst, TSecond, TFirst> sink)
@@ -235,7 +235,7 @@ namespace RuntimeInspectorNamespace
 			return result;
 		}
 
-		public static void Broadcast<TFirst, TSecond>(
+		internal static void Broadcast<TFirst, TSecond>(
 				this ReadOnlyCollection<TFirst> first,
 				ReadOnlyCollection<TSecond> second,
 				Action<TFirst, TSecond> sink)
