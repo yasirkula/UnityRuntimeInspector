@@ -254,28 +254,7 @@ namespace RuntimeInspectorNamespace
 				memberType,
 				variableName,
 				() => parent.BoundValues.Select( getter ).AsReadOnly(),
-				newValues =>
-				{
-					// Call different setter depending on whether TParent
-					// is value- or reference type
-	#if UNITY_EDITOR || !NETFX_CORE
-					if( m_boundVariableType.IsValueType )
-	#else
-					if( m_boundVariableType.GetTypeInfo().IsValueType )
-	#endif
-					{
-						parent.BoundValues = parent.BoundValues.Broadcast(
-							newValues, ( x, y ) =>
-							{
-								setter( x, y );
-								return x;
-							} ).AsReadOnly();
-					}
-					else
-					{
-						parent.BoundValues.Broadcast( newValues, setter );
-					}
-				},
+				newValues => Broadcast( newValues, parent, setter ),
 				member);
 		}
 
@@ -310,6 +289,39 @@ namespace RuntimeInspectorNamespace
 			this.setter = setter;
 
 			OnBound( variable );
+		}
+
+		// Use RuntimeInspectorUtils.Broadcast to apply given values to the
+		// bound values of the target inspector field.
+		protected void Broadcast<TTarget, TValue>(
+			ReadOnlyCollection<TValue> newValues,
+			InspectorField<TTarget> target,
+			Action<TTarget, TValue> setter)
+		{
+			bool originallyLocked = Inspector.IsLocked;
+			Inspector.IsLocked = true;
+
+			// Call different setter depending on whether TTarget
+			// is value- or reference type
+#if UNITY_EDITOR || !NETFX_CORE
+			if( m_boundVariableType.IsValueType )
+#else
+			if( m_boundVariableType.GetTypeInfo().IsValueType )
+#endif
+			{
+				target.BoundValues = target.BoundValues.Broadcast(
+					newValues, ( x, y ) =>
+					{
+						setter( x, y );
+						return x;
+					} ).AsReadOnly();
+			}
+			else
+			{
+				target.BoundValues.Broadcast( newValues, setter );
+			}
+
+			Inspector.IsLocked = originallyLocked;
 		}
 
 		public override void Unbind()
@@ -674,12 +686,7 @@ namespace RuntimeInspectorNamespace
 				variableType,
 				variableName,
 				() => BoundValues.Select( getter ).AsReadOnly(),
-				newChildObjs =>
-				{
-					foreach( TBinding instance in BoundValues )
-						foreach( TChild value in newChildObjs )
-							setter( instance, value );
-				},
+				newChildObjs => Broadcast( newChildObjs, this, setter ),
 				drawObjectsAsFields);
 		}
 
