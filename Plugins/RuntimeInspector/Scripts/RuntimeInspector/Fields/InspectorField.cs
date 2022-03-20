@@ -58,7 +58,19 @@ namespace RuntimeInspectorNamespace
 			}
 		}
 
+		/// <summary>
+		/// Runtime type of <see cref="InspectorField{TBinding}.BoundValues"/>
+		/// passed via <see cref="BindTo"/>, e.g. type of property/field behind
+		/// <see cref="InspectorField{TBinding}.getter"/> and
+		/// <see cref="InspectorField{TBinding}.setter"/>.
+		/// </summary>
 		protected Type m_boundVariableType;
+
+		/// <summary>
+		/// Most-specific common base type of all
+		/// <see cref="InspectorField{TBinding}.BoundValues"/>.
+		/// </summary>
+		protected Type m_boundCommonBaseType;
 
 		private int m_depth = -1;
 		public int Depth
@@ -287,6 +299,11 @@ namespace RuntimeInspectorNamespace
 
 			this.getter = getter;
 			this.setter = setter;
+
+			var types = new HashSet<Type>();
+			foreach( object item in getter() )
+				types.Add( item.GetType() );
+			m_boundCommonBaseType = types.CommonBaseType();
 
 			OnBound( variable );
 		}
