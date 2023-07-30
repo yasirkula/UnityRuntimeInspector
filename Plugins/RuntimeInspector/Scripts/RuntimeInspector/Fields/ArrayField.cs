@@ -140,7 +140,13 @@ namespace RuntimeInspectorNamespace
 					if( i < elementsExpandedStates.Count && elementsExpandedStates[i] && elementDrawer is ExpandableInspectorField )
 						( (ExpandableInspectorField) elementDrawer ).IsExpanded = true;
 
-					elementDrawer.NameRaw = Inspector.ArrayIndicesStartAtOne ? ( ( i + 1 ) + ":" ) : ( i + ":" );
+					string nameRaw = Inspector.ArrayIndicesStartAtOne ? ((i + 1) + ": ") : (i + ": ");
+
+                    object currentListObject = array.GetValue(i);
+                    if (currentListObject != null)
+                        nameRaw += GetArrayElementPreviewText(currentListObject);
+
+                    elementDrawer.NameRaw = nameRaw;
 					elements.Add( elementDrawer );
 				}
 			}
@@ -152,10 +158,15 @@ namespace RuntimeInspectorNamespace
 					InspectorField elementDrawer = Inspector.CreateDrawerForType( elementType, drawArea, Depth + 1 );
 					if( elementDrawer == null )
 						break;
+					
+					string variableName = Inspector.ArrayIndicesStartAtOne ? ( ( i + 1 ) + ": " ) : ( i + ": " );
+					
+					object currentListObject = list[i];
+					if (currentListObject != null)
+						variableName += GetArrayElementPreviewText(currentListObject);
 
-					int j = i;
-					string variableName = Inspector.ArrayIndicesStartAtOne ? ( ( i + 1 ) + ":" ) : ( i + ":" );
-					elementDrawer.BindTo( elementType, variableName, () => ( (IList) Value )[j], ( value ) =>
+                    int j = i;
+                    elementDrawer.BindTo( elementType, variableName, () => ( (IList) Value )[j], ( value ) =>
 					{
 						IList _list = (IList) Value;
 						_list[j] = value;
@@ -172,6 +183,38 @@ namespace RuntimeInspectorNamespace
 			sizeInput.Text = Length.ToString( RuntimeInspectorUtils.numberFormat );
 			elementsExpandedStates.Clear();
 		}
+
+		string GetArrayElementPreviewText(object obj)
+		{
+			var type = obj.GetType();
+
+			// skip types that are displayed inline
+			if (obj is string || obj is Object || type.IsPrimitive || type.IsEnum)
+				return null;
+
+			// it must have a [Serializable] attribute - this way we also exclude Unity built-in serializable types
+			if (!type.IsSerializable)
+				return null;
+
+			var variables = type.GetAllVariables();
+			if (variables.Length == 0)
+				return null;
+
+			const int maxStringLength = 30;
+
+			var nameVariable = Array.Find(variables, v => 
+				v.GetVariableType() == typeof(string)
+				&& (v.Name.Equals("name", StringComparison.OrdinalIgnoreCase) || v.Name.Equals("m_name", StringComparison.OrdinalIgnoreCase)));
+			
+			if (nameVariable != null)
+				return nameVariable.GetVariableValue(obj)?.ToString()?.SubstringMax(maxStringLength);
+
+			var firstVariable = variables[0];
+			if (firstVariable.GetVariableType() == typeof(string))
+                return firstVariable.GetVariableValue(obj)?.ToString()?.SubstringMax(maxStringLength);
+
+			return null;
+        }
 
 		void IDropHandler.OnDrop( PointerEventData eventData )
 		{
