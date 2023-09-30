@@ -69,6 +69,16 @@ namespace RuntimeInspectorNamespace
 
 		private bool ShouldUpdateChildren { get { return ( isEnabled || !m_hideOnDisable ) && Hierarchy && !string.IsNullOrEmpty( m_sceneName ); } }
 
+#if UNITY_2018_1_OR_NEWER
+		private void Awake()
+		{
+			// OnApplicationQuit isn't reliable on some Unity versions when Application.wantsToQuit is used; Application.quitting is the only reliable solution on those versions
+			// https://issuetracker.unity3d.com/issues/onapplicationquit-method-is-called-before-application-dot-wantstoquit-event-is-raised
+			Application.quitting -= OnApplicationQuitting;
+			Application.quitting += OnApplicationQuitting;
+		}
+#endif
+
 		private void OnEnable()
 		{
 			isEnabled = true;
@@ -86,7 +96,18 @@ namespace RuntimeInspectorNamespace
 				RemoveChildrenFromScene();
 		}
 
+#if UNITY_2018_1_OR_NEWER
+		private void OnDestroy()
+		{
+			Application.quitting -= OnApplicationQuitting;
+		}
+#endif
+
+#if UNITY_2018_1_OR_NEWER
+		private void OnApplicationQuitting()
+#else
 		private void OnApplicationQuit()
+#endif
 		{
 			isQuitting = true;
 		}
