@@ -190,6 +190,7 @@ namespace RuntimeInspectorNamespace
 					}
 					catch( NotSupportedException ) { }
 					catch( System.IO.FileNotFoundException ) { }
+					catch( ReflectionTypeLoadException ) { }
 					catch( Exception e )
 					{
 						Debug.LogError( "Couldn't search assembly for Component types: " + assembly.GetName().Name + "\n" + e.ToString() );
