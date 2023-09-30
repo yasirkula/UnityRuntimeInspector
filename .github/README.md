@@ -30,6 +30,16 @@ There are 5 ways to install this plugin:
 - *(via [OpenUPM](https://openupm.com))* after installing [openupm-cli](https://github.com/openupm/openupm-cli), run the following command:
   - `openupm add com.yasirkula.runtimeinspector`
 
+## FAQ
+
+- **New Input System isn't supported on Unity 2019.2.5 or earlier**
+
+Add `ENABLE_INPUT_SYSTEM` compiler directive to **Player Settings/Scripting Define Symbols** (these symbols are platform specific, so if you change the active platform later, you'll have to add the compiler directive again).
+
+- **"Unity.InputSystem" assembly can't be resolved on Unity 2018.4 or earlier**
+
+Remove `Unity.InputSystem` assembly from **RuntimeInspector.Runtime** Assembly Definition File's *Assembly Definition References* list.
+
 ## D. HOW TO
 
 - To use the hierarchy in your scene, drag&drop the **RuntimeHierarchy** prefab to your canvas
@@ -40,14 +50,6 @@ You can connect the inspector to the hierarchy so that whenever the selection in
 You can also connect the hierarchy to the inspector so that whenever an object reference in the inspector is highlighted, the selection in hierarchy is updated. To do this, assign the hierarchy to the **Connected Hierarchy** property of the inspector.
 
 Note that these connections are *one-directional*, meaning that assigning the inspector to the hierarchy will not automatically assign the hierarchy to the inspector or vice versa. Also note that the inspector and the hierarchy are **not** singletons and therefore, you can have several instances of them in your scene at a time with different configurations.
-
-### NEW INPUT SYSTEM SUPPORT
-
-This plugin supports Unity's new Input System but it requires some manual modifications (if both the legacy and the new input systems are active at the same time, no changes are needed):
-
-- the plugin mustn't be installed as a package, i.e. it must reside inside the *Assets* folder and not the *Packages* folder (it can reside inside a subfolder of Assets like *Assets/Plugins*)
-- if Unity 2019.2.5 or earlier is used, add `ENABLE_INPUT_SYSTEM` compiler directive to **Player Settings/Scripting Define Symbols** (these symbols are platform specific, so if you change the active platform later, you'll have to add the compiler directive again)
-- add `Unity.InputSystem` assembly to **RuntimeInspector.Runtime** Assembly Definition File's *Assembly Definition References* list
 
 ## E. FEATURES
 
