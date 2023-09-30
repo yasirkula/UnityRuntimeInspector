@@ -28,7 +28,8 @@ namespace RuntimeInspectorNamespace
 
 		public override Transform GetChild( int index )
 		{
-			return rootObjects[index].transform;
+			GameObject rootObject = rootObjects[index];
+			return rootObject ? rootObject.transform : null;
 		}
 
 		public override Transform GetNearestRootOf( Transform target )
