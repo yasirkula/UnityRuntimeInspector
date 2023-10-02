@@ -149,6 +149,11 @@ namespace RuntimeInspectorNamespace
 			return stringBuilder.ToString();
 		}
 
+		public static string SubstringMax(this string str, int count)
+		{
+			return str[..Math.Min(count, str.Length)];
+		}
+
 		public static string GetNameWithType( this object obj, Type defaultType = null )
 		{
 			if( obj.IsNull() )
@@ -699,7 +704,29 @@ namespace RuntimeInspectorNamespace
 			return result;
 		}
 
-		private static bool IsSerializable( this Type type )
+        public static object GetVariableValue(this MemberInfo memberInfo, object obj)
+		{
+			if (memberInfo is PropertyInfo propertyInfo)
+				return propertyInfo.GetValue(obj);
+
+            if (memberInfo is FieldInfo fieldInfo)
+                return fieldInfo.GetValue(obj);
+
+			throw new ArgumentException("Invalid MemberInfo type");
+        }
+
+        public static Type GetVariableType(this MemberInfo memberInfo)
+        {
+            if (memberInfo is PropertyInfo propertyInfo)
+                return propertyInfo.PropertyType;
+
+            if (memberInfo is FieldInfo fieldInfo)
+                return fieldInfo.FieldType;
+
+            throw new ArgumentException("Invalid MemberInfo type");
+        }
+
+        private static bool IsSerializable( this Type type )
 		{
 #if UNITY_EDITOR || !NETFX_CORE
 			if( type.IsPrimitive || commonSerializableTypes.Contains( type ) || type.IsEnum )
