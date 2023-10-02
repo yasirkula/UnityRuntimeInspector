@@ -994,5 +994,12 @@ namespace RuntimeInspectorNamespace
 
 			return null;
 		}
+
+		public static Color GetTextColor( this InspectorField drawer )
+		{
+			if( drawer.IsInteractable )
+				return drawer.Skin.TextColor;
+			return drawer.Skin.InactiveTextColor;
+		}
 	}
 }

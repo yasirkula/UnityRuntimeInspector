@@ -40,6 +40,9 @@ namespace RuntimeInspectorNamespace
 
 		private void ShowColorPicker( PointerEventData eventData )
 		{
+			if( !IsInteractable )
+				return;
+
 			Color value = isColor32 ? (Color) (Color32) Value : (Color) Value;
 
 			ColorPicker.Instance.Skin = Inspector.Skin;
