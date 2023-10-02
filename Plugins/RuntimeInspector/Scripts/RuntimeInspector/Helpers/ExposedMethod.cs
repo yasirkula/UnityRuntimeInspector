@@ -25,12 +25,14 @@ namespace RuntimeInspectorNamespace
 
 		public void Call( object source )
 		{
+			MethodInfo toCall = method.IsGenericMethod ? method.MakeGenericMethod( source.GetType() ) : method;
+
 			if( isExtensionMethod )
-				method.Invoke( null, new object[] { source } );
-			else if( method.IsStatic )
-				method.Invoke( null, null );
+				toCall.Invoke( null, new object[] { source } );
+			else if( toCall.IsStatic )
+				toCall.Invoke( null, null );
 			else if( source != null )
-				method.Invoke( source, null );
+				toCall.Invoke( source, null );
 		}
 
 		public object CallAndReturnValue( object source )

@@ -1,4 +1,4 @@
-﻿using System;
+﻿using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -7,7 +7,7 @@ using Object = UnityEngine.Object;
 
 namespace RuntimeInspectorNamespace
 {
-	public class ObjectReferenceField : InspectorField, IDropHandler
+	public class ObjectReferenceField : InspectorField<Object>, IDropHandler
 	{
 #pragma warning disable 0649
 		[SerializeField]
@@ -40,59 +40,57 @@ namespace RuntimeInspectorNamespace
 			}
 		}
 
-		public override bool SupportsType( Type type )
-		{
-			return typeof( Object ).IsAssignableFrom( type );
-		}
-
 		private void ShowReferencePicker( PointerEventData eventData )
 		{
-			Object[] allReferences = Resources.FindObjectsOfTypeAll( BoundVariableType );
+			Object[] allReferences = Resources.FindObjectsOfTypeAll( m_boundVariableType );
 
 			ObjectReferencePicker.Instance.Skin = Inspector.Skin;
 			ObjectReferencePicker.Instance.Show(
-				( reference ) => OnReferenceChanged( (Object) reference ), null,
-				( reference ) => (Object) reference ? ( (Object) reference ).name : "None",
-				( reference ) => reference.GetNameWithType(),
-				allReferences, (Object) Value, true, "Select " + BoundVariableType.Name, Inspector.Canvas );
+				onReferenceChanged:         ( reference ) => OnReferenceChanged( new Object[] { (Object) reference } ),
+				onSelectionConfirmed:       null,
+				referenceNameGetter:        ( reference ) => (Object) reference ? ( (Object) reference ).name : "None",
+				referenceDisplayNameGetter: ( reference ) => reference.GetNameWithType(),
+				references:                 allReferences,
+				initialReference:           BoundValues[0],
+				includeNullReference:       true,
+				title:                      "Select " + m_boundVariableType.Name,
+				referenceCanvas:            Inspector.Canvas);
 		}
 
 		private void InspectReference( PointerEventData eventData )
 		{
-			if( Value != null && !Value.Equals( null ) )
+			if( BoundValues.Count > 0 )
 			{
-				if( Value is Component )
-					Inspector.InspectInternal( ( (Component) Value ).gameObject );
+				var components = GetBoundOfType<Component>();
+				if( components.Count > 0 )
+					Inspector.InspectInternal( components.Select( c => c.gameObject ) );
 				else
-					Inspector.InspectInternal( Value );
+					Inspector.InspectInternal( BoundValues );
 			}
 		}
 
 		protected override void OnBound( MemberInfo variable )
 		{
 			base.OnBound( variable );
-			OnReferenceChanged( (Object) Value );
+			OnReferenceChanged( BoundValues );
 		}
 
-		protected virtual void OnReferenceChanged( Object reference )
+		protected virtual void OnReferenceChanged( IList<Object> references )
 		{
-			if( (Object) Value != reference )
-				Value = reference;
-
 			if( referenceNameText != null )
-				referenceNameText.text = reference.GetNameWithType( BoundVariableType );
+				referenceNameText.text = references.GetNameWithType( m_boundVariableType );
 
 			if( inspectReferenceButton != null )
-				inspectReferenceButton.gameObject.SetActive( Value != null && !Value.Equals( null ) );
+				inspectReferenceButton.gameObject.SetActive( BoundValues.Any( x => x != null ) );
 
+			BoundValues = references.AsReadOnly();
 			Inspector.RefreshDelayed();
 		}
 
 		public void OnDrop( PointerEventData eventData )
 		{
-			Object assignableObject = (Object) RuntimeInspectorUtils.GetAssignableObjectFromDraggedReferenceItem( eventData, BoundVariableType );
-			if( assignableObject )
-				OnReferenceChanged( assignableObject );
+			var objs = (Object[]) RuntimeInspectorUtils.GetAssignableObjectsFromDraggedReferenceItem( eventData, m_boundVariableType );
+			OnReferenceChanged( objs );
 		}
 
 		protected override void OnSkinChanged()
@@ -122,11 +120,11 @@ namespace RuntimeInspectorNamespace
 
 		public override void Refresh()
 		{
-			object lastValue = Value;
+			var oldBoundValues = BoundValues.FirstOrDefault();
 			base.Refresh();
 
-			if( lastValue != Value )
-				OnReferenceChanged( (Object) Value );
+			if( oldBoundValues != BoundValues.FirstOrDefault() )
+				OnReferenceChanged( BoundValues );
 		}
 	}
 }

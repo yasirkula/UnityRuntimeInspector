@@ -1,7 +1,9 @@
 ﻿#define EXCLUDE_BACKING_FIELDS_FROM_VARIABLES
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.Serialization;
@@ -93,6 +95,177 @@ namespace RuntimeInspectorNamespace
 			return true;
 		}
 
+		// Get first entry if all entries in given sequence are equal, null
+		// otherwise. Returns true if all entries are equal.
+		//
+		// Sequence null or empty: single null, return true
+		// All entries equal: single first entry, return true
+		// Distinct entries: single first entry, return false
+		// All entries null: single null, return true
+		public static bool TryGetSingle<T>( this IList<T> list, out T single )
+		{
+			if( list == null || list.Count == 0 )
+			{
+				single = default( T );
+			}
+			else
+			{
+				single = list[0];
+				foreach( T item in list )
+					if( !Equals( item, single ) )
+						return false;
+			}
+			return true;
+		}
+
+		// For each given list, compare the ith entry with the ith entry in every
+		// other list. If all are equal, put the value at the ith position in the
+		// returned list. If unequal, put null at that position.
+		public static T?[] SinglePerEntry<T>(
+				this IList<IList<T>> source) where T : struct, IEquatable<T>
+		{
+			if( source.Count == 0 )
+				return new T?[0];
+
+			int len = int.MaxValue;
+			foreach( var list in source )
+				len = Math.Min( len, list.Count );
+
+			var result = new T?[len];
+			for( int i = 0; i < len; i++ )
+			{
+				result[i] = source[0][i];
+				for( int j = 1; j < source.Count; j++ )
+				{
+					if( result[i].HasValue && !result[i].Value.Equals( source[j][i] ) )
+						result[i] = null;
+				}
+			}
+			return result;
+		}
+
+		internal static Type CommonBaseType( this IEnumerable<Type> types )
+		{
+			Type ret = types.FirstOrDefault();
+			if( ret == null )
+				return null;
+
+			foreach( Type type in types )
+			{
+				if( type.IsAssignableFrom( ret ) )
+				{
+					ret = type;
+				}
+				else
+				{
+					while( !ret.IsAssignableFrom( type ) )
+						ret = ret.BaseType;
+				}
+			}
+
+			return ret;
+		}
+
+		internal static T FirstOrDefault<T>( this IEnumerable<T> source )
+		{
+			foreach( T item in source )
+				return item;
+			return default( T );
+		}
+
+		internal static bool All<T>( this IEnumerable<T> source, Func<T, bool> func )
+		{
+			foreach( T item in source )
+				if( !func( item ) )
+					return false;
+			return true;
+		}
+
+		internal static bool Any<T>( this IEnumerable<T> source, Func<T, bool> func )
+		{
+			foreach( T item in source )
+				if( func( item ) )
+					return true;
+			return false;
+		}
+
+		internal static TResult[] Cast<TSource, TResult>( this IList<TSource> source )
+		{
+			var result = new TResult[source.Count];
+			for( int i = 0; i < result.Length; i++ )
+				result[i] = (TResult) (object) source[i];
+			return result;
+		}
+
+		internal static TResult[] Select<TSource, TResult>( this IList<TSource> list, Func<TSource, TResult> selector )
+		{
+			var result = new TResult[list.Count];
+			for( int i = 0; i < result.Length; i++ )
+				result[i] = selector( list[i] );
+			return result;
+		}
+
+		internal static ReadOnlyCollection<T> AsReadOnly<T>( this IList<T> list )
+		{
+			return new ReadOnlyCollection<T>( list );
+		}
+
+		// Call given function with each 'zipped' pair built from entries in
+		// given sequences.
+		// If one of the sequences only has one entry, it is
+		// passed together with every entry in the other sequence.
+		// If both pairs have no or at least two entries, IEnumerable.Zip is used.
+		internal static TFirst[] Broadcast<TFirst, TSecond>(
+				this ReadOnlyCollection<TFirst> first,
+				ReadOnlyCollection<TSecond> second,
+				Func<TFirst, TSecond, TFirst> sink)
+		{
+			TFirst[] result;
+			if( first.Count == 1 )
+			{
+				result = new TFirst[second.Count];
+				for( int i = 0; i < result.Length; i++ )
+					result[i] = sink( first[0], second[i] );
+			}
+			else if( second.Count == 1 )
+			{
+				result = new TFirst[first.Count];
+				for( int i = 0; i < result.Length; i++ )
+					result[i] = sink( first[i], second[0] );
+			}
+			else
+			{
+				int minLen = Math.Min(first.Count, second.Count);
+				result = new TFirst[minLen];
+				for( int i = 0; i < minLen; i++ )
+					result[i] = sink( first[i], second[i] );
+			}
+			return result;
+		}
+
+		internal static void Broadcast<TFirst, TSecond>(
+				this ReadOnlyCollection<TFirst> first,
+				ReadOnlyCollection<TSecond> second,
+				Action<TFirst, TSecond> sink)
+		{
+			if( first.Count == 1 )
+			{
+				foreach( TSecond s in second )
+					sink( first[0], s );
+			}
+			else if( second.Count == 1 )
+			{
+				foreach( TFirst f in first )
+					sink( f, second[0] );
+			}
+			else
+			{
+				int len = Math.Min(first.Count, second.Count);
+				for (int i = 0; i < len; i++)
+					sink( first[i], second[i] );
+			}
+		}
+
 		public static string ToTitleCase( this string str )
 		{
 			if( str == null || str.Length == 0 )
@@ -149,17 +322,45 @@ namespace RuntimeInspectorNamespace
 			return stringBuilder.ToString();
 		}
 
+		private static string HandleDefaultType( Type type )
+		{
+			const string none = "None";
+			if( type == null )
+				return none;
+			return string.Concat( none, " (", type.Name, ")" );
+		}
+
 		public static string GetNameWithType( this object obj, Type defaultType = null )
 		{
 			if( obj.IsNull() )
-			{
-				if( defaultType == null )
-					return "None";
+				return HandleDefaultType( defaultType );
 
-				return string.Concat( "None (", defaultType.Name, ")" );
+			string typeName = null;
+			if( obj is IEnumerable )
+			{
+				int count = 0;
+				foreach( object elem in (IEnumerable) obj )
+				{
+					if( typeName == null && elem != null )
+						typeName = elem.GetType().Name;
+					count++;
+				}
+
+				if( typeName == null )
+					typeName = HandleDefaultType( defaultType );
+
+				if( count > 1 )
+					return string.Concat( typeName, " [", count, "]" );
+			}
+			else
+			{
+				typeName = obj.GetType().Name;
+
+				if( obj is Object )
+					return string.Concat( ( (Object) obj ).name, " (", typeName, ")" );
 			}
 
-			return ( obj is Object ) ? string.Concat( ( (Object) obj ).name, " (", obj.GetType().Name, ")" ) : obj.GetType().Name;
+			return typeName;
 		}
 
 		public static Texture GetTexture( this Object obj )
@@ -994,5 +1195,22 @@ namespace RuntimeInspectorNamespace
 
 			return null;
 		}
+
+		public static Quaternion Quaternion( this Vector4 v )
+		{
+			return new Quaternion( v.x, v.y, v.z, v.w );
+		}
+
+#if UNITY_2017_2_OR_NEWER
+		public static RectInt FloorToInt( this Rect r )
+		{
+			return new RectInt( Vector2Int.FloorToInt( r.position ), Vector2Int.FloorToInt( r.size ) );
+		}
+#endif
+
+		public static float[] ToArray( this Vector2 v ) { return new float[] { v.x, v.y }; }
+		public static float[] ToArray( this Vector3 v ) { return new float[] { v.x, v.y, v.z }; }
+		public static float[] ToArray( this Vector4 v ) { return new float[] { v.x, v.y, v.z, v.w }; }
+		public static float[] ToArray( this    Rect v ) { return new float[] { v.x, v.y, v.width, v.height }; }
 	}
 }

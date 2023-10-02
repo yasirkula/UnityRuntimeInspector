@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
-	public class EnumField : InspectorField
+	public class EnumField : InspectorField<int>
 	{
 #pragma warning disable 0649
 		[SerializeField]
@@ -35,6 +35,9 @@ namespace RuntimeInspectorNamespace
 
 		[SerializeField]
 		private Dropdown input;
+
+		[SerializeField]
+		private Text multiValueText;
 #pragma warning restore 0649
 
 		private static readonly Dictionary<Type, List<string>> enumNames = new Dictionary<Type, List<string>>();
@@ -67,10 +70,10 @@ namespace RuntimeInspectorNamespace
 		{
 			base.OnBound( variable );
 
-			if( !enumNames.TryGetValue( BoundVariableType, out currEnumNames ) || !enumValues.TryGetValue( BoundVariableType, out currEnumValues ) )
+			if( !enumNames.TryGetValue( m_boundVariableType, out currEnumNames ) || !enumValues.TryGetValue( m_boundVariableType, out currEnumValues ) )
 			{
-				string[] names = Enum.GetNames( BoundVariableType );
-				Array values = Enum.GetValues( BoundVariableType );
+				string[] names = Enum.GetNames( m_boundVariableType );
+				Array values = Enum.GetValues( m_boundVariableType );
 
 				currEnumNames = new List<string>( names.Length );
 				currEnumValues = new List<object>( names.Length );
@@ -81,8 +84,8 @@ namespace RuntimeInspectorNamespace
 					currEnumValues.Add( values.GetValue( i ) );
 				}
 
-				enumNames[BoundVariableType] = currEnumNames;
-				enumValues[BoundVariableType] = currEnumValues;
+				enumNames[m_boundVariableType] = currEnumNames;
+				enumValues[m_boundVariableType] = currEnumValues;
 			}
 
 			input.ClearOptions();
@@ -108,7 +111,7 @@ namespace RuntimeInspectorNamespace
 
 		private void OnValueChanged( int input )
 		{
-			Value = currEnumValues[input];
+			BoundValues = new int[] { input }.AsReadOnly();
 			Inspector.RefreshDelayed();
 		}
 
@@ -143,6 +146,7 @@ namespace RuntimeInspectorNamespace
 
 			input.captionText.SetSkinInputFieldText( Skin );
 			templateText.SetSkinInputFieldText( Skin );
+			multiValueText.SetSkinInputFieldText( Skin );
 
 			templateBackground.color = Skin.InputFieldNormalBackgroundColor.Tint( 0.075f );
 			templateCheckmark.color = Skin.ToggleCheckmarkColor;
@@ -152,13 +156,26 @@ namespace RuntimeInspectorNamespace
 			( (RectTransform) input.transform ).anchorMin = rightSideAnchorMin;
 		}
 
+		private void UpdateMultiValueText( bool hasMultipleValues )
+		{
+			multiValueText.enabled = hasMultipleValues;
+			input.captionText.enabled = !hasMultipleValues;
+		}
+
 		public override void Refresh()
 		{
 			base.Refresh();
 
-			int valueIndex = currEnumValues.IndexOf( Value );
-			if( valueIndex != -1 )
-				input.value = valueIndex;
+			int single;
+			if( BoundValues.TryGetSingle( out single ) )
+			{
+				input.value = single;
+				UpdateMultiValueText( false );
+			}
+			else
+			{
+				UpdateMultiValueText( true );
+			}
 		}
 	}
 }

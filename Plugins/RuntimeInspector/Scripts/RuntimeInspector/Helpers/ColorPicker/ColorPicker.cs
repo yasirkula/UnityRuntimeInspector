@@ -66,6 +66,7 @@ namespace RuntimeInspectorNamespace
 
 		private Color initialValue;
 		private ColorWheelControl.OnColorChangedDelegate onColorChanged, onColorConfirmed;
+		private ColorWheelControl.OnColorCanceledDelegate onColorCanceled;
 
 		protected override void Awake()
 		{
@@ -116,7 +117,12 @@ namespace RuntimeInspectorNamespace
 			OnSelectedColorChanged( colorWheel.Color );
 		}
 
-		public void Show( ColorWheelControl.OnColorChangedDelegate onColorChanged, ColorWheelControl.OnColorChangedDelegate onColorConfirmed, Color initialColor, Canvas referenceCanvas )
+		public void Show(
+			ColorWheelControl.OnColorChangedDelegate onColorChanged,
+			ColorWheelControl.OnColorChangedDelegate onColorConfirmed,
+			Color initialColor,
+			Canvas referenceCanvas,
+			ColorWheelControl.OnColorCanceledDelegate onColorCanceled = null )
 		{
 			initialValue = initialColor;
 
@@ -126,6 +132,7 @@ namespace RuntimeInspectorNamespace
 			alphaSlider.Value = initialColor.a;
 			this.onColorChanged = onColorChanged;
 			this.onColorConfirmed = onColorConfirmed;
+			this.onColorCanceled = onColorCanceled;
 
 			if( referenceCanvas && this.referenceCanvas != referenceCanvas )
 			{
@@ -142,9 +149,12 @@ namespace RuntimeInspectorNamespace
 
 		public void Cancel()
 		{
+
 			try
 			{
-				if( colorWheel.Color != initialValue && onColorChanged != null )
+				if( onColorCanceled != null )
+					onColorCanceled();
+				else if( colorWheel.Color != initialValue && onColorChanged != null )
 					onColorChanged( initialValue );
 			}
 			catch( Exception e )
