@@ -112,7 +112,7 @@ Shader "UI/ColorWheel"
 				bGrad.x = smoothstep(0.25, 0.75, i.uv.x);
 				bGrad.y = smoothstep(0.25, 0.75, i.uv.y);
 				
-				fixed4 cBox = lerp(1, _Color, bGrad.x) * bGrad.y;
+				fixed4 cBox = lerp(fixed4(1, 1, 1, 1), _Color, bGrad.x) * bGrad.y;
 				
 				//Set up PI
 				fixed PI = 3.14159265359;
