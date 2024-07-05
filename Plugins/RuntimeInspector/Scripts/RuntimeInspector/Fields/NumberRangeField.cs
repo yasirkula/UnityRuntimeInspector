@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Reflection;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
@@ -29,18 +28,18 @@ namespace RuntimeInspectorNamespace
 
 			RangeAttribute rangeAttribute = variable.GetAttribute<RangeAttribute>();
 			slider.SetRange( Mathf.Max( rangeAttribute.min, numberHandler.MinValue ), Mathf.Min( rangeAttribute.max, numberHandler.MaxValue ) );
-			slider.BackingField.wholeNumbers = BoundVariableType != typeof( float ) && BoundVariableType != typeof( double ) && BoundVariableType != typeof( decimal );
+			slider.BackingField.wholeNumbers = m_boundVariableType != typeof( float ) && m_boundVariableType != typeof( double ) && m_boundVariableType != typeof( decimal );
 		}
 
 		protected override bool OnValueChanged( BoundInputField source, string input )
 		{
-			object value;
+			IConvertible value;
 			if( numberHandler.TryParse( input, out value ) )
 			{
 				float fvalue = numberHandler.ConvertToFloat( value );
 				if( fvalue >= slider.BackingField.minValue && fvalue <= slider.BackingField.maxValue )
 				{
-					Value = value;
+					BoundValues = new IConvertible[] { value }.AsReadOnly();
 					return true;
 				}
 			}
@@ -53,8 +52,8 @@ namespace RuntimeInspectorNamespace
 			if( input.BackingField.isFocused )
 				return;
 
-			Value = numberHandler.ConvertFromFloat( value );
-			input.Text = numberHandler.ToString( Value );
+			BoundValues = new IConvertible[] { (IConvertible) value }.AsReadOnly();
+			input.Text = value.ToString( RuntimeInspectorUtils.numberFormat );
 			Inspector.RefreshDelayed();
 		}
 
@@ -74,7 +73,16 @@ namespace RuntimeInspectorNamespace
 		public override void Refresh()
 		{
 			base.Refresh();
-			slider.Value = numberHandler.ConvertToFloat( Value );
+			IConvertible value;
+			if( BoundValues.TryGetSingle( out value ) )
+			{
+				slider.HasMultipleValues = false;
+				slider.Value = numberHandler.ConvertToFloat( value );
+			}
+			else
+			{
+				slider.HasMultipleValues = true;
+			}
 		}
 	}
 }

@@ -1,10 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
-	public class ExposedMethodField : InspectorField
+	public class ExposedMethodField : InspectorField<object>
 	{
 #pragma warning disable 0649
 		[SerializeField]
@@ -47,9 +48,17 @@ namespace RuntimeInspectorNamespace
 			Refresh();
 
 			if( boundMethod.IsInitializer )
-				Value = boundMethod.CallAndReturnValue( Value );
+			{
+				var newBoundValues = new List<object>();
+				foreach( object o in BoundValues )
+					newBoundValues.Add( boundMethod.CallAndReturnValue( o ) );
+				BoundValues = newBoundValues.AsReadOnly();
+			}
 			else
-				boundMethod.Call( Value );
+			{
+				foreach( object o in BoundValues )
+					boundMethod.Call( o );
+			}
 		}
 	}
 }

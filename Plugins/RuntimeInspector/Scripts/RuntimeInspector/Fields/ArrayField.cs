@@ -10,7 +10,7 @@ using Object = UnityEngine.Object;
 
 namespace RuntimeInspectorNamespace
 {
-	public class ArrayField : ExpandableInspectorField, IDropHandler
+	public class ArrayField : ExpandableInspectorField<IList>, IDropHandler
 	{
 #pragma warning disable 0649
 		[SerializeField]
@@ -32,20 +32,13 @@ namespace RuntimeInspectorNamespace
 		{
 			get
 			{
-				if( isArray )
-				{
-					Array array = (Array) Value;
-					if( array != null )
-						return array.Length;
-				}
-				else
-				{
-					IList list = (IList) Value;
-					if( list != null )
-						return list.Count;
-				}
+				if( BoundValues.Count == 0 )
+					return 0;
 
-				return 0;
+				int minCount = int.MaxValue;
+				foreach( var item in BoundValues )
+					minCount = Math.Min( minCount, BoundValues.Count );
+				return minCount;
 			}
 		}
 
@@ -74,8 +67,24 @@ namespace RuntimeInspectorNamespace
 		{
 			base.OnBound( variable );
 
-			isArray = BoundVariableType.IsArray;
-			elementType = isArray ? BoundVariableType.GetElementType() : BoundVariableType.GetGenericArguments()[0];
+			isArray = m_boundVariableType.IsArray;
+			elementType = isArray ? m_boundVariableType.GetElementType() : m_boundVariableType.GetGenericArguments()[0];
+			UpdateSizeInputText();
+		}
+
+		private void UpdateSizeInputText()
+		{
+			if( BoundValues == null || BoundValues.Count == 0 )
+				return;
+
+			int firstCount = BoundValues[0].Count;
+			if( BoundValues.Any( x => x.Count != firstCount ) )
+				sizeInput.HasMultipleValues = true;
+			else
+			{
+				sizeInput.HasMultipleValues = false;
+				sizeInput.Text = firstCount.ToString( RuntimeInspectorUtils.numberFormat );
+			}
 		}
 
 		protected override void OnUnbound()
@@ -110,66 +119,48 @@ namespace RuntimeInspectorNamespace
 		{
 			elementsExpandedStates.Clear();
 			for( int i = 0; i < elements.Count; i++ )
-				elementsExpandedStates.Add( ( elements[i] is ExpandableInspectorField ) ? ( (ExpandableInspectorField) elements[i] ).IsExpanded : false );
+				elementsExpandedStates.Add( ( elements[i] is IExpandableInspectorField ) ? ( (IExpandableInspectorField) elements[i] ).IsExpanded : false );
 
 			base.ClearElements();
 		}
 
 		protected override void GenerateElements()
 		{
-			if( Value == null )
-				return;
-
-			if( isArray )
+			int minElemCount = Length;
+			for( int i = 0; i < minElemCount; i++ )
 			{
-				Array array = (Array) Value;
-				for( int i = 0; i < array.Length; i++ )
-				{
-					InspectorField elementDrawer = Inspector.CreateDrawerForType( elementType, drawArea, Depth + 1 );
-					if( elementDrawer == null )
-						break;
+				InspectorField elementDrawer = Inspector.CreateDrawerForType( elementType, drawArea, Depth + 1 );
+				if( elementDrawer == null )
+					break;
 
-					int j = i;
-					elementDrawer.BindTo( elementType, string.Empty, () => ( (Array) Value ).GetValue( j ), ( value ) =>
-					{
-						Array _array = (Array) Value;
-						_array.SetValue( value, j );
-						Value = _array;
-					} );
+					var everyIth = new List<object>();
+					foreach( IList list in BoundValues )
+						everyIth.Add( list[i] );
 
-					if( i < elementsExpandedStates.Count && elementsExpandedStates[i] && elementDrawer is ExpandableInspectorField )
-						( (ExpandableInspectorField) elementDrawer ).IsExpanded = true;
-
-					elementDrawer.NameRaw = Inspector.ArrayIndicesStartAtOne ? ( ( i + 1 ) + ":" ) : ( i + ":" );
-					elements.Add( elementDrawer );
-				}
-			}
-			else
-			{
-				IList list = (IList) Value;
-				for( int i = 0; i < list.Count; i++ )
-				{
-					InspectorField elementDrawer = Inspector.CreateDrawerForType( elementType, drawArea, Depth + 1 );
-					if( elementDrawer == null )
-						break;
-
-					int j = i;
+					int i_copy = i;
 					string variableName = Inspector.ArrayIndicesStartAtOne ? ( ( i + 1 ) + ":" ) : ( i + ":" );
-					elementDrawer.BindTo( elementType, variableName, () => ( (IList) Value )[j], ( value ) =>
-					{
-						IList _list = (IList) Value;
-						_list[j] = value;
-						Value = _list;
-					} );
+					elementDrawer.BindTo(
+						variableType: elementType,
+						variableName: variableName,
+						getter: () => everyIth.AsReadOnly(),
+						setter: everyNewIth =>
+						{
+							int minCount = Math.Min( BoundValues.Count, everyNewIth.Count );
+							for( int j = 0; j < minCount; j++ )
+								BoundValues[j][i_copy] = everyNewIth[j];
 
-					if( i < elementsExpandedStates.Count && elementsExpandedStates[i] && elementDrawer is ExpandableInspectorField )
-						( (ExpandableInspectorField) elementDrawer ).IsExpanded = true;
+							// Trigger setter
+							BoundValues = BoundValues;
+						} );
 
-					elements.Add( elementDrawer );
-				}
+				if( i < elementsExpandedStates.Count && elementsExpandedStates[i] && elementDrawer is IExpandableInspectorField )
+					( (IExpandableInspectorField) elementDrawer ).IsExpanded = true;
+
+				elementDrawer.NameRaw = Inspector.ArrayIndicesStartAtOne ? ( ( i + 1 ) + ":" ) : ( i + ":" );
+				elements.Add( elementDrawer );
 			}
 
-			sizeInput.Text = Length.ToString( RuntimeInspectorUtils.numberFormat );
+			UpdateSizeInputText();
 			elementsExpandedStates.Clear();
 		}
 
@@ -178,27 +169,19 @@ namespace RuntimeInspectorNamespace
 			object[] assignableObjects = RuntimeInspectorUtils.GetAssignableObjectsFromDraggedReferenceItem( eventData, elementType );
 			if( assignableObjects != null && assignableObjects.Length > 0 )
 			{
-				int prevLength = Length;
-				if( !OnSizeChanged( null, ( prevLength + assignableObjects.Length ).ToString( RuntimeInspectorUtils.numberFormat ) ) )
-					return;
-
-				if( isArray )
+				var newBoundValues = new List<IList>();
+				foreach( IList list in BoundValues )
 				{
-					Array _array = (Array) Value;
-					for( int i = 0; i < assignableObjects.Length; i++ )
-						_array.SetValue( assignableObjects[i], prevLength + i );
+					int oldCount = list.Count;
+					IList current = ChangeSizeOfList( list, oldCount + assignableObjects.Length );
 
-					Value = _array;
-				}
-				else
-				{
-					IList _list = (IList) Value;
 					for( int i = 0; i < assignableObjects.Length; i++ )
-						_list[prevLength + i] = assignableObjects[i];
+						current[oldCount + i] = assignableObjects[i];
 
-					Value = _list;
+					newBoundValues.Add( current );
 				}
 
+				BoundValues = newBoundValues.AsReadOnly();
 				if( !IsExpanded )
 					IsExpanded = true;
 			}
@@ -213,76 +196,80 @@ namespace RuntimeInspectorNamespace
 			return false;
 		}
 
-		private bool OnSizeChanged( BoundInputField source, string input )
+		private IList ChangeSizeOfList( IList list, int newLength )
 		{
-			int value;
-			if( int.TryParse( input, NumberStyles.Integer, RuntimeInspectorUtils.numberFormat, out value ) && value >= 0 )
+			int curLength = list.Count;
+			if( curLength != newLength )
 			{
-				int currLength = Length;
-				if( currLength != value )
+				if( list is Array )
 				{
-					if( isArray )
+					Array oldArray = (Array) list;
+					Array newArray = Array.CreateInstance( m_boundVariableType.GetElementType(), newLength );
+					if( newLength > curLength )
 					{
-						Array array = (Array) Value;
-						Array newArray = Array.CreateInstance( BoundVariableType.GetElementType(), value );
-						if( value > currLength )
+						if( oldArray != null )
+							Array.ConstrainedCopy( oldArray, 0, newArray, 0, curLength );
+
+						for( int i = curLength; i < newLength; i++ )
 						{
-							if( array != null )
-								Array.ConstrainedCopy( array, 0, newArray, 0, currLength );
-
-							for( int i = currLength; i < value; i++ )
-							{
-								object template = GetTemplateElement( array );
-								if( template != null )
-									newArray.SetValue( template, i );
-							}
+							object template = GetTemplateElement( oldArray );
+							if( template != null )
+								newArray.SetValue( template, i );
 						}
-						else
-							Array.ConstrainedCopy( array, 0, newArray, 0, value );
+					}
+					else
+						Array.ConstrainedCopy( oldArray, 0, newArray, 0, newLength );
 
-						Value = newArray;
+					list = newArray;
+				}
+				else
+				{
+					int deltaLength = newLength - curLength;
+					if( deltaLength > 0 )
+					{
+						if( list == null )
+							list = (IList) Activator.CreateInstance(
+								typeof( List<> ).MakeGenericType( m_boundVariableType.GetGenericArguments()[0] ) );
+
+						for( int i = 0; i < deltaLength; i++ )
+							list.Add( GetTemplateElement( list ) );
 					}
 					else
 					{
-						IList list = (IList) Value;
-						int deltaLength = value - currLength;
-						if( deltaLength > 0 )
-						{
-							if( list == null )
-								list = (IList) Activator.CreateInstance( typeof( List<> ).MakeGenericType( BoundVariableType.GetGenericArguments()[0] ) );
-
-							for( int i = 0; i < deltaLength; i++ )
-								list.Add( GetTemplateElement( list ) );
-						}
-						else
-						{
-							for( int i = 0; i > deltaLength; i-- )
-								list.RemoveAt( list.Count - 1 );
-						}
-
-						Value = list;
+						for( int i = 0; i > deltaLength; i-- )
+							list.RemoveAt( list.Count - 1 );
 					}
-
-					Inspector.RefreshDelayed();
 				}
-
-				return true;
 			}
-
-			return false;
+			return list;
 		}
 
-		private object GetTemplateElement( object value )
+		private bool OnSizeChanged( BoundInputField source, string input )
+		{
+			int newLength;
+			if( !int.TryParse( input, NumberStyles.Integer, RuntimeInspectorUtils.numberFormat, out newLength ) || newLength < 0 )
+				return false;
+
+			var newBoundValues = new List<IList>();
+			foreach( IList list in BoundValues )
+				newBoundValues.Add( ChangeSizeOfList( list, newLength ) );
+
+			BoundValues = newBoundValues.AsReadOnly();
+			Inspector.RefreshDelayed();
+			return true;
+		}
+
+		private object GetTemplateElement( IList value )
 		{
 			Array array = null;
 			IList list = null;
 			if( isArray )
 				array = (Array) value;
 			else
-				list = (IList) value;
+				list = value;
 
 			object template = null;
-			Type elementType = isArray ? BoundVariableType.GetElementType() : BoundVariableType.GetGenericArguments()[0];
+			Type elementType = isArray ? m_boundVariableType.GetElementType() : m_boundVariableType.GetGenericArguments()[0];
 #if UNITY_EDITOR || !NETFX_CORE
 			if( elementType.IsValueType )
 #else

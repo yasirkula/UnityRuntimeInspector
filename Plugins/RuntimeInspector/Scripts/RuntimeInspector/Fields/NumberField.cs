@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
-	public class NumberField : InspectorField
+	public class NumberField : InspectorField<IConvertible>
 	{
 		private static readonly HashSet<Type> supportedTypes = new HashSet<Type>()
 		{
@@ -41,24 +41,23 @@ namespace RuntimeInspectorNamespace
 		{
 			base.OnBound( variable );
 
-			if( BoundVariableType == typeof( float ) || BoundVariableType == typeof( double ) || BoundVariableType == typeof( decimal ) )
+			if( m_boundVariableType == typeof( float ) || m_boundVariableType == typeof( double ) || m_boundVariableType == typeof( decimal ) )
 				input.BackingField.contentType = InputField.ContentType.DecimalNumber;
 			else
 				input.BackingField.contentType = InputField.ContentType.IntegerNumber;
 
-			numberHandler = NumberHandlers.Get( BoundVariableType );
-			input.Text = numberHandler.ToString( Value );
+			numberHandler = NumberHandlers.Get( m_boundVariableType );
+			UpdateInput();
 		}
 
 		protected virtual bool OnValueChanged( BoundInputField source, string input )
 		{
-			object value;
+			IConvertible value;
 			if( numberHandler.TryParse( input, out value ) )
 			{
-				Value = value;
+				BoundValues = new IConvertible[] { value }.AsReadOnly();
 				return true;
 			}
-
 			return false;
 		}
 
@@ -80,11 +79,22 @@ namespace RuntimeInspectorNamespace
 
 		public override void Refresh()
 		{
-			object prevVal = Value;
 			base.Refresh();
+			UpdateInput();
+		}
 
-			if( !numberHandler.ValuesAreEqual( Value, prevVal ) )
-				input.Text = numberHandler.ToString( Value );
+		private void UpdateInput()
+		{
+			IConvertible value;
+			if( BoundValues.TryGetSingle( out value ) )
+			{
+				input.Text = value.ToString( RuntimeInspectorUtils.numberFormat );
+				input.HasMultipleValues = false;
+			}
+			else
+			{
+				input.HasMultipleValues = true;
+			}
 		}
 	}
 }

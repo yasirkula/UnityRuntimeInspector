@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
 using UnityEngine;
@@ -6,7 +7,7 @@ using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
-	public class Vector2Field : InspectorField
+	public class Vector2Field : InspectorField<Vector2>
 	{
 #pragma warning disable 0649
 		[SerializeField]
@@ -57,58 +58,67 @@ namespace RuntimeInspectorNamespace
 			base.OnBound( variable );
 
 #if UNITY_2017_2_OR_NEWER
-			isVector2Int = BoundVariableType == typeof( Vector2Int );
+			isVector2Int = m_boundVariableType == typeof( Vector2Int );
+#endif
+			UpdateInputs();
+		}
+
+		private void UpdateInputs()
+		{
+			float?[] coords = BoundValues
+				.Select( RuntimeInspectorUtils.ToArray )
+				.SinglePerEntry();
+
+			inputX.HasMultipleValues = !coords[0].HasValue;
+			inputY.HasMultipleValues = !coords[1].HasValue;
+
+#if UNITY_2017_2_OR_NEWER
 			if( isVector2Int )
-			{
-				Vector2Int val = (Vector2Int) Value;
-				inputX.Text = val.x.ToString( RuntimeInspectorUtils.numberFormat );
-				inputY.Text = val.y.ToString( RuntimeInspectorUtils.numberFormat );
-			}
+				UpdateInputTexts( coords.Cast<float?, int?>() );
 			else
 #endif
-			{
-				Vector2 val = (Vector2) Value;
-				inputX.Text = val.x.ToString( RuntimeInspectorUtils.numberFormat );
-				inputY.Text = val.y.ToString( RuntimeInspectorUtils.numberFormat );
-			}
+				UpdateInputTexts( coords );
+		}
+
+		private void UpdateInputTexts<T>( IList<T?> coords ) where T : struct, IConvertible
+		{
+			if( coords[0].HasValue )
+				inputX.Text = coords[0].Value.ToString( RuntimeInspectorUtils.numberFormat );
+			if( coords[1].HasValue )
+				inputY.Text = coords[1].Value.ToString( RuntimeInspectorUtils.numberFormat );
 		}
 
 		private bool OnValueChanged( BoundInputField source, string input )
 		{
+			bool couldParse;
+			float value;
+
 #if UNITY_2017_2_OR_NEWER
 			if( isVector2Int )
 			{
-				int value;
-				if( int.TryParse( input, NumberStyles.Integer, RuntimeInspectorUtils.numberFormat, out value ) )
-				{
-					Vector2Int val = (Vector2Int) Value;
-					if( source == inputX )
-						val.x = value;
-					else
-						val.y = value;
-
-					Value = val;
-					return true;
-				}
+					int intval;
+					couldParse = int.TryParse( input, NumberStyles.Integer, RuntimeInspectorUtils.numberFormat, out intval );
+					value = intval;
 			}
 			else
 #endif
-			{
-				float value;
-				if( float.TryParse( input, NumberStyles.Float, RuntimeInspectorUtils.numberFormat, out value ) )
-				{
-					Vector2 val = (Vector2) Value;
-					if( source == inputX )
-						val.x = value;
-					else
-						val.y = value;
+			couldParse = float.TryParse( input, NumberStyles.Float, RuntimeInspectorUtils.numberFormat, out value );
 
-					Value = val;
-					return true;
-				}
+			if( !couldParse )
+					return false;
+
+			int coord = source == inputX ? 0 : 1;
+			var newVs = new List<Vector2>();
+
+			foreach( Vector2 oldV in BoundValues )
+			{
+				Vector2 newV = oldV;
+				newV[coord] = value;
+				newVs.Add( newV );
 			}
 
-			return false;
+			BoundValues = newVs.AsReadOnly();
+			return true;
 		}
 
 		private bool OnValueSubmitted( BoundInputField source, string input )
@@ -140,30 +150,8 @@ namespace RuntimeInspectorNamespace
 
 		public override void Refresh()
 		{
-#if UNITY_2017_2_OR_NEWER
-			if( isVector2Int )
-			{
-				Vector2Int prevVal = (Vector2Int) Value;
-				base.Refresh();
-				Vector2Int val = (Vector2Int) Value;
-
-				if( val.x != prevVal.x )
-					inputX.Text = val.x.ToString( RuntimeInspectorUtils.numberFormat );
-				if( val.y != prevVal.y )
-					inputY.Text = val.y.ToString( RuntimeInspectorUtils.numberFormat );
-			}
-			else
-#endif
-			{
-				Vector2 prevVal = (Vector2) Value;
-				base.Refresh();
-				Vector2 val = (Vector2) Value;
-
-				if( val.x != prevVal.x )
-					inputX.Text = val.x.ToString( RuntimeInspectorUtils.numberFormat );
-				if( val.y != prevVal.y )
-					inputY.Text = val.y.ToString( RuntimeInspectorUtils.numberFormat );
-			}
+			base.Refresh();
+			UpdateInputs();
 		}
 	}
 }

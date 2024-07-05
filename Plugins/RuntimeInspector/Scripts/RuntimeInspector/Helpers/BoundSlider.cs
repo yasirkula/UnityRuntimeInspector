@@ -28,6 +28,17 @@ namespace RuntimeInspectorNamespace
 			set { slider.value = value; }
 		}
 
+		private bool m_hasMultipleValues;
+		public bool HasMultipleValues
+		{
+			get { return m_hasMultipleValues; }
+			set
+			{
+				m_hasMultipleValues = value;
+				OnHasMultipleValuesChanged( value );
+			}
+		}
+
 		private int m_skinVersion = 0;
 		private UISkin m_skin;
 		public UISkin Skin
@@ -84,6 +95,11 @@ namespace RuntimeInspectorNamespace
 
 			if( OnValueChanged != null )
 				OnValueChanged( this, value );
+		}
+
+		private void OnHasMultipleValuesChanged( bool value )
+		{
+			thumb.enabled = !value;
 		}
 	}
 }

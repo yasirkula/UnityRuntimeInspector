@@ -1,11 +1,10 @@
-﻿using System;
-using System.Reflection;
+﻿using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace RuntimeInspectorNamespace
 {
-	public class StringField : InspectorField
+	public class StringField : InspectorField<string>
 	{
 		public enum Mode { OnValueChange = 0, OnSubmit = 1 };
 
@@ -36,11 +35,6 @@ namespace RuntimeInspectorNamespace
 			input.OnValueChanged += OnValueChanged;
 			input.OnValueSubmitted += OnValueSubmitted;
 			input.DefaultEmptyValue = string.Empty;
-		}
-
-		public override bool SupportsType( Type type )
-		{
-			return type == typeof( string );
 		}
 
 		protected override void OnBound( MemberInfo variable )
@@ -79,7 +73,7 @@ namespace RuntimeInspectorNamespace
 		private bool OnValueChanged( BoundInputField source, string input )
 		{
 			if( m_setterMode == Mode.OnValueChange )
-				Value = input;
+				BoundValues = new string[] { input }.AsReadOnly();
 
 			return true;
 		}
@@ -87,7 +81,7 @@ namespace RuntimeInspectorNamespace
 		private bool OnValueSubmitted( BoundInputField source, string input )
 		{
 			if( m_setterMode == Mode.OnSubmit )
-				Value = input;
+				BoundValues = new string[] { input }.AsReadOnly();
 
 			Inspector.RefreshDelayed();
 			return true;
@@ -107,10 +101,20 @@ namespace RuntimeInspectorNamespace
 		{
 			base.Refresh();
 
-			if( Value == null )
-				input.Text = string.Empty;
+			string value;
+			if( BoundValues.TryGetSingle( out value ) )
+			{
+				if( value == null )
+					input.Text = string.Empty;
+				else
+					input.Text = value;
+
+				input.HasMultipleValues = false;
+			}
 			else
-				input.Text = (string) Value;
+			{
+				input.HasMultipleValues = true;
+			}
 		}
 	}
 }

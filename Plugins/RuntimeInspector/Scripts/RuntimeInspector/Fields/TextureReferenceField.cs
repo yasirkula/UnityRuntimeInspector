@@ -1,7 +1,5 @@
 ﻿using System;
-#if !UNITY_EDITOR && NETFX_CORE
-using System.Reflection;
-#endif
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
@@ -13,6 +11,9 @@ namespace RuntimeInspectorNamespace
 #pragma warning disable 0649
 		[SerializeField]
 		private RawImage referencePreview;
+
+		[SerializeField]
+		private Text multiValueText;
 #pragma warning restore 0649
 
 		protected override float HeightMultiplier { get { return 2f; } }
@@ -22,15 +23,31 @@ namespace RuntimeInspectorNamespace
 			return typeof( Texture ).IsAssignableFrom( type ) || typeof( Sprite ).IsAssignableFrom( type );
 		}
 
-		protected override void OnReferenceChanged( Object reference )
+		protected override void OnSkinChanged()
 		{
-			base.OnReferenceChanged( reference );
+			base.OnSkinChanged();
+			multiValueText.SetSkinInputFieldText( Skin );
+		}
 
-			referenceNameText.gameObject.SetActive( !reference );
+		protected override void OnReferenceChanged( IList<Object> references )
+		{
+			base.OnReferenceChanged( references );
 
-			Texture tex = reference.GetTexture();
-			referencePreview.enabled = tex != null;
-			referencePreview.texture = tex;
+			Object value;
+			if( BoundValues.TryGetSingle( out value ) )
+			{
+				Texture tex = value.GetTexture();
+				referencePreview.enabled = tex != null;
+				referencePreview.texture = tex;
+				referenceNameText.enabled = value == null;
+				multiValueText.enabled = false;
+			}
+			else
+			{
+				referencePreview.enabled = false;
+				referenceNameText.enabled = false;
+				multiValueText.enabled = true;
+			}
 		}
 	}
 }
