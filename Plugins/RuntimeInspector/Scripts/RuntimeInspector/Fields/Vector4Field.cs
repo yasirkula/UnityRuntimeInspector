@@ -197,5 +197,26 @@ namespace RuntimeInspectorNamespace
 					inputW.Text = val.w.ToString( RuntimeInspectorUtils.numberFormat );
 			}
 		}
+
+		protected override void OnIsInteractableChanged()
+		{
+			base.OnIsInteractableChanged();
+			Color textColor = this.GetTextColor();
+
+			inputX.BackingField.interactable = IsInteractable;
+			inputY.BackingField.interactable = IsInteractable;
+			inputZ.BackingField.interactable = IsInteractable;
+			inputW.BackingField.interactable = IsInteractable;
+
+			inputX.BackingField.textComponent.color = textColor;
+			inputY.BackingField.textComponent.color = textColor;
+			inputZ.BackingField.textComponent.color = textColor;
+			inputW.BackingField.textComponent.color = textColor;
+
+			labelX.color = textColor;
+			labelY.color = textColor;
+			labelZ.color = textColor;
+			labelW.color = textColor;
+		}
 	}
 }

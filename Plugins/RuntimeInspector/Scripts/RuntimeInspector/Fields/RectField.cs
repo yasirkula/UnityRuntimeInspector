@@ -178,6 +178,27 @@ namespace RuntimeInspectorNamespace
 			( (RectTransform) inputH.transform ).SetAnchorMinMaxInputField( labelH.rectTransform, rightSideAnchorMin, new Vector2( rightSideAnchorMax.x, 0.5f ) );
 		}
 
+		protected override void OnIsInteractableChanged()
+		{
+			base.OnIsInteractableChanged();
+			Color textColor = this.GetTextColor();
+
+			inputX.BackingField.interactable = IsInteractable;
+			inputY.BackingField.interactable = IsInteractable;
+			inputW.BackingField.interactable = IsInteractable;
+			inputH.BackingField.interactable = IsInteractable;
+
+			inputX.BackingField.textComponent.color = textColor;
+			inputY.BackingField.textComponent.color = textColor;
+			inputW.BackingField.textComponent.color = textColor;
+			inputH.BackingField.textComponent.color = textColor;
+
+			labelX.color = textColor;
+			labelY.color = textColor;
+			labelW.color = textColor;
+			labelH.color = textColor;
+		}
+
 		public override void Refresh()
 		{
 #if UNITY_2017_2_OR_NEWER
