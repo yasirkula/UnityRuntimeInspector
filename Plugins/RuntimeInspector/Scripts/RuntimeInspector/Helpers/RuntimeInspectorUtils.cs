@@ -67,6 +67,7 @@ namespace RuntimeInspectorNamespace
 		private static Tooltip tooltipPopup;
 		private static readonly Stack<DraggedReferenceItem> draggedReferenceItemsPool = new Stack<DraggedReferenceItem>();
 
+		public static readonly CompareInfo caseInsensitiveComparer = new CultureInfo( "en-US" ).CompareInfo;
 		internal static readonly NumberFormatInfo numberFormat = NumberFormatInfo.GetInstance( CultureInfo.InvariantCulture );
 		internal static readonly StringBuilder stringBuilder = new StringBuilder( 200 );
 
@@ -924,8 +925,6 @@ namespace RuntimeInspectorNamespace
 					"AssetStoreTools",
 #endif
 				};
-
-				CompareInfo caseInsensitiveComparer = new CultureInfo( "en-US" ).CompareInfo;
 
 				foreach( Assembly assembly in AppDomain.CurrentDomain.GetAssemblies() )
 				{
