@@ -516,6 +516,34 @@ namespace RuntimeInspectorNamespace
 #endif
 		}
 
+		// Check if Control/Command key is held
+		public static bool IsCtrlKeyHeld()
+		{
+#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
+#if UNITY_EDITOR_OSX || ( !UNITY_EDITOR && UNITY_STANDALONE_OSX )
+			return Keyboard.current != null && ( Keyboard.current.leftCommandKey.isPressed || Keyboard.current.rightCommandKey.isPressed );
+#else
+			return Keyboard.current != null && Keyboard.current.ctrlKey.isPressed;
+#endif
+#else
+#if UNITY_EDITOR_OSX || ( !UNITY_EDITOR && UNITY_STANDALONE_OSX )
+			return Input.GetKey( KeyCode.LeftCommand ) || Input.GetKey( KeyCode.RightCommand );
+#else
+			return Input.GetKey( KeyCode.LeftControl ) || Input.GetKey( KeyCode.RightControl );
+#endif
+#endif
+		}
+
+		// Check if Shift key is held
+		public static bool IsShiftKeyHeld()
+		{
+#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
+			return Keyboard.current != null && Keyboard.current.shiftKey.isPressed;
+#else
+			return Input.GetKey( KeyCode.LeftShift ) || Input.GetKey( KeyCode.RightShift );
+#endif
+		}
+
 		public static MemberInfo[] GetAllVariables( this Type type )
 		{
 			MemberInfo[] result;
