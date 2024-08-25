@@ -13,7 +13,7 @@ namespace RuntimeInspectorNamespace
 	public class RuntimeHierarchy : SkinnedWindow, IListViewAdapter, ITooltipManager
 	{
 		[System.Flags]
-		public enum SelectOptions { None = 0, Additive = 1, FocusOnSelection = 2, ForceRevealSelection = 4 };
+		public enum SelectOptions { None = 0, Additive = 1, FocusOnSelection = 2, ForceRevealSelection = 4, DontRaiseEvent = 8 }
 		public enum LongPressAction { None = 0, CreateDraggedReferenceItem = 1, ShowMultiSelectionToggles = 2, ShowMultiSelectionTogglesThenCreateDraggedReferenceItem = 3 };
 
 		public delegate void SelectionChangedDelegate( ReadOnlyCollection<Transform> selection );
@@ -1290,7 +1290,7 @@ namespace RuntimeInspectorNamespace
 			}
 
 			if( hasSelectionChanged )
-				OnCurrentSelectionChanged();
+				OnCurrentSelectionChanged( ( selectOptions & SelectOptions.DontRaiseEvent ) == SelectOptions.DontRaiseEvent );
 
 			return hasSelectionChanged;
 		}
@@ -1400,7 +1400,7 @@ namespace RuntimeInspectorNamespace
 			return true;
 		}
 
-		private void OnCurrentSelectionChanged()
+		private void OnCurrentSelectionChanged( bool dontRaiseEvent = false )
 		{
 			selectLock = true;
 			try
@@ -1431,7 +1431,7 @@ namespace RuntimeInspectorNamespace
 					}
 				}
 
-				if( OnSelectionChanged != null )
+				if( OnSelectionChanged != null && !dontRaiseEvent )
 					OnSelectionChanged( m_currentSelection.AsReadOnly() );
 			}
 			catch( System.Exception e )
