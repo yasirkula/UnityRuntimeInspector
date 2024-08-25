@@ -123,6 +123,22 @@ namespace RuntimeInspectorNamespace
 
 		[Space]
 		[SerializeField]
+		private bool m_showInspectReferenceButton = true;
+		public bool ShowInspectReferenceButton
+		{
+			get { return m_showInspectReferenceButton; }
+			set
+			{
+				if( m_showInspectReferenceButton != value )
+				{
+					m_showInspectReferenceButton = value;
+					isDirty = true;
+				}
+			}
+		}
+
+		[Space]
+		[SerializeField]
 		private bool m_showTooltips;
 		public bool ShowTooltips { get { return m_showTooltips; } }
 

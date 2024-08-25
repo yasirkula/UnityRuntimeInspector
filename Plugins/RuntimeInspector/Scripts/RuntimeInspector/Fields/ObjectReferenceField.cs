@@ -83,7 +83,7 @@ namespace RuntimeInspectorNamespace
 				referenceNameText.text = reference.GetNameWithType( BoundVariableType );
 
 			if( inspectReferenceButton != null )
-				inspectReferenceButton.gameObject.SetActive( Value != null && !Value.Equals( null ) );
+				inspectReferenceButton.gameObject.SetActive( Inspector.ShowInspectReferenceButton && !Value.IsNull() );
 
 			Inspector.RefreshDelayed();
 		}

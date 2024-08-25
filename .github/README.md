@@ -79,6 +79,7 @@ RuntimeInspector works similar to the editor Inspector. It can expose commonly u
 - **Use Title Case Naming**: when enabled, variable names are displayed in title case format (e.g. *m_myVariable* becomes *My Variable*)
 - **Show Add Component Button**: when enabled, *Add Component* button will appear while inspecting a GameObject
 - **Show Remove Component Button**: when enabled, *Remove Component* button will appear under inspected components
+- **Show Inspect Reference Button**: when enabled, *ObjectReferenceField*s will show an arrow next to the selected Object reference. When that arrow is clicked, inspector will automatically inspect that Object
 - **Show Tooltips**: when enabled, hovering over a variable's name for a while will show a tooltip displaying the variable's name. Can be useful for variables whose names are partially obscured
 - **Tooltip Delay**: determines how long the cursor should remain static over a variable's name before the tooltip appears. Has no effect if *Show Tooltips* is disabled
 - **Nest Limit**: imagine exposing a linked list. This variable defines how many nodes you can expose in the inspector starting from the initial node until the inspector stops exposing any further nodes
