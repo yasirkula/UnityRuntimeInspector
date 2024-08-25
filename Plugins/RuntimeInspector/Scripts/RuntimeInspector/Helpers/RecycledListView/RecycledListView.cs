@@ -80,15 +80,10 @@ namespace RuntimeInspectorNamespace
 			itemHeight = adapter.ItemHeight;
 			_1OverItemHeight = 1f / itemHeight;
 
-			if( currentTopIndex > -1 && currentBottomIndex > -1 )
+			if( currentTopIndex >= 0 )
 			{
-				if( currentBottomIndex > adapter.Count - 1 )
-					currentBottomIndex = adapter.Count - 1;
-
 				DestroyItemsBetweenIndices( currentTopIndex, currentBottomIndex );
-
-				currentTopIndex = -1;
-				currentBottomIndex = -1;
+				currentTopIndex = currentBottomIndex = -1;
 			}
 
 			UpdateList();
@@ -244,6 +239,14 @@ namespace RuntimeInspectorNamespace
 
 				item.gameObject.SetActive( false );
 				pooledItems.Push( item );
+			}
+
+			if( topIndex == currentTopIndex && bottomIndex == currentBottomIndex )
+				items.Clear();
+			else
+			{
+				for( int i = topIndex; i <= bottomIndex; i++ )
+					items.Remove( i );
 			}
 		}
 
