@@ -70,7 +70,7 @@ namespace RuntimeInspectorNamespace
 		internal static readonly NumberFormatInfo numberFormat = NumberFormatInfo.GetInstance( CultureInfo.InvariantCulture );
 		internal static readonly StringBuilder stringBuilder = new StringBuilder( 200 );
 
-		public static bool IsNull( this object obj )
+		internal static bool IsNull( this object obj )
 		{
 			if( obj is Object )
 				return obj == null || obj.Equals( null );
@@ -79,7 +79,7 @@ namespace RuntimeInspectorNamespace
 		}
 
 		// Checks if all the objects inside the IList are null
-		public static bool IsEmpty<T>( this IList<T> objects )
+		internal static bool IsEmpty<T>( this IList<T> objects )
 		{
 			if( objects == null )
 				return true;
@@ -149,7 +149,7 @@ namespace RuntimeInspectorNamespace
 			return stringBuilder.ToString();
 		}
 
-		public static string GetNameWithType( this object obj, Type defaultType = null )
+		internal static string GetNameWithType( this object obj, Type defaultType = null )
 		{
 			if( obj.IsNull() )
 			{
@@ -162,7 +162,7 @@ namespace RuntimeInspectorNamespace
 			return ( obj is Object ) ? string.Concat( ( (Object) obj ).name, " (", obj.GetType().Name, ")" ) : obj.GetType().Name;
 		}
 
-		public static Texture GetTexture( this Object obj )
+		internal static Texture GetTexture( this Object obj )
 		{
 			if( obj )
 			{

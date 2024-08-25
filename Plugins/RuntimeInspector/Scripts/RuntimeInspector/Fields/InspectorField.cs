@@ -453,7 +453,7 @@ namespace RuntimeInspectorNamespace
 			ExposedMethod[] methods = BoundVariableType.GetExposedMethods();
 			if( methods != null )
 			{
-				bool isInitialized = Value != null && !Value.Equals( null );
+				bool isInitialized = !Value.IsNull();
 				for( int i = 0; i < methods.Length; i++ )
 				{
 					ExposedMethod method = methods[i];

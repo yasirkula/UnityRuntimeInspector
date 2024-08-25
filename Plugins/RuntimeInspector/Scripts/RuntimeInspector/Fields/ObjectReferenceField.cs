@@ -59,7 +59,7 @@ namespace RuntimeInspectorNamespace
 
 		private void InspectReference( PointerEventData eventData )
 		{
-			if( Value != null && !Value.Equals( null ) )
+			if( !Value.IsNull() )
 			{
 				if( Value is Component )
 					Inspector.InspectInternal( ( (Component) Value ).gameObject );
