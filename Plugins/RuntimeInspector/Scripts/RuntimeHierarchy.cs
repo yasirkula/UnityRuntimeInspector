@@ -1424,14 +1424,8 @@ namespace RuntimeInspectorNamespace
 
 				if( m_connectedInspector )
 				{
-					for( int i = m_currentSelection.Count - 1; i >= 0; i-- )
-					{
-						if( m_currentSelection[i] )
-						{
-							m_connectedInspector.Inspect( m_currentSelection[i].gameObject );
-							break;
-						}
-					}
+					Transform newInspectedObject = m_currentSelection.FindLast( ( transform ) => transform != null );
+					m_connectedInspector.Inspect( ( newInspectedObject != null ) ? newInspectedObject.gameObject : null );
 				}
 
 				if( OnSelectionChanged != null && !dontRaiseEvent )
