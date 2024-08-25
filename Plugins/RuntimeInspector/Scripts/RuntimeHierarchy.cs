@@ -771,7 +771,7 @@ namespace RuntimeInspectorNamespace
 
 			searchInputField.textComponent.SetSkinInputFieldText( Skin );
 			searchInputFieldBackground.color = Skin.InputFieldNormalBackgroundColor.Tint( 0.08f );
-			searchIcon.color = Skin.ButtonTextColor;
+			searchIcon.color = Skin.TextColor;
 			searchBarLayoutElement.SetHeight( Skin.LineHeight );
 
 			deselectAllLayoutElement.SetHeight( Skin.LineHeight );
@@ -779,7 +779,7 @@ namespace RuntimeInspectorNamespace
 			deselectAllLabel.SetSkinInputFieldText( Skin );
 
 			selectedPathBackground.color = Skin.BackgroundColor.Tint( 0.1f );
-			selectedPathText.SetSkinButtonText( Skin );
+			selectedPathText.SetSkinText( Skin );
 
 			Text placeholder = searchInputField.placeholder as Text;
 			if( placeholder != null )
