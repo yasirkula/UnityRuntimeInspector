@@ -683,6 +683,11 @@ namespace RuntimeInspectorNamespace
 			}
 		}
 
+		public void RefreshDelayed()
+		{
+			nextHierarchyRefreshTime = nextSearchRefreshTime = 0f;
+		}
+
 		private void RefreshListView()
 		{
 			isListViewDirty = false;
