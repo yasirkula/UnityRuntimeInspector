@@ -1223,16 +1223,16 @@ namespace RuntimeInspectorNamespace
 				}
 			}
 
-			if( !hasSelectionChanged && ( ( selectOptions & SelectOptions.ForceRevealSelection ) != SelectOptions.ForceRevealSelection ) )
-				return true;
-
-			if( hasSelectionChanged )
-				OnCurrentSelectionChanged();
-
-			HierarchyDataTransform itemToFocus = null;
-			int itemToFocusSceneDataIndex = 0;
+			if( multiSelectionPivotTransform != null && !currentSelectionSet.Contains( multiSelectionPivotTransform.GetHashCode() ) )
+			{
+				multiSelectionPivotTransform = null;
+				multiSelectionPivotSceneData = null;
+			}
 
 			// Expand the selected Transforms' parents if they are currently collapsed
+			HierarchyDataTransform itemToFocus = null;
+			int itemToFocusSceneDataIndex = 0;
+			bool forceRevealSelection = ( selectOptions & SelectOptions.ForceRevealSelection ) == SelectOptions.ForceRevealSelection;
 			List<HierarchyDataRoot> sceneData = m_isInSearchMode ? searchSceneData : this.sceneData;
 			for( int i = 0; i < m_currentSelection.Count; i++ )
 			{
@@ -1243,11 +1243,15 @@ namespace RuntimeInspectorNamespace
 					HierarchyDataRoot data = sceneData[j];
 					if( m_isInSearchMode || ( data is HierarchyDataRootPseudoScene ) || ( (HierarchyDataRootScene) data ).Scene == selectionScene )
 					{
-						HierarchyDataTransform selectionItem = data.FindTransform( _selection );
+						HierarchyDataTransform selectionItem = forceRevealSelection ? data.FindTransform( _selection ) : data.FindTransformInVisibleChildren( _selection );
 						if( selectionItem != null )
 						{
 							itemToFocus = selectionItem;
 							itemToFocusSceneDataIndex = j;
+
+							multiSelectionPivotTransform = _selection;
+							multiSelectionPivotSceneData = data;
+							selectionItem.GetSiblingIndexTraversalList( multiSelectionPivotSiblingIndexTraversalList );
 
 							// Transform may exist in multiple places (zero or one Unity scene and zero or more pseudo-scene(s)). After expanding the Transform's parent in
 							// one of these scenes, we can call it a day. This way, we'd use less CPU-cycles but the Transform's parent in other scene(s) may not be expanded.
@@ -1283,12 +1287,12 @@ namespace RuntimeInspectorNamespace
 						scrollView.verticalNormalizedPosition = 1f - Mathf.Clamp01( ( focusPoint - viewportHeight * 0.5f ) / ( drawAreaHeight - viewportHeight ) );
 					}
 				}
-
-				// When itemToFocus isn't null, it also means that we were successfully able to expand the selection's parents in the hierarchy
-				return true;
 			}
 
-			return false;
+			if( hasSelectionChanged )
+				OnCurrentSelectionChanged();
+
+			return hasSelectionChanged;
 		}
 
 		public void Deselect()
@@ -1342,6 +1346,12 @@ namespace RuntimeInspectorNamespace
 				{
 					if( drawers[i].gameObject.activeSelf && drawers[i].IsSelected )
 						drawers[i].IsSelected = false;
+				}
+
+				if( multiSelectionPivotTransform != null && !currentSelectionSet.Contains( multiSelectionPivotTransform.GetHashCode() ) )
+				{
+					multiSelectionPivotTransform = null;
+					multiSelectionPivotSceneData = null;
 				}
 
 				OnCurrentSelectionChanged();
