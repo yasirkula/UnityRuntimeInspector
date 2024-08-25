@@ -1354,6 +1354,9 @@ namespace RuntimeInspectorNamespace
 					multiSelectionPivotSceneData = null;
 				}
 
+				if( selectedPathBackground.gameObject.activeSelf )
+					selectedPathBackground.gameObject.SetActive( false );
+
 				OnCurrentSelectionChanged();
 			}
 		}
