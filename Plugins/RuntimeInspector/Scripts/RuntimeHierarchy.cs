@@ -984,15 +984,16 @@ namespace RuntimeInspectorNamespace
 							// Fetch the object's path and show it in Hierarchy
 							System.Text.StringBuilder sb = RuntimeInspectorUtils.stringBuilder;
 							sb.Length = 0;
+							sb.Append( "Path:" );
 
-							sb.AppendLine( "Path:" );
-							while( selection )
+							Transform rootTransform = ( (HierarchyDataRootSearch) drawer.Data.Root ).RootTransform;
+							while( selection != rootTransform )
 							{
-								sb.Append( "  " ).AppendLine( selection.name );
+								sb.AppendLine().Append( "  " ).Append( selection.name );
 								selection = selection.parent;
 							}
 
-							selectedPathText.text = sb.Append( "  " ).Append( drawer.Data.Root.Name ).ToString();
+							selectedPathText.text = sb.ToString();
 							shouldShowSearchPathText = true;
 
 							break;
@@ -1589,20 +1590,20 @@ namespace RuntimeInspectorNamespace
 				return data;
 
 			if( createIfNotExists )
-				return CreatePseudoSceneInternal( scene );
+				return CreatePseudoSceneInternal( scene, null );
 
 			return null;
 		}
 
-		public void CreatePseudoScene( string scene )
+		public void CreatePseudoScene( string scene, Transform rootTransform = null )
 		{
 			if( pseudoSceneDataLookup.ContainsKey( scene ) )
 				return;
 
-			CreatePseudoSceneInternal( scene );
+			CreatePseudoSceneInternal( scene, rootTransform );
 		}
 
-		private HierarchyDataRootPseudoScene CreatePseudoSceneInternal( string scene )
+		private HierarchyDataRootPseudoScene CreatePseudoSceneInternal( string scene, Transform rootTransform )
 		{
 			int index = 0;
 			if( pseudoScenesOrder.Length > 0 )
@@ -1619,7 +1620,7 @@ namespace RuntimeInspectorNamespace
 			else
 				index = pseudoSceneDataLookup.Count;
 
-			HierarchyDataRootPseudoScene data = new HierarchyDataRootPseudoScene( this, scene );
+			HierarchyDataRootPseudoScene data = new HierarchyDataRootPseudoScene( this, scene, rootTransform );
 
 			// Pseudo-scenes should come after Unity scenes
 			index += sceneData.Count - pseudoSceneDataLookup.Count;

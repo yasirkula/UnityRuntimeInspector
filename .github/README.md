@@ -235,10 +235,16 @@ public void RemoveFromPseudoScene( string scene, IEnumerable<Transform> transfor
 You can use the following functions to create or delete a pseudo-scene manually:
 
 ```csharp
-public void CreatePseudoScene( string scene );
+public void CreatePseudoScene( string scene, Transform rootTransform = null );
 public void DeletePseudoScene( string scene );
 public void DeleteAllPseudoScenes();
 ```
+
+The optional *rootTransform* parameter of `CreatePseudoScene` acts similar to *PseudoSceneSourceTransform* with the following differences:
+
+- Doesn't require adding a component to the source Transform
+- When a Transform is dragged & dropped onto the pseudo-scene, its parent will actually be changed to *rootTransform*
+- During search, selected Transform's displayed path will stop at *rootTransform* (i.e. won't include its parents)
 
 #### F.1.1. PseudoSceneSourceTransform
 

@@ -8,6 +8,7 @@ namespace RuntimeInspectorNamespace
 	{
 		public override string Name { get { return reference.Name; } }
 		public override int ChildCount { get { return searchResult.Count; } }
+		internal Transform RootTransform { get { return ( reference is HierarchyDataRootPseudoScene ) ? ( reference as HierarchyDataRootPseudoScene ).rootTransform : null; } }
 
 		private readonly List<Transform> searchResult = new List<Transform>();
 

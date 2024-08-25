@@ -9,47 +9,64 @@ namespace RuntimeInspectorNamespace
 		public override string Name { get { return name; } }
 		public override int ChildCount { get { return rootObjects.Count; } }
 
+		internal readonly Transform rootTransform;
 		private readonly List<Transform> rootObjects = new List<Transform>();
 
-		public HierarchyDataRootPseudoScene( RuntimeHierarchy hierarchy, string name ) : base( hierarchy )
+		public HierarchyDataRootPseudoScene( RuntimeHierarchy hierarchy, string name, Transform rootTransform = null ) : base( hierarchy )
 		{
 			this.name = name;
+			this.rootTransform = rootTransform;
 		}
 
 		public void AddChild( Transform child )
 		{
-			if( !rootObjects.Contains( child ) )
+			if( rootTransform != null )
+				child.SetParent( rootTransform, true );
+			else if( !rootObjects.Contains( child ) )
 				rootObjects.Add( child );
 		}
 
 		public void InsertChild( int index, Transform child )
 		{
-			index = Mathf.Clamp( index, 0, rootObjects.Count );
-			rootObjects.Insert( index, child );
-
-			// If the object was already in the list, remove the old copy from the list
-			for( int i = rootObjects.Count - 1; i >= 0; i-- )
+			if( rootTransform != null )
 			{
-				if( i != index && rootObjects[i] == child )
+				child.SetParent( rootTransform, true );
+				child.SetSiblingIndex( index );
+			}
+			else
+			{
+				index = Mathf.Clamp( index, 0, rootObjects.Count );
+				rootObjects.Insert( index, child );
+
+				// If the object was already in the list, remove the old copy from the list
+				for( int i = rootObjects.Count - 1; i >= 0; i-- )
 				{
-					rootObjects.RemoveAt( i );
-					return;
+					if( i != index && rootObjects[i] == child )
+					{
+						rootObjects.RemoveAt( i );
+						break;
+					}
 				}
 			}
 		}
 
 		public void RemoveChild( Transform child )
 		{
-			rootObjects.Remove( child );
+			if( rootTransform == null )
+				rootObjects.Remove( child );
 		}
 
 		public override void RefreshContent()
 		{
-			for( int i = rootObjects.Count - 1; i >= 0; i-- )
+			if( rootTransform != null )
 			{
-				if( !rootObjects[i] )
-					rootObjects.RemoveAt( i );
+				rootObjects.Clear();
+
+				for( int i = 0, childCount = rootTransform.childCount; i < childCount; i++ )
+					rootObjects.Add( rootTransform.GetChild( i ) );
 			}
+			else
+				rootObjects.RemoveAll( ( transform ) => transform == null );
 		}
 
 		public override Transform GetChild( int index )
