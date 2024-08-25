@@ -1140,6 +1140,10 @@ namespace RuntimeInspectorNamespace
 
 			Initialize();
 
+			// Make sure that the contents of the hierarchy are up-to-date
+			Refresh();
+			RefreshSearchResults();
+
 			bool additive = ( selectOptions & SelectOptions.Additive ) == SelectOptions.Additive;
 			if( !m_allowMultiSelection )
 			{
@@ -1218,10 +1222,6 @@ namespace RuntimeInspectorNamespace
 
 			if( hasSelectionChanged )
 				OnCurrentSelectionChanged();
-
-			// Make sure that the contents of the hierarchy are up-to-date
-			Refresh();
-			RefreshSearchResults();
 
 			HierarchyDataTransform itemToFocus = null;
 			int itemToFocusSceneDataIndex = 0;
