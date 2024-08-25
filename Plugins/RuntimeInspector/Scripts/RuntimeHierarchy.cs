@@ -1140,6 +1140,16 @@ namespace RuntimeInspectorNamespace
 
 			Initialize();
 
+			// Remove null Transforms from existing selection
+			for( int i = m_currentSelection.Count - 1; i >= 0; i-- )
+			{
+				if( m_currentSelection[i] == null )
+				{
+					currentSelectionSet.Remove( m_currentSelection[i].GetHashCode() );
+					m_currentSelection.RemoveAt( i );
+				}
+			}
+
 			// Make sure that the contents of the hierarchy are up-to-date
 			Refresh();
 			RefreshSearchResults();
@@ -1202,11 +1212,7 @@ namespace RuntimeInspectorNamespace
 				// Remove old Transforms from selection
 				for( int i = m_currentSelection.Count - 1; i >= 0; i-- )
 				{
-					Transform oldSelection = m_currentSelection[i];
-					if( !oldSelection )
-						continue;
-
-					int selectionInstanceID = oldSelection.GetHashCode();
+					int selectionInstanceID = m_currentSelection[i].GetHashCode();
 					if( !newSelectionSet.Contains( selectionInstanceID ) )
 					{
 						m_currentSelection.RemoveAt( i );
@@ -1231,9 +1237,6 @@ namespace RuntimeInspectorNamespace
 			for( int i = 0; i < m_currentSelection.Count; i++ )
 			{
 				Transform _selection = m_currentSelection[i];
-				if( !_selection )
-					continue;
-
 				Scene selectionScene = _selection.gameObject.scene;
 				for( int j = 0; j < sceneData.Count; j++ )
 				{
