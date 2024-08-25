@@ -408,8 +408,7 @@ namespace RuntimeInspectorNamespace
 		private Canvas m_canvas;
 		public Canvas Canvas { get { return m_canvas; } }
 
-		private float m_autoScrollSpeed;
-		internal float AutoScrollSpeed { set { m_autoScrollSpeed = value; } }
+		internal float AutoScrollSpeed;
 
 		// Used to make sure that the scrolled content always remains within the scroll view's boundaries
 		private PointerEventData nullPointerEventData;
@@ -660,8 +659,8 @@ namespace RuntimeInspectorNamespace
 				pressedDrawerActivePointer = null;
 			}
 
-			if( m_autoScrollSpeed != 0f )
-				scrollView.verticalNormalizedPosition = Mathf.Clamp01( scrollView.verticalNormalizedPosition + m_autoScrollSpeed * Time.unscaledDeltaTime / totalItemCount );
+			if( AutoScrollSpeed != 0f )
+				scrollView.verticalNormalizedPosition = Mathf.Clamp01( scrollView.verticalNormalizedPosition + AutoScrollSpeed * Time.unscaledDeltaTime / totalItemCount );
 		}
 
 		public void Refresh()

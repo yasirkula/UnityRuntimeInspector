@@ -72,7 +72,7 @@ namespace RuntimeInspectorNamespace
 			}
 
 			Vector2 position;
-			if( RectTransformUtility.ScreenPointToLocalPointInRectangle( rectTransform, pointer.position, worldCamera, out position ) && position.y != pointerLastYPos )
+			if( RectTransformUtility.ScreenPointToLocalPointInRectangle( rectTransform, pointer.position, worldCamera, out position ) && ( position.y != -pointerLastYPos || hierarchy.AutoScrollSpeed != 0f ) )
 			{
 				pointerLastYPos = -position.y;
 
