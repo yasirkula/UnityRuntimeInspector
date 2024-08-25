@@ -63,6 +63,8 @@ namespace RuntimeInspectorNamespace
 
 			if( !m_references.IsEmpty() && ( eventData.position - pressPosition ).sqrMagnitude < dragThreshold * dragThreshold )
 				RuntimeInspectorUtils.CreateDraggedReferenceItem( m_references, eventData, draggedReferenceSkin, GetComponentInParent<Canvas>() );
+
+			pointerHeldCoroutine = null;
 		}
 	}
 }
