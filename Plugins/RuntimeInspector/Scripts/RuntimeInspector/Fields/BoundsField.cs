@@ -27,6 +27,9 @@ namespace RuntimeInspectorNamespace
 		{
 			base.Initialize();
 
+			inputCenter.Initialize();
+			inputExtents.Initialize();
+
 			centerVariable = typeof( Bounds ).GetProperty( "center" );
 			extentsVariable = typeof( Bounds ).GetProperty( "extents" );
 #if UNITY_2017_2_OR_NEWER
