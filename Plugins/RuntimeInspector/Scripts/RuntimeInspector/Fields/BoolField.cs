@@ -48,5 +48,12 @@ namespace RuntimeInspectorNamespace
 			base.Refresh();
 			input.isOn = (bool) Value;
 		}
+
+		protected override void OnIsInteractableChanged()
+		{
+			base.OnIsInteractableChanged();
+			input.interactable = IsInteractable;
+			input.graphic.color = this.GetTextColor();
+		}
 	}
 }
