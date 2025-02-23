@@ -287,7 +287,7 @@ namespace RuntimeInspectorNamespace
 
 			// If we are only changing the sibling index of the dropped Transform and not its parent, then make sure
 			// that the target sibling index won't be affected when the dropped Transform is shifted in the Hierarchy
-			if( droppedTransform.parent == newParent )
+			if( droppedTransform.parent == newParent || ( newScene != null && newScene.IndexOf( droppedTransform ) >= 0 ) )
 			{
 				if( newParent || ( newScene is HierarchyDataRootScene && ( (HierarchyDataRootScene) newScene ).Scene == droppedTransform.gameObject.scene ) )
 				{

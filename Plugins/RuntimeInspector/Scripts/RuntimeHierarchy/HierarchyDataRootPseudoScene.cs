@@ -35,18 +35,8 @@ namespace RuntimeInspectorNamespace
 			}
 			else
 			{
-				index = Mathf.Clamp( index, 0, rootObjects.Count );
-				rootObjects.Insert( index, child );
-
-				// If the object was already in the list, remove the old copy from the list
-				for( int i = rootObjects.Count - 1; i >= 0; i-- )
-				{
-					if( i != index && rootObjects[i] == child )
-					{
-						rootObjects.RemoveAt( i );
-						break;
-					}
-				}
+				rootObjects.Remove( child ); // If the object was already in the list, remove the old copy from the list
+				rootObjects.Insert( Mathf.Clamp( index, 0, rootObjects.Count ), child );
 			}
 		}
 

@@ -1,7 +1,7 @@
 {
   "name": "com.yasirkula.runtimeinspector",
   "displayName": "Runtime Inspector & Hierarchy",
-  "version": "1.7.2",
+  "version": "1.7.3",
   "documentationUrl": "https://github.com/yasirkula/UnityRuntimeInspector",
   "changelogUrl": "https://github.com/yasirkula/UnityRuntimeInspector/releases",
   "licensesUrl": "https://github.com/yasirkula/UnityRuntimeInspector/blob/master/LICENSE.txt",

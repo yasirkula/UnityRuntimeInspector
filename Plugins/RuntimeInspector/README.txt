@@ -1,4 +1,4 @@
-= Runtime Inspector & Hierarchy (v1.7.2) =
+= Runtime Inspector & Hierarchy (v1.7.3) =
 
 Documentation: https://github.com/yasirkula/UnityRuntimeInspector
 FAQ: https://github.com/yasirkula/UnityRuntimeInspector#faq
