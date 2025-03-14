@@ -47,6 +47,9 @@ namespace RuntimeInspectorNamespace
 
 		private void ShowReferencePicker( PointerEventData eventData )
 		{
+			if ( !IsInteractable )
+				return;
+
 			Object[] allReferences = Resources.FindObjectsOfTypeAll( BoundVariableType );
 
 			ObjectReferencePicker.Instance.Skin = Inspector.Skin;
@@ -127,6 +130,14 @@ namespace RuntimeInspectorNamespace
 
 			if( lastValue != Value )
 				OnReferenceChanged( (Object) Value );
+		}
+
+		protected override void OnIsInteractableChanged()
+		{
+			base.OnIsInteractableChanged();
+			Color textColor = this.GetTextColor();
+			referenceNameText.color = textColor;
+			background.color *= textColor;
 		}
 	}
 }
