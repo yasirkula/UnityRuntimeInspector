@@ -71,6 +71,16 @@ namespace RuntimeInspectorNamespace
 		internal static readonly NumberFormatInfo numberFormat = NumberFormatInfo.GetInstance( CultureInfo.InvariantCulture );
 		internal static readonly StringBuilder stringBuilder = new StringBuilder( 200 );
 
+		[RuntimeInitializeOnLoadMethod( RuntimeInitializeLoadType.SubsystemRegistration )] // Configurable Enter Play Mode: https://docs.unity3d.com/Manual/DomainReloading.html
+		private static void ResetStatics()
+		{
+			IgnoredTransformsInHierarchy.Clear();
+			popupCanvas = null;
+			popupReferenceCanvas = null;
+			tooltipPopup = null;
+			draggedReferenceItemsPool.Clear();
+		}
+
 		internal static bool IsNull( this object obj )
 		{
 			if( obj is Object )
