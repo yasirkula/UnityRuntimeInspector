@@ -35,6 +35,12 @@ namespace RuntimeInspectorNamespace
 			( (RectTransform) invokeButton.transform ).sizeDelta = new Vector2( -Skin.IndentAmount * Depth, 0f );
 		}
 
+		protected override void OnIsInteractableChanged()
+		{
+			base.OnIsInteractableChanged();
+			invokeButton.interactable = IsInteractable;
+		}
+
 		public void SetBoundMethod( ExposedMethod boundMethod )
 		{
 			this.boundMethod = boundMethod;
