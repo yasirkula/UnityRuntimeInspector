@@ -159,6 +159,21 @@ namespace RuntimeInspectorNamespace
 		}
 
 		[SerializeField]
+		private Color m_inactiveTextColor = Color.gray;
+		public Color InactiveTextColor
+		{
+			get { return m_inactiveTextColor; }
+			set
+			{
+				if( m_inactiveTextColor != value )
+				{
+					m_inactiveTextColor = value;
+					m_version++;
+				}
+			}
+		}
+
+		[SerializeField]
 		private Color m_scrollbarColor = Color.black;
 		public Color ScrollbarColor
 		{

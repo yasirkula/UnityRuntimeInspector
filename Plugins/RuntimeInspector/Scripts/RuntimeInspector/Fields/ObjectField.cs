@@ -171,5 +171,13 @@ namespace RuntimeInspectorNamespace
 				IsExpanded = true;
 			}
 		}
+
+		protected override void OnIsInteractableChanged()
+		{
+			base.OnIsInteractableChanged();
+			initializeObjectButton.interactable = IsInteractable;
+			Text buttonText = initializeObjectButton.GetComponentInChildren<Text>();
+			buttonText.color = this.GetTextColor();
+		}
 	}
 }

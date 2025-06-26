@@ -112,5 +112,12 @@ namespace RuntimeInspectorNamespace
 			else
 				input.Text = (string) Value;
 		}
+
+		protected override void OnIsInteractableChanged()
+		{
+			base.OnIsInteractableChanged();
+			input.BackingField.interactable = IsInteractable;
+			input.BackingField.textComponent.color = this.GetTextColor();
+		}
 	}
 }

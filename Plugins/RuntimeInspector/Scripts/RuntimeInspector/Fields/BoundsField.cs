@@ -89,6 +89,13 @@ namespace RuntimeInspectorNamespace
 			inputExtents.Depth = Depth + 1;
 		}
 
+		protected override void OnIsInteractableChanged()
+		{
+			base.OnIsInteractableChanged();
+			inputCenter.IsInteractable = IsInteractable;
+			inputExtents.IsInteractable = IsInteractable;
+		}
+
 		public override void Refresh()
 		{
 			base.Refresh();
