@@ -22,6 +22,7 @@ namespace RuntimeInspectorNamespace
 	{
 		private static readonly Dictionary<Type, MemberInfo[]> typeToVariables = new Dictionary<Type, MemberInfo[]>( 89 ) { { typeof( object ), null } };
 		private static readonly Dictionary<Type, ExposedMethod[]> typeToExposedMethods = new Dictionary<Type, ExposedMethod[]>( 89 );
+		private static readonly Dictionary<string, Type> typeNameToType = new Dictionary<string, Type>( 89 );
 
 		private static readonly HashSet<Type> commonSerializableTypes = new HashSet<Type>()
 		{
@@ -834,6 +835,17 @@ namespace RuntimeInspectorNamespace
 
 		public static Type GetType( string typeName )
 		{
+			Type cachedType;
+			if( typeNameToType.TryGetValue( typeName, out cachedType ) )
+				return cachedType;
+
+			Type result = GetTypeUncached( typeName );
+			typeNameToType[typeName] = result;
+			return result;
+		}
+
+		private static Type GetTypeUncached( string typeName )
+		{
 			try
 			{
 				// Try Type.GetType() first. This will work with types defined
@@ -846,6 +858,19 @@ namespace RuntimeInspectorNamespace
 				type = typeof( Transform ).Assembly.GetType( "UnityEngine." + typeName );
 				if( type != null )
 					return type;
+
+				// Also try UnityEngine's facade assembly, which covers other split engine modules
+				try
+				{
+#if UNITY_EDITOR || !NETFX_CORE
+					type = Assembly.Load( "UnityEngine" ).GetType( "UnityEngine." + typeName );
+#else
+					type = Assembly.Load( new AssemblyName( "UnityEngine" ) ).GetType( "UnityEngine." + typeName );
+#endif
+					if( type != null )
+						return type;
+				}
+				catch { }
 
                 // Search all assemblies for type
                 Type nameMatchingType = null;
