@@ -51,7 +51,27 @@ namespace RuntimeInspectorNamespace
 		protected int m_depth;
 		public int Depth { get { return m_depth; } }
 
-		public bool CanExpand { get { return ChildCount > 0; } }
+		public bool CanExpand
+        {
+            get
+            {
+                int childCount = ChildCount;
+                if (childCount == 0)
+                    return false;
+
+                // Can't expand if all children are filtered out
+                RuntimeHierarchy hierarchy = Root.Hierarchy;
+                for (int i = 0; i < childCount; i++)
+                {
+                    Transform child = GetChild(i);
+                    if (child != null && hierarchy.CanDisplayTransform(child))
+                        return true;
+                }
+
+                return false;
+            }
+        }
+
 		public bool IsExpanded
 		{
 			get { return children != null; }
