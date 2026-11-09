@@ -68,8 +68,8 @@ namespace RuntimeInspectorNamespace
 
 		private void SearchTransformRecursively( Transform obj )
 		{
-			if( RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Contains( obj ) )
-				return;
+            if (!Hierarchy.CanDisplayTransform(obj))
+                return;
 
 			if( RuntimeInspectorUtils.caseInsensitiveComparer.IndexOf( obj.name, searchTerm, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace ) >= 0 )
 				searchResult.Add( obj );
