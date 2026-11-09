@@ -800,6 +800,11 @@ namespace RuntimeInspectorNamespace
 			scrollView.OnScroll( nullPointerEventData );
 		}
 
+        public bool CanDisplayTransform(Transform transform)
+        {
+            return !RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Contains(transform) && (m_gameObjectDelegate == null || m_gameObjectDelegate(transform));
+        }
+
 		void IListViewAdapter.SetItemContent( RecycledListItem item )
 		{
 			if( isListViewDirty )
@@ -1362,8 +1367,8 @@ namespace RuntimeInspectorNamespace
 			if( !transform )
 				return false;
 
-			if( RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Contains( transform ) || ( m_gameObjectDelegate != null && !m_gameObjectDelegate( transform ) ) )
-				return false;
+            if (!CanDisplayTransform(transform))
+                return false;
 
 			// When Transform passes the above checks, it doesn't necessarily mean that it is visible since one of its parents might also be hidden from this RuntimeHierarchy.
 			// We aren't just checking if all parents of the Transform are visible; imagine the scenario where there exist an A/B/C Transform hierarchy in which A is hidden from
@@ -1385,8 +1390,8 @@ namespace RuntimeInspectorNamespace
 				// Check if B is explicitly hidden from this RuntimeHierarchy in the A/B/C example above
 				for( Transform _transform = transform.parent; _transform && _transform != nearestRoot; _transform = _transform.parent )
 				{
-					if( RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Contains( _transform ) || ( m_gameObjectDelegate != null && !m_gameObjectDelegate( _transform ) ) )
-						return false;
+                    if (!CanDisplayTransform(_transform))
+                        return false;
 				}
 			}
 

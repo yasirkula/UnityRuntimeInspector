@@ -347,10 +347,7 @@ namespace RuntimeInspectorNamespace
 
 		private void GenerateChildItem( Transform child, int index, RuntimeHierarchy hierarchy )
 		{
-			bool isChildVisible = !RuntimeInspectorUtils.IgnoredTransformsInHierarchy.Contains( child );
-			if( isChildVisible && hierarchy.GameObjectFilter != null )
-				isChildVisible = hierarchy.GameObjectFilter( child );
-
+            bool isChildVisible = hierarchy.CanDisplayTransform(child);
 			HierarchyDataTransform childData;
 			int poolIndex = transformDataPool.Count - 1;
 			if( poolIndex >= 0 )
